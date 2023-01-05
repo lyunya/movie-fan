@@ -2,10 +2,11 @@ import { type GetServerSideProps, type NextPage } from "next";
 import Layout from "@layout/default";
 import MovieCard from "@/components/MovieCard/MovieCard";
 import { getNowPlayingMovies } from "../hooks/getNowPlayingMovies";
+import { HomePageProps } from "@/types/main";
 
 
 
-const Home: NextPage = ({ data }) => {
+const Home: NextPage<HomePageProps> = ({ data }) => {
 
 const { results:movies } = data
 
