@@ -2,6 +2,7 @@ import { type AppType } from "next/app";
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { Krona_One, Rubik_Bubbles } from '@next/font/google'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { api } from "../utils/api";
 
 import "../styles/globals.css";
@@ -22,11 +23,15 @@ const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
+  const client = new QueryClient();
+
   return (
     <SessionProvider session={session}>
-      <main className={`${kronaOne.variable} ${Rubik.variable} font-sans`}>
-        <Component {...pageProps} />
-      </main>
+      <QueryClientProvider client={client}>
+        <main className={`${kronaOne.variable} ${Rubik.variable} font-sans`}>
+          <Component {...pageProps} />
+        </main>
+        </QueryClientProvider>
     </SessionProvider>
   );
 };
