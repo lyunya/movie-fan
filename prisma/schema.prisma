@@ -12,6 +12,7 @@ datasource db {
     // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
     // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
     url      = env("DATABASE_URL")
+    shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model Example {
@@ -63,4 +64,15 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+model Movie {
+    id        String   @id @default(cuid())
+    title     String
+    director  String
+    year      Int
+    revenue   Int
+    runtime   Int
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
