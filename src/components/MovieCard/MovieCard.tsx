@@ -1,9 +1,9 @@
-import React from 'react'
 import type { FC } from 'react'
+import type { MovieCardProps } from './types'
 import Image from 'next/image'
 import { TMDB_POSTER_URL } from '@/data/Contstants'
 
-const MovieCard: FC = ({ title, poster_path, overview }) => {
+const MovieCard: FC<MovieCardProps> = ({ title, poster_path, overview }) => {
   // const { title } = props
 
   return (
