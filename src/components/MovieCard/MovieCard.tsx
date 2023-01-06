@@ -5,8 +5,9 @@ import Image from 'next/image'
 import { TMDB_POSTER_URL } from '@/data/Contstants'
 import { getMovieDetails } from '@/utils/getMovieDetails'
 import { convertRunTime } from '@/utils/convertRunTime'
+import Link from 'next/link'
 
-const MovieCard: FC<MovieCardProps> = ({ title, poster_path, overview, id }) => {
+const MovieCard: FC<MovieCardProps> = ({ title, poster_path, id }) => {
   const { isLoading, isError, data, error } = useQuery(['movieDetails', id], () => getMovieDetails(id));
    
   if (isLoading) {
@@ -17,28 +18,27 @@ const MovieCard: FC<MovieCardProps> = ({ title, poster_path, overview, id }) => 
     return <>Error: {error}</>
   }
 
-  const genresList = data.genres.map((genre: { name: string }) => genre.name);
-  const runTime = data.runtime;
+  const { runtime, overview, backdrop_path, tagline, imdb_id } = data;
+
+  const genresList = data.genres.slice(0, 2).map((genre: { name: string }) => genre.name);
   
   return (
-    <div className='flex flex-col items-center bg-white border rounded-lg md:flex-row'>
-     <div className='w-1/3 h-full'>
-        <Image src={`${TMDB_POSTER_URL}${poster_path}`} height={350} width={250} alt='movie poster' />
-      </div>
-      <div className='flex flex-col w-2/3 h-full p-4 items-center'>
-      <h2 className='mb-4 text-center text-2xl'>{title}</h2>
-        <p className='line-clamp-5 text-md'>{overview}</p>
+    <Link href={{pathname: `/movie/${id}`, query: {title, poster_path, overview, id, backdrop_path, tagline, imdb_id} }}>
+    <div className='flex h-[400px] w-[300px] flex-col relative items-center bg-white border rounded-lg md:flex-row cursor-pointer'>
+        <Image className='h-full absolute inset-0 bg-cover bg-center z-0 rounded-lg' src={`${TMDB_POSTER_URL}${poster_path}`} height={400} width={300} alt='movie poster' />
+      <div className='grid place-items-center	 h-full p-4 items-center opacity-0 hover:opacity-90  absolute inset-0 z-10 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg'>
+      <h2 className='mb-4 text-center text-3xl'>{title}</h2>
         <div className='mt-auto text-center'>
-        <p className='flex w-fit justify-between mt-auto'>
+        <p className='flex w-fit justify-between mt-auto text-xl'>
           {genresList.map((genre: string, idx: number) => {
           return <span className='px-2' key={idx}>{genre}</span>
         })}
           </p>
-          <p className='py-2'>{convertRunTime(runTime)}</p>
+          <p className='py-2 text-xl'>{convertRunTime(runtime)}</p>
           </div>
       </div>
-
     </div>
+    </Link>
   ) 
 }
 

@@ -5,7 +5,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        'heading': [`var(--font-rubik)`],
+        'heading': [`var(--font-overPass)`],
         'body': [`var(--font-kronaOne)`],
       },
     },

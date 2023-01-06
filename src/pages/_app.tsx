@@ -1,7 +1,7 @@
 import { type AppType } from "next/app";
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
-import { Krona_One, Rubik_Bubbles } from '@next/font/google'
+import { Krona_One, Overpass } from '@next/font/google'
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { api } from "../utils/api";
 
@@ -13,10 +13,11 @@ const kronaOne = Krona_One({
   weight: "400"
 })
 
-const Rubik = Rubik_Bubbles({
+const overPass = Overpass({
   subsets: ['latin'],
-  variable: '--font-rubik',
-  weight: "400"
+  variable: '--font-overPass',
+  display: "swap",
+  weight: ["400", "500", "700", "800"]
 })
 
 const MyApp: AppType<{ session: Session | null }> = ({
@@ -28,7 +29,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
   return (
     <SessionProvider session={session}>
       <QueryClientProvider client={client}>
-        <main className={`${kronaOne.variable} ${Rubik.variable} font-sans`}>
+        <main className={`${kronaOne.variable} ${overPass.variable} font-sans`}>
           <Component {...pageProps} />
         </main>
         </QueryClientProvider>
