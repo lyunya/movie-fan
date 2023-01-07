@@ -9,7 +9,7 @@ const Movie = () => {
 
   return (
     <Layout>
-      <div className='container grid place-content-start grid-cols-2'>
+      <div className='container grid place-content-start grid-cols-2 mx-auto px-4'>
       <Image src={`${TMDB_BACKDROP_URL}${backdrop_path}`} height={500} width={1000} alt='Movie Backdrop' />
       <div className="text-white text-center">
           <h1 className='text-5xl pb-6'>{title}</h1>
