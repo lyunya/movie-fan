@@ -5,11 +5,17 @@ import Layout from "@layout/default";
 
 const Movie = () => {
   const router = useRouter();
-  const { runtime, overview, backdrop_path, tagline, imdb_id }  = router.query;
+  const { runtime, overview, backdrop_path, tagline, imdb_id, title }  = router.query;
 
   return (
     <Layout>
-      <Image src={`${TMDB_BACKDROP_URL}${backdrop_path}`} height={1000} width={1000} alt='Movie Backdrop' />
+      <div className='container grid place-content-start grid-cols-2'>
+      <Image src={`${TMDB_BACKDROP_URL}${backdrop_path}`} height={500} width={1000} alt='Movie Backdrop' />
+      <div className="text-white text-center">
+          <h1 className='text-5xl pb-6'>{title}</h1>
+          <h2 className='text-xl px-4'>{overview}</h2>
+      </div>
+      </div>
     </Layout>  
   )
 }
