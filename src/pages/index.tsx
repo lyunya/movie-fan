@@ -12,9 +12,9 @@ const { results:movies } = data
 
   return (
     <Layout>
-      <main className="items-center">
-        <h2 className="text-white text-5xl text-center">See what&apos;s now Playing</h2>
-        <div className="max-w-[90%] grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-6 my-8">
+      <main className="grid items-center ">
+        <h2 className="text-white text-5xl text-center pb-12">See what&apos;s now Playing</h2>
+        <div className="max-w-[90%] grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-12 my-8 mx-auto px-8">
         {movies.slice(0,12).map((movie, idx) => {
         return <MovieCard key={idx} {...movie} />
         })}
