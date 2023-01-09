@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import type { FC } from 'react';
+import type { CarouselProps } from './types';
 
-const Carousel = ({ movieCards }) => {
+const Carousel: FC<CarouselProps> = ({ movieCards }) => {
   const maxScrollWidth = useRef(0);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const carousel = useRef(null);
+  const carousel = useRef<HTMLDivElement>(null);
 
   const movePrev = () => {
     if (currentIndex > 0) {
