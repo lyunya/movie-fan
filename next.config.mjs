@@ -14,7 +14,7 @@ const config = {
     defaultLocale: "en",
   },
   images: {
-    domains: ['image.tmdb.org'],
+    domains: ['image.tmdb.org', 'resizing.flixster.com'],
   },
 };
 export default config;

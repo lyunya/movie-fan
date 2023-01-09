@@ -1,24 +1,39 @@
 import { type GetServerSideProps, type NextPage } from "next";
 import Layout from "@layout/default";
 import MovieCard from "@/components/MovieCard/MovieCard";
-import { getNowPlayingMovies } from "@util/getNowPlayingMovies";
 import type { HomePageProps } from "@/types/main";
-
-
+import Carousel from "@/components/Carousel/Carousel";
+import { getUpcomingFlix } from "@/utils/getUpcomingFlix";
+import { getOpeningFlix } from "@/utils/getOpeningFlix";
+import { getPopularMovies } from "@/utils/getPopularMovies";
 
 const Home: NextPage<HomePageProps> = ({ data }) => {
+  const { popularMovies, upcomingFlix } = data
 
-const { results:movies } = data
+  const { data: { opening: moviesOpening, popularity: moviesPopular } } = popularMovies
+  const { data: { upcoming: moviesUpcomingFlix } } = upcomingFlix
+
+  const popularMovieCards = moviesPopular.map((movie, idx) => {
+    return <MovieCard key={idx} {...movie} />
+  })
+
+  const openingMovieCards = moviesOpening.map((movie, idx) => {
+    return <MovieCard key={idx} {...movie} />
+  })
+
+  const upcomingMovieCards = moviesUpcomingFlix.map((movie, idx) => {
+    return <MovieCard key={idx} {...movie} />
+  })
 
   return (
     <Layout>
       <main className="grid items-center ">
-        <h2 className="text-white text-5xl text-center pb-12">See what&apos;s now Playing</h2>
-        <div className="max-w-[90%] grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-12 my-8 mx-auto px-8">
-        {movies.slice(0,12).map((movie, idx) => {
-        return <MovieCard key={idx} {...movie} />
-        })}
-        </div>
+        <h2 className="text-white text-5xl text-left pl-8 pb-12">Popular</h2>
+        <Carousel movieCards={popularMovieCards} />
+        <h2 className="text-white text-5xl text-left pl-8 pb-12">Opening this week</h2>
+        <Carousel movieCards={openingMovieCards} />
+        <h2 className="text-white text-5xl text-left pl-8 pb-12">Upcoming</h2>
+        <Carousel movieCards={upcomingMovieCards} />
       </main>
     </Layout>
   );
@@ -26,8 +41,9 @@ const { results:movies } = data
 
 export const getServerSideProps: GetServerSideProps = async () => { 
 try {
-	  const data = await getNowPlayingMovies()
-	  return { props: { data } }
+  const upcomingFlix = await getUpcomingFlix()
+  const popularMovies = await getPopularMovies()
+  return { props: { data: {  upcomingFlix, popularMovies } } }
 } catch (error) {
 	return { props: { error } }
 }
