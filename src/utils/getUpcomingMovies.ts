@@ -1,7 +1,15 @@
-import { TMDB_BASE_API_URL, TMDB_API_KEY } from "@/data/Contstants"
+import { RAPID_API_HOST, FLIXSTER_API_UPCOMING_URL } from "@/data/Contstants"
+
+const options = {
+  method: 'GET',
+  headers: {
+    'X-RapidAPI-Key': process.env.RAPID_API_KEY as string,
+    'X-RapidAPI-Host': RAPID_API_HOST
+	}
+};
 
 export const getUpcomingMovies = async () => { 
-  const res = await fetch(`${TMDB_BASE_API_URL}/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=1`)
+  const res = await fetch(FLIXSTER_API_UPCOMING_URL, options)
   const data = await res.json()
   return data
 }

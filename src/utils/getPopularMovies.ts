@@ -1,9 +1,9 @@
-import { RAPID_API_HOST, RAPID_API_KEY, FLIXSTER_API_POPULAR_URL } from "@/data/Contstants"
+import { RAPID_API_HOST, FLIXSTER_API_POPULAR_URL } from "@/data/Contstants"
 
 const options = {
   method: 'GET',
   headers: {
-    'X-RapidAPI-Key': RAPID_API_KEY,
+    'X-RapidAPI-Key': process.env.RAPID_API_KEY as string,
     'X-RapidAPI-Host': RAPID_API_HOST
 	}
 };

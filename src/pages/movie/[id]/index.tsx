@@ -2,9 +2,9 @@ import Image from 'next/image'
 import Layout from "@layout/default";
 import { type GetServerSideProps, type NextPage } from "next";
 import { getMovieDetails } from '@/utils/getMovieDetails';
+import type { MoviePageProps } from '@/types/main';
 
-const Movie: NextPage = ({ data }) => {
-  console.log(data.movieDetails)
+const Movie: NextPage<MoviePageProps> = ({ data }) => {
 
 
   return (

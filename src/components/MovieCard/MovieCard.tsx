@@ -1,26 +1,9 @@
 import type { FC } from 'react'
 import type { MovieCardProps } from './types'
-import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
-import { getMovieDetails } from '@/utils/getMovieDetails'
 import Link from 'next/link'
 
-const MovieCard: FC<MovieCardProps> = ({ name, posterImage, emsVersionId }) => {
-  // const { isLoading, isError, data, error } = useQuery(['movieDetails', emsVersionId], () => getMovieDetails(emsVersionId));
-   
-  // if (isLoading) {
-  //   return <span>Loading...</span>
-  // }
-  
-  // if (isError) {
-  //   return <>Error: {error}</>
-  // }
-
-  // console.log(data, 'here is data')
-
-  // const { runtime, overview, backdrop_path, tagline, imdb_id } = data;
-
-  
+const MovieCard: FC<MovieCardProps> = ({ name, posterImage, emsVersionId }) => {  
   return (
     <Link href={`/movie/${emsVersionId}`}>
     <div className='flex min-h-[480px] min-w-[384px] flex-col relative items-center bg-white border rounded-lg cursor-pointer snap-start mx-4'>

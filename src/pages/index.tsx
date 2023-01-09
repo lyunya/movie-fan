@@ -3,15 +3,14 @@ import Layout from "@layout/default";
 import MovieCard from "@/components/MovieCard/MovieCard";
 import type { HomePageProps } from "@/types/main";
 import Carousel from "@/components/Carousel/Carousel";
-import { getUpcomingFlix } from "@/utils/getUpcomingFlix";
-import { getOpeningFlix } from "@/utils/getOpeningFlix";
+import { getUpcomingMovies } from "@/utils/getUpcomingMovies";
 import { getPopularMovies } from "@/utils/getPopularMovies";
 
 const Home: NextPage<HomePageProps> = ({ data }) => {
-  const { popularMovies, upcomingFlix } = data
+  const { popularMovies, upcomingMovies } = data
 
   const { data: { opening: moviesOpening, popularity: moviesPopular } } = popularMovies
-  const { data: { upcoming: moviesUpcomingFlix } } = upcomingFlix
+  const { data: { upcoming: upComingMovies } } = upcomingMovies
 
   const popularMovieCards = moviesPopular.map((movie, idx) => {
     return <MovieCard key={idx} {...movie} />
@@ -21,7 +20,7 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
     return <MovieCard key={idx} {...movie} />
   })
 
-  const upcomingMovieCards = moviesUpcomingFlix.map((movie, idx) => {
+  const upcomingMovieCards = upComingMovies.map((movie, idx) => {
     return <MovieCard key={idx} {...movie} />
   })
 
@@ -41,9 +40,9 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
 
 export const getServerSideProps: GetServerSideProps = async () => { 
 try {
-  const upcomingFlix = await getUpcomingFlix()
+  const upcomingMovies = await getUpcomingMovies()
   const popularMovies = await getPopularMovies()
-  return { props: { data: {  upcomingFlix, popularMovies } } }
+  return { props: { data: {  upcomingMovies, popularMovies } } }
 } catch (error) {
 	return { props: { error } }
 }
