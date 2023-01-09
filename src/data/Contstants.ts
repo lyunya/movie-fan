@@ -3,7 +3,6 @@ export const TMDB_BASE_API_URL='https://api.themoviedb.org/3'
 export const TMDB_POSTER_URL='https://image.tmdb.org/t/p/w500/'
 export const TMDB_MOVIE_DETAILS_URL = 'https://api.themoviedb.org/3/movie/'
 export const TMDB_BACKDROP_URL = 'https://image.tmdb.org/t/p/original/'
-export const RAPID_API_KEY = process.env.RAPID_API_KEY
 export const RAPID_API_HOST = 'flixster.p.rapidapi.com'
 export const FLIXSTER_API_OPENING_URL = 'https://flixster.p.rapidapi.com/movies/get-opening?countryId=usa'
 export const FLIXSTER_API_UPCOMING_URL = 'https://flixster.p.rapidapi.com/movies/get-upcoming?countryId=usa&limit=15'
