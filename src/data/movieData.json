@@ -1,4 +1,4 @@
-const movie = {
+  {
   "emsId": "0e71cf84-e236-3ed7-9d91-3df34e6b2fae",
   "fandangoId": "226754",
   "rtMovieId": "771512313",
@@ -600,5 +600,3 @@ const movie = {
       "theaters": []
   }
 }
-
-export default movie;
