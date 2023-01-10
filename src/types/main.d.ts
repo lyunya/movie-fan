@@ -28,9 +28,9 @@ export interface HomePageProps {
   }
 
 export interface MoviePageProps {
-  data: {
-    movieDetails: {
       movie: {
+        synopsis: ReactNode;
+        durationMinutes: ReactNode;
         backgroundImage: Image,
         cast: Credit[],
         crew: Credit[],
@@ -53,7 +53,4 @@ export interface MoviePageProps {
         }
   
       }
-    }
-
-  }
   }
