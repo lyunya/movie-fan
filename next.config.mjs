@@ -11,11 +11,17 @@ const config = {
   reactStrictMode: true,
   swcMinify: true,
   i18n: {
-    locales: ["en"],
-    defaultLocale: "en",
+    locales: ['en'],
+    defaultLocale: 'en',
   },
   images: {
-    domains: ['image.tmdb.org', 'resizing.flixster.com', 'flxt.tmsimg.com', 'images.fandango.com'],
+    domains: [
+      'image.tmdb.org',
+      'resizing.flixster.com',
+      'flxt.tmsimg.com',
+      'images.fandango.com',
+      'prd-rteditorial.s3.us-west-2.amazonaws.com',
+    ],
   },
-};
+}
 export default config;
