@@ -36,32 +36,5 @@ export interface HomePageProps {
   }
 
 export interface MoviePageProps {
-      movie: {
-        synopsis: ReactNode;
-        durationMinutes: ReactNode;
-        backgroundImage: Image,
-        cast: Credit[],
-        crew: Credit[],
-        directedBy: string,
-        Images: Image[],
-        genres: {name: string}[],
-        name: string,
-        posterImage: Image,
-        releaseDate: string,
-        totalGross: string,
-        motionPictureRating: {
-          code: string,
-        }
-        trailer: {
-          url: string
-        },
-        tomatoRating: {
-          tomatometer: number,
-          consensus: string,
-          iconImage: {
-            url: string
-          }
-        }
-  
-      }
+  id: string;
   }

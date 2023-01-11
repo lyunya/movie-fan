@@ -1,5 +1,5 @@
 import Nav from '@comp/Nav/Nav';
-// import Footer from '@comp/HomeFooter';
+import Footer from '@comp/Footer/Footer';
 import Head from '@comp/Head';
 
 import type { FC } from 'react';
@@ -15,7 +15,7 @@ const Default: FC<Props> = ({
 		<main className='bg-gradient-to-b from-[#000000] to-[#1e1e1e] min-h-screen flex flex-col min-w-full'>
 			{children}
 		</main>
-		{/* <Footer /> */}
+		<Footer />
 	</>
 );
 

@@ -56,11 +56,11 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
   return (
     <Layout>
       <main className="grid items-center">
-        <div className="flex flex-col-reverse sm:flex-row justify-between mx-auto w-full">
+        <div className="flex flex-col justify-between mx-auto w-full">
+        <Search handleSearch={debouncedSearch} />
           <div className={results.length ? 'hidden' : 'w-fit'}>
             <News newsStories={newsStories} />
           </div>
-          <Search handleSearch={debouncedSearch} />
         </div>
         {results.length > 0 ? <SearchResults movieCards={searchedMovieCards} /> : 
           <>

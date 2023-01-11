@@ -4,5 +4,7 @@
   "editor.tabSize": 2,
   "editor.detectIndentation": false,
   "prettier.printWidth": 100,
-  "javascript.suggestionActions.enabled": false
+  "javascript.suggestionActions.enabled": false,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }
