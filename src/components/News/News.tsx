@@ -14,12 +14,14 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
   return (
     <section className='text-white pl-8'>
       <>
-      <h2 className='text-xl md:text-5xl self-start mb-4'>News</h2>
+      <h2 className='text-xl md:text-5xl self-start mb-4 w-fit'>News</h2>
+      <div className='flex flex-col'>
       {news.slice(0, 10).map((story: NewStory) => {
-       return <a className='py-6' key={story.id} href={story.link} target="_blank" rel="noreferrer" >
-         <Balancer className='text-blue w-11/12 my-2'>{parse(story.title)}</Balancer>
+       return <a className='py-2' key={story.id} href={story.link} target="_blank" rel="noreferrer" >
+         <Balancer className='text-blue'>{parse(story.title)}</Balancer>
         </a>
       })}
+      </div>
         </>
     </section>
   )
