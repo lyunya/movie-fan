@@ -57,18 +57,18 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
     <Layout>
       <main className="grid items-center">
         <div className="flex flex-col-reverse sm:flex-row justify-between mx-auto w-full">
-          <div className={results.length ? 'hidden' : ''}>
+          <div className={results.length ? 'hidden' : 'w-fit'}>
             <News newsStories={newsStories} />
           </div>
           <Search handleSearch={debouncedSearch} />
         </div>
         {results.length > 0 ? <SearchResults movieCards={searchedMovieCards} /> : 
           <>
-            <h2 className="text-white text-3xl md:text-5xl text-left pl-8 sm:pb-12 pt-2">Popular</h2>
+            <h2 className="text-white text-3xl md:text-5xl text-left pl-8 sm:pb-4 pt-2 sm:pt-8">Popular</h2>
             <Carousel movieCards={popularMovieCards} />
-            <h2 className="text-white text-3xl md:text-5xl text-left pl-8 sm:pb-12">Opening this week</h2>
+            <h2 className="text-white text-3xl md:text-5xl text-left pl-8 sm:pb-4">Opening this week</h2>
             <Carousel movieCards={openingMovieCards} />
-            <h2 className="text-white text-3xl md:text-5xl text-left pl-8 sm:pb-12">Upcoming</h2>
+            <h2 className="text-white text-3xl md:text-5xl text-left pl-8 sm:pb-4">Upcoming</h2>
             <Carousel movieCards={upcomingMovieCards} />
           </>}
       </main>
