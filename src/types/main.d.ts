@@ -11,6 +11,13 @@ export interface Credit {
   role: string;
   characterName: string;
 }
+
+export interface NewStory { 
+  id: string;
+  title: string;
+  mainImage: Image;
+  link: string;
+}
 export interface HomePageProps {
   data: {
     popularMovies: {
@@ -24,6 +31,7 @@ export interface HomePageProps {
         upcoming: MovieCardProps[]
       }
     }
+    newsStories: NewStory[]
     }
   }
 
@@ -41,6 +49,9 @@ export interface MoviePageProps {
         posterImage: Image,
         releaseDate: string,
         totalGross: string,
+        motionPictureRating: {
+          code: string,
+        }
         trailer: {
           url: string
         },

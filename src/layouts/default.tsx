@@ -12,7 +12,7 @@ const Default: FC<Props> = ({
 	<>
 		<Head />
 		<Nav />
-		<main className='bg-gradient-to-b from-[#000000] to-[#1e1e1e] min-h-screen flex flex-col min-w-full pt-24'>
+		<main className='bg-gradient-to-b from-[#000000] to-[#1e1e1e] min-h-screen flex flex-col min-w-full'>
 			{children}
 		</main>
 		{/* <Footer /> */}
