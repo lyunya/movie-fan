@@ -5,12 +5,11 @@ import { getMovieDetails } from '@/utils/getMovieDetails';
 import type { MoviePageProps } from '@/types/main';
 import Balancer from 'react-wrap-balancer'
 import parse from 'html-react-parser';
-import movie from '../../../data/movieData.json'
 import { signIn, signOut, useSession } from "next-auth/react";
 
 
 
-const Movie: NextPage<MoviePageProps> = () => {
+const Movie: NextPage<MoviePageProps> = ({ movie }) => {
   const genres = movie.genres.map(genre => genre.name)
   const { data: sessionData } = useSession();
 

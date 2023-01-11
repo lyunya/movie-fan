@@ -1,0 +1,17 @@
+import type { FC } from 'react'
+import type { SearchProps } from './types'
+
+const Search: FC<SearchProps> = ({ handleSearch }) => {
+  return (
+    <>
+      <label className='sr-only' htmlFor='search'>Search For Movies</label> 
+      <input className='min-w-[400px] w-fit max-w-[800px] mx-auto rounded pl-4 pr-6 py-2 text-2xl xl:text-4xl focus:border-pink-400 pt-2' onChange={(e) => handleSearch(e)}
+        id="search"
+      placeholder="Search for Movies"
+      type='search' />
+    </>
+
+  )
+}
+
+export default Search
