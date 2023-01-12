@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GetServerSideProps} from "next";
+import type { GetStaticProps} from "next";
 import { type NextPage } from "next";
 import type { HomePageProps, NewStory } from "@/types/main";
 import type { ChangeEvent} from "react";
@@ -76,13 +76,16 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   try {
     const upcomingMovies = await getUpcomingMovies()
     const popularMovies = await getPopularMovies()
     const news = await getNews()
     const newsStories = news.data.newsStories
-    return { props: { data: { upcomingMovies, popularMovies, newsStories } } }
+    return {
+      props: { data: { upcomingMovies, popularMovies, newsStories } },
+      revalidate: 60 * 60,
+    }
   } catch (error) {
     return { props: { error } }
   }

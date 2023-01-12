@@ -9,8 +9,6 @@ const Nav: FC = () => {
   const router = useRouter()
   const home = router.pathname === '/';
 
-  console.log(router.pathname, 'this pathname')
-
   return (
     <nav className='relative h-18 p-8 bg-black w-full flex items-center justify-between'>
       <Link href='/'>
