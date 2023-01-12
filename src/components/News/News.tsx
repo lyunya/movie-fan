@@ -19,7 +19,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
       <>
         <h2 className="mb-4 w-fit self-start text-xl md:text-5xl">News</h2>
         <div className="space-between flex w-full flex-col-reverse lg:flex-row">
-          <div className="flex flex-col lg:w-1/2">
+          <div className="flex flex-col lg:ml-12 lg:w-1/2">
             {news.slice(0, 10).map((story: NewStory) => {
               return (
                 <a
@@ -42,6 +42,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
                 src={mainImage?.url}
                 width={800}
                 height={900}
+                priority
                 alt="news story"
               />
             </div>
