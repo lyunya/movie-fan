@@ -12,7 +12,7 @@ const Nav: FC = () => {
   return (
     <nav className='relative h-18 p-8 bg-black w-full flex items-center justify-between'>
       <Link href='/'>
-      <h1 className='text-4xl sm:text-5xl font-heading font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-red-600'>Movie Fan</h1>
+      <h1 className='text-4xl sm:text-5xl lg:text-6xl font-heading font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-red-600'>Movie Fan</h1>
       </Link>
       {home ? <AuthShowcase /> :
         <Link href='/'>

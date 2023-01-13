@@ -5,48 +5,53 @@ import type { NewStory } from '@/types/main'
 import Image from 'next/image'
 import parse from 'html-react-parser'
 import Balancer from 'react-wrap-balancer'
+import Link from 'next/link'
 
 const News: FC<NewsStoryProps> = ({ newsStories }) => {
   if (!newsStories) return null
 
-  const news = newsStories.filter(
+  let news = newsStories.filter(
     (story) => !story.title.toLowerCase()?.includes('tv' || 'television')
   )
-  const { mainImage } = news.find((story) => story.mainImage.url)
+  const mainStory = news.find((story) => story.mainImage.url)
+  news = news.filter((story) => mainStory.id !== story.id)
 
   return (
-    <section className="w-full pl-8 text-white">
+    <section className=" mx-auto text-white md:pl-8">
       <>
-        <h2 className="mb-4 w-fit self-start text-xl md:text-5xl">News</h2>
-        <div className="space-between flex w-full flex-col-reverse lg:flex-row">
-          <div className="flex flex-col lg:ml-12 lg:w-1/2">
+        <h2 className="mb-4 self-start text-3xl md:text-5xl">News</h2>
+        <div className="w-11/12 space-between grid grid-cols-1 xl:grid-cols-2">
+          {mainStory?.mainImage.url && (
+            <div className="col-span-full flex text-center xl:col-start-2">
+              <a href={mainStory.link} target="_blank" rel="noreferrer">
+                <Image
+                  src={mainStory?.mainImage.url}
+                  height={1200}
+                  width={1200}
+                  priority
+                  alt="news story"
+                />
+                <Balancer className="my-4 text-center text-2xl lg:text-3xl">
+                  {mainStory.title}
+                </Balancer>
+              </a>
+            </div>
+          )}
+          <div className="col-span-full	flex flex-col mx-1 xl:ml-12 xl:col-end-2 xl:row-start-1">
             {news.slice(0, 10).map((story: NewStory) => {
               return (
                 <a
-                  className="py-2"
+                  className="w-fit py-2 text-lg lg:text-xl"
                   key={story.id}
                   href={story.link}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <Balancer className="text-blue">
-                    {parse(story.title)}
-                  </Balancer>
+                  <Balancer>{parse(story.title)}</Balancer>
                 </a>
               )
             })}
           </div>
-          {mainImage?.url && (
-            <div className="w-full pr-8 pb-4 lg:w-1/2">
-              <Image
-                src={mainImage?.url}
-                width={800}
-                height={900}
-                priority
-                alt="news story"
-              />
-            </div>
-          )}
         </div>
       </>
     </section>

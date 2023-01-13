@@ -56,9 +56,9 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
   return (
     <Layout>
       <main className="grid items-center">
-        <div className="flex flex-col justify-between mx-auto w-full">
+        <div className="flex flex-col justify-between mx-auto">
         <Search handleSearch={debouncedSearch} />
-          <div className={results.length ? 'hidden' : 'w-full'}>
+          <div className={results.length ? 'hidden' : ''}>
             <News newsStories={newsStories} />
           </div>
         </div>
