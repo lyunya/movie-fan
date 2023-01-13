@@ -21,6 +21,7 @@ const config = {
       'flxt.tmsimg.com',
       'images.fandango.com',
       'prd-rteditorial.s3.us-west-2.amazonaws.com',
+      'lh3.googleusercontent.com',
     ],
   },
 }

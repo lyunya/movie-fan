@@ -41,7 +41,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
             {news.slice(0, 10).map((story: NewStory) => {
               return (
                 <a
-                  className=" py-2 text-lg lg:text-xl"
+                  className="py-2 text-lg lg:text-xl"
                   key={story.id}
                   href={story.link}
                   target="_blank"
