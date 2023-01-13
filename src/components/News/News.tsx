@@ -17,7 +17,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
   news = news.filter((story) => mainStory.id !== story.id)
 
   return (
-    <section className=" mx-auto text-white md:pl-8">
+    <section className="mx-auto text-white w-11/12 md:w-full md:pl-8">
       <>
         <h2 className="mb-4 self-start text-3xl md:text-5xl">News</h2>
         <div className="w-11/12 space-between grid grid-cols-1 xl:grid-cols-2">
@@ -41,7 +41,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
             {news.slice(0, 10).map((story: NewStory) => {
               return (
                 <a
-                  className="w-fit py-2 text-lg lg:text-xl"
+                  className=" py-2 text-lg lg:text-xl"
                   key={story.id}
                   href={story.link}
                   target="_blank"
