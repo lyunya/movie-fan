@@ -54,7 +54,7 @@ CREATE TABLE "WatchListItem" (
     "name" TEXT NOT NULL,
     "posterImage" TEXT,
     "genres" TEXT[],
-    "synopsis" TEXT NOT NULL,
+    "synopsis" TEXT,
     "tomatoMeter" INTEGER,
     "consensus" TEXT,
     "totalGross" TEXT,
