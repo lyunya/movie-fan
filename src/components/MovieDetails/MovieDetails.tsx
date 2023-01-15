@@ -1,17 +1,31 @@
-import Image from 'next/image'
 import type { FC } from 'react'
+import type {
+  IMovieDetail,
+  MovieDetailInterface,
+  MovieDetailProps,
+} from './types'
+import type { MovieType } from '@/types/MovieSchema'
+import type { UseQueryResult } from '@tanstack/react-query'
+import Image from 'next/image'
 import Balancer from 'react-wrap-balancer'
-import parse from 'html-react-parser';
-import type { MovieDetailInterface, MovieDetailProps } from './types'
-import type { UseQueryResult } from '@tanstack/react-query';
-import { useQuery } from '@tanstack/react-query';
-import { getMovieDetails } from '@/utils/getMovieDetails';
-import MovieSkeleton from './Skeleton';
+import parse from 'html-react-parser'
+import MovieSkeleton from './Skeleton'
+import { useQuery } from '@tanstack/react-query'
+import { getMovieDetails } from '@/utils/getMovieDetails'
+import { api } from '@/utils/api'
 
 const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
-  const { data, isLoading, isError }: UseQueryResult<MovieDetailInterface, Error> = useQuery<MovieDetailInterface, Error>(['movieDetails', id], () => getMovieDetails(id))
-  
-  if (isError) { 
+  const {
+    data,
+    isLoading,
+    isError,
+  }: UseQueryResult<MovieDetailInterface, Error> = useQuery<
+    MovieDetailInterface,
+    Error
+  >(['movieDetails', id], () => getMovieDetails(id))
+  const { mutateAsync } = api.addMovie.create.useMutation()
+  // refactor into better error handling
+  if (isError) {
     return (
       <div>
         <p>Please Let Leon know about this error</p>
@@ -19,16 +33,31 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
       </div>
     )
   }
-
+  // improve skeleton animation
   if (isLoading) {
-    return (
-      <MovieSkeleton />
-    )
+    return <MovieSkeleton />
+  }
+  const { movie }: {movie: IMovieDetail } = data.data
+  const genres: string[] = movie?.genres.map((genre) => genre.name)
+
+  const handleAddMovie = (movie: IMovieDetail, genres: string[]) => {
+    const movieData: MovieType = {
+      movieId: movie.emsId,
+      name: movie.name,
+      synopsis: movie.synopsis,
+      consensus: movie.tomatoRating.consensus,
+      durationMinutes: movie.durationMinutes,
+      releaseDate: movie.releaseDate,
+      directedBy: movie.directedBy,
+      genres: genres,
+      posterImage: movie.posterImage.url,
+      tomatoMeter: movie.tomatoRating.tomatometer,
+      totalGross: movie.totalGross,
+      motionPictureRating: movie.motionPictureRating?.code || 'Not Rated',
+    }
+    mutateAsync({ movieData })
   }
 
-  const { movie } = data.data;
-  const genres = movie?.genres.map(genre => genre.name)
-  
   return (
     <div className="container mx-auto px-4 pb-20">
       <div className="container mb-12 grid place-content-start lg:grid-cols-6">
@@ -40,7 +69,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
             {!!movie.tomatoRating?.iconImage && (
               <div className="flex w-8 items-center sm:w-24">
                 <Image
-                  src={movie.tomatoRating.iconImage.url}
+                  src={movie.tomatoRating.iconImage.url as string}
                   height={50}
                   width={50}
                   alt="Movie Backdrop"
@@ -62,34 +91,40 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
           <div className="flex flex-col sm:flex-row">
             <p className="mr-4">{movie.durationMinutes} minutes</p>
             <div className="flex">
-              {genres.splice(0, 3).map((genre, idx) => (
+              {genres.slice(0, 3).map((genre, idx) => (
                 <p key={idx} className="mx-2 first:ml-0 sm:first:ml-2">
                   {genre}
                 </p>
               ))}
             </div>
-            {!!movie.motionPictureRating &&
+            {!!movie.motionPictureRating && (
               <p className="mr-2 sm:ml-auto">
-              Rated: {movie.motionPictureRating.code}
-            </p>}
+                Rated: {movie.motionPictureRating.code}
+              </p>
+            )}
           </div>
-          <button className="bordered mt-8 rounded bg-blue-500 py-2 px-4 font-heading text-xl text-white hover:bg-blue-700">
+          <button
+            className="bordered mt-8 rounded bg-blue-500 py-2 px-4 font-heading text-xl text-white hover:bg-blue-700"
+            onClick={() => handleAddMovie(movie, genres)}
+          >
             {sessionData ? 'Add to Watchlist' : 'Sign In to Add to Watchlist'}
           </button>
         </div>
-        {!!movie.posterImage && <div className="lg:col-start-5 lg:col-end-7">
-          <Image
-            src={movie.posterImage.url}
-            height={300}
-            width={450}
-            alt="Movie Backdrop"
-          />
-        </div>}
+        {!!movie.posterImage && (
+          <div className="lg:col-start-5 lg:col-end-7">
+            <Image
+              src={movie.posterImage.url}
+              height={300}
+              width={450}
+              alt="Movie Backdrop"
+            />
+          </div>
+        )}
       </div>
       {!!movie?.tomatoRating?.consensus && (
         <div className="flex w-full">
           <Balancer className="mx-auto mb-8 text-xl text-white md:text-3xl xl:text-5xl">
-           {parse(movie.tomatoRating.consensus)} 
+            {parse(movie.tomatoRating.consensus)}
           </Balancer>
         </div>
       )}

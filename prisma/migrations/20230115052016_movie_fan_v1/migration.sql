@@ -45,17 +45,23 @@ CREATE TABLE "VerificationToken" (
 );
 
 -- CreateTable
-CREATE TABLE "Movie" (
+CREATE TABLE "WatchListItem" (
     "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "director" TEXT NOT NULL,
-    "year" INTEGER NOT NULL,
-    "revenue" INTEGER NOT NULL,
-    "runtime" INTEGER NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "userId" TEXT NOT NULL,
+    "movieId" TEXT NOT NULL,
+    "directedBy" TEXT NOT NULL,
+    "durationMinutes" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "posterImage" TEXT,
+    "genres" TEXT[],
+    "synopsis" TEXT NOT NULL,
+    "tomatoMeter" INTEGER,
+    "consensus" TEXT,
+    "totalGross" TEXT,
+    "releaseDate" TEXT,
+    "motionPictureRating" TEXT,
 
-    CONSTRAINT "Movie_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "WatchListItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -78,3 +84,6 @@ ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WatchListItem" ADD CONSTRAINT "WatchListItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

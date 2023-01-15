@@ -5,7 +5,6 @@ import type { NewStory } from '@/types/main'
 import Image from 'next/image'
 import parse from 'html-react-parser'
 import Balancer from 'react-wrap-balancer'
-import Link from 'next/link'
 
 const News: FC<NewsStoryProps> = ({ newsStories }) => {
   if (!newsStories) return null
@@ -32,7 +31,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
                   alt="news story"
                 />
                 <Balancer className="my-4 text-center text-2xl lg:text-3xl">
-                  {mainStory.title}
+                  {parse( mainStory.title )}
                 </Balancer>
               </a>
             </div>
