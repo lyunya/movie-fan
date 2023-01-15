@@ -5,7 +5,6 @@ import type { NewStory } from '@/types/main'
 import Image from 'next/image'
 import parse from 'html-react-parser'
 import Balancer from 'react-wrap-balancer'
-import Link from 'next/link'
 
 const News: FC<NewsStoryProps> = ({ newsStories }) => {
   if (!newsStories) return null
@@ -32,7 +31,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
                   alt="news story"
                 />
                 <Balancer className="my-4 text-center text-2xl lg:text-3xl">
-                  {mainStory.title}
+                  {parse( mainStory.title )}
                 </Balancer>
               </a>
             </div>
@@ -41,7 +40,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
             {news.slice(0, 10).map((story: NewStory) => {
               return (
                 <a
-                  className=" py-2 text-lg lg:text-xl"
+                  className="py-2 text-lg lg:text-xl"
                   key={story.id}
                   href={story.link}
                   target="_blank"

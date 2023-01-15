@@ -1,3 +1,4 @@
+import { watchListItemRouter } from './routers/watchListItem';
 import { createTRPCRouter } from "./trpc";
 import { exampleRouter } from "./routers/example";
 
@@ -8,6 +9,7 @@ import { exampleRouter } from "./routers/example";
  */
 export const appRouter = createTRPCRouter({
   example: exampleRouter,
+  addMovie: watchListItemRouter
 });
 
 // export type definition of API
