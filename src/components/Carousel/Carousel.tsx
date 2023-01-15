@@ -49,7 +49,7 @@ const Carousel: FC<CarouselProps> = ({ movieCards }) => {
   }, []);
 
   return (
-    <div className="carousel my-12 mx-auto w-11/12 overflow-scroll">
+    <div className="carousel my-12 mx-auto w-10/12 sm:w-11/12 overflow-scroll">
       <div className="relative overflow-hidden w-full">
         <div className="flex justify-between absolute top left w-full h-full">
           <button

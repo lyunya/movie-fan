@@ -19,7 +19,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
     <section className="mx-auto text-white w-11/12 md:w-full md:pl-8">
       <>
         <h2 className="mb-4 self-start text-3xl md:text-5xl">News</h2>
-        <div className="w-11/12 space-between grid grid-cols-1 xl:grid-cols-2">
+        <div className="sm:w-11/12 space-between grid grid-cols-1 xl:grid-cols-2">
           {mainStory?.mainImage.url && (
             <div className="col-span-full flex text-center xl:col-start-2">
               <a href={mainStory.link} target="_blank" rel="noreferrer">

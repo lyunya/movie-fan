@@ -69,4 +69,6 @@ model WatchListItem {
   totalGross String?
   releaseDate String?
   motionPictureRating String?
+
+  @@unique([userId, movieId])
 }

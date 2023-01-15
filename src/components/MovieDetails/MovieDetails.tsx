@@ -5,7 +5,8 @@ import type {
   MovieDetailProps,
 } from './types'
 import type { MovieType } from '@/types/MovieSchema'
-import type { UseQueryResult } from '@tanstack/react-query'
+import type { UseQueryResult } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query'
 import Image from 'next/image'
 import Balancer from 'react-wrap-balancer'
 import parse from 'html-react-parser'
@@ -13,6 +14,7 @@ import MovieSkeleton from './Skeleton'
 import { useQuery } from '@tanstack/react-query'
 import { getMovieDetails } from '@/utils/getMovieDetails'
 import { api } from '@/utils/api'
+import { signIn } from 'next-auth/react'
 
 const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   const {
@@ -23,7 +25,22 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
     MovieDetailInterface,
     Error
   >(['movieDetails', id], () => getMovieDetails(id))
-  const { mutateAsync } = api.addMovie.create.useMutation()
+   const queryClient = useQueryClient()
+
+  const addMovie = api.movie.create.useMutation({
+    onSuccess: () => { 
+      queryClient.invalidateQueries()
+    }
+  })
+  const watchlistItem = api.movie.query.useQuery({ movieId: id })
+  const removeMovie = api.movie.delete.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries()
+    },
+  })
+
+
+  
   // refactor into better error handling
   if (isError) {
     return (
@@ -46,20 +63,25 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
 
   const handleAddMovie = (movie: IMovieDetail, genres: string[]) => {
     const movieData: MovieType = {
-      movieId: movie.emsId,
+      movieId: id,
       name: movie.name,
       synopsis: movie.synopsis,
-      consensus: movie.tomatoRating.consensus,
+      consensus: movie.tomatoRating?.consensus || null,
       durationMinutes: movie.durationMinutes,
       releaseDate: movie.releaseDate,
       directedBy: movie.directedBy,
       genres: genres,
       posterImage: movie.posterImage.url,
-      tomatoMeter: movie.tomatoRating.tomatometer,
+      tomatoMeter: movie.tomatoRating?.tomatometer || null,
       totalGross: movie.totalGross,
       motionPictureRating: movie.motionPictureRating?.code || 'Not Rated',
     }
-    mutateAsync({ movieData })
+    addMovie.mutateAsync({ movieData })
+  }
+
+  const handleRemoveMovie = (movieId: string) => { 
+    removeMovie.mutateAsync({ movieId })
+  console.log(watchlistItem, 'this is the watchlist item')
   }
 
   return (
@@ -107,12 +129,34 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
               </p>
             )}
           </div>
-          <button
-            className="bordered mt-8 rounded bg-blue-500 py-2 px-4 font-heading text-xl text-white hover:bg-blue-700"
-            onClick={() => handleAddMovie(movie, genres)}
-          >
-            {sessionData ? 'Add to Watchlist' : 'Sign In to Add to Watchlist'}
-          </button>
+          {!!watchlistItem.data?.movie.length ? (
+            <button
+              className="bordered
+              mt-8
+              rounded
+              bg-red-500
+              py-2
+              px-4
+              font-heading
+              text-xl
+              text-white
+              hover:bg-red-700"
+              onClick={() => handleRemoveMovie(id)}
+            >
+              Remove From Watchlist
+            </button>
+          ) : (
+            <button
+              className="bordered mt-8 rounded bg-blue-500 py-2 px-4 font-heading text-xl text-white hover:bg-blue-700"
+              onClick={
+                sessionData
+                  ? () => handleAddMovie(movie, genres)
+                  : () => signIn()
+              }
+            >
+              {sessionData ? 'Add to Watchlist' : 'Sign In to Add to Watchlist'}
+            </button>
+          )}
         </div>
         {!!movie.posterImage && (
           <div className="lg:col-start-5 lg:col-end-7">

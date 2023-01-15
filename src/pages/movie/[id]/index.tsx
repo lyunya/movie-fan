@@ -7,15 +7,22 @@ import MovieDetails from '@/components/MovieDetails/MovieDetails'
 const Movie: NextPage<MoviePageProps> = ({ id }) => {
   const { data: sessionData } = useSession()
 
+
+  
   return (
     <Layout>
-      <MovieDetails id={id} sessionData={sessionData} />
+      <MovieDetails
+        id={id}
+        sessionData={sessionData}
+      />
     </Layout>
   )
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const id = context.query.id as string
+
+
 
   try {
     return { props: { id } }
