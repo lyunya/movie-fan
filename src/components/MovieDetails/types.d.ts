@@ -15,7 +15,7 @@ export interface IMovieDetail {
   emsId: string
   id: string
   name: string
-  synopsis: string
+  synopsis: string | null
   tomatoRating: {
       tomatometer: number | null
       consensus: string | null
@@ -37,7 +37,7 @@ export interface MovieDetailInterface {
   data?: {
     data?: {
       movie: {
-        synopsis: string
+        synopsis: string | null
         durationMinutes: number
         directedBy: string
         backgroundImage: Image

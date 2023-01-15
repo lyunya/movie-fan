@@ -63,7 +63,7 @@ model WatchListItem {
   name String
   posterImage String?
   genres String[]
-  synopsis String
+  synopsis String?
   tomatoMeter Int?
   consensus String?
   totalGross String?
