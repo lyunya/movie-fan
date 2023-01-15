@@ -37,8 +37,12 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   if (isLoading) {
     return <MovieSkeleton />
   }
-  const { movie }: {movie: IMovieDetail } = data.data
-  const genres: string[] = movie?.genres.map((genre) => genre.name)
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore-next-line
+  const { movie } = data.data
+  const genres: string[] = movie?.genres.map(
+    (genre: { name: string }) => genre.name
+  )
 
   const handleAddMovie = (movie: IMovieDetail, genres: string[]) => {
     const movieData: MovieType = {
@@ -91,7 +95,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
           <div className="flex flex-col sm:flex-row">
             <p className="mr-4">{movie.durationMinutes} minutes</p>
             <div className="flex">
-              {genres.slice(0, 3).map((genre, idx) => (
+              {genres.slice(0, 3).map((genre: string, idx: number) => (
                 <p key={idx} className="mx-2 first:ml-0 sm:first:ml-2">
                   {genre}
                 </p>

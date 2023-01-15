@@ -4,14 +4,14 @@ export interface MovieDetailProps extends ComponentPropsWithRef<'div'> {
 }
 
 export interface IGenres {
-  name: string[]
+  name: string
 }
 
 export interface IMovieDetail {
-  genres: IGenres
+  genres: IGenres[]
   trailer: {
   url: string
-}
+  }
   emsId: string
   id: string
   name: string
@@ -35,33 +35,35 @@ export interface IMovieDetail {
 
 export interface MovieDetailInterface {
   data?: {
-    movie: {
-    synopsis: string
-    durationMinutes: number
-    directedBy: string
-    backgroundImage: Image
-    cast: Credit[]
-    crew: Credit[]
-    directedBy: string
-    Images: Image[]
-    genres: IGenres
-    name: string
-    posterImage: Image
-    releaseDate: string
-    totalGross: string | null
-    motionPictureRating: {
-      code: string | null
-    }
-    trailer: {
-      url: string
-    }
-    tomatoRating: {
-      tomatometer: number | null
-      consensus: string | null
-      iconImage: {
-        url: string | null
+    data?: {
+      movie: {
+        synopsis: string
+        durationMinutes: number
+        directedBy: string
+        backgroundImage: Image
+        cast: Credit[]
+        crew: Credit[]
+        directedBy: string
+        Images: Image[]
+        genres: IGenres[]
+        name: string
+        posterImage: Image
+        releaseDate: string
+        totalGross: string | null
+        motionPictureRating: {
+          code: string | null
+        }
+        trailer: {
+          url: string
+        }
+        tomatoRating: {
+          tomatometer: number | null
+          consensus: string | null
+          iconImage: {
+            url: string | null
+          }
+        }
       }
     }
-  }
   }
 }
