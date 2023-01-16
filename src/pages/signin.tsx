@@ -37,7 +37,7 @@ const Signin = () => {
               alt="The Shining Jack busting through the door"
             />
           </div>
-          <div className="mt-12 flex flex-col items-center gap-5">
+          <div className="my-12 flex flex-col items-center gap-5">
             <button
               onClick={() =>
                 signIn('github', {
