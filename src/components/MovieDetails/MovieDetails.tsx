@@ -38,8 +38,6 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
       queryClient.invalidateQueries()
     },
   })
-
-
   
   // refactor into better error handling
   if (isError) {
@@ -159,7 +157,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
           )}
         </div>
         {!!movie.posterImage && (
-          <div className="lg:col-start-5 lg:col-end-7">
+          <div className="animate-pulse lg:col-start-5 lg:col-end-7">
             <Image
               src={movie.posterImage.url}
               height={300}
