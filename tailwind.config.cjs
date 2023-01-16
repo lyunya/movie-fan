@@ -15,6 +15,9 @@ module.exports = {
       future: {
         hoverOnlyWhenSupported: true,
       },
+      backgroundImage: {
+        divider: "url('/divider.svg')",
+      },
     },
   },
   plugins: [require('@tailwindcss/line-clamp')],
