@@ -37,8 +37,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
     onSuccess: () => {
       queryClient.invalidateQueries()
     },
-  })
-  
+  })  
   // refactor into better error handling
   if (isError) {
     return (
@@ -79,7 +78,6 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
 
   const handleRemoveMovie = (movieId: string) => { 
     removeMovie.mutateAsync({ movieId })
-  console.log(watchlistItem, 'this is the watchlist item')
   }
 
   return (

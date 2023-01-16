@@ -53,7 +53,7 @@
     "**/*.cjs",
     "**/*.mjs",
     ".next/types/**/*.ts"
-, "src/pages/movie/[id]/loading.js"  ],
+, "src/pages/movie/[id]/loading.js", "src/pages/api/auth/signin.js"  ],
   "exclude": [
     "node_modules"
   ]
