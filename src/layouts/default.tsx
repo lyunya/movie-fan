@@ -6,18 +6,16 @@ import type { FC } from 'react';
 import type { DefaultProps as Props } from './types';
 
 
-const Default: FC<Props> = ({
-	children,
-}) => (
-	<>
-		<Head />
-		<Nav />
-		<main className='bg-gradient-to-b from-[#000000] to-[#1e1e1e] min-h-screen flex flex-col min-w-full'>
-			{children}
-		</main>
-		<Footer />
-	</>
-);
+const Default: FC<Props> = ({ children }) => (
+  <>
+    <Head />
+    <Nav />
+    <main className="flex min-h-screen min-w-full flex-col bg-gradient-to-b from-[#000000] to-[#1e1e1e]">
+      {children}
+      <Footer />
+    </main>
+  </>
+)
 
 
 export default Default;

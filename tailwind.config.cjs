@@ -18,6 +18,10 @@ module.exports = {
       backgroundImage: {
         divider: "url('/divider.svg')",
       },
+      color: {
+        transparent: 'transparent',
+        current: 'currentColor',
+      },
     },
   },
   plugins: [require('@tailwindcss/line-clamp')],
