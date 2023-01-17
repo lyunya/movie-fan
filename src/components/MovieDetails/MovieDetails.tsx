@@ -111,7 +111,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
           <div></div>
           <p className="pb-4">{movie.synopsis}</p>
           <div className="flex flex-col sm:flex-row">
-            <p className="mr-4">{movie.durationMinutes} minutes</p>
+        {movie.durationMinutes && <p className="mr-4">{movie.durationMinutes} minutes</p>}
             <div className="flex">
               {genres.slice(0, 3).map((genre: string, idx: number) => (
                 <p key={idx} className="mx-2 first:ml-0 sm:first:ml-2">
