@@ -12,7 +12,7 @@ export interface IMovieDetail {
   trailer: {
   url: string
   }
-  emsId: string
+  emsVersionId: string
   id: string
   name: string
   synopsis: string | null
@@ -31,6 +31,7 @@ export interface IMovieDetail {
   motionPictureRating: {
     code: string | null
   }
+  userRating: number | null
 }
 
 export interface MovieDetailInterface {
@@ -40,6 +41,7 @@ export interface MovieDetailInterface {
         synopsis: string | null
         durationMinutes: number
         directedBy: string
+        emsVersionId: string
         backgroundImage: Image
         cast: Credit[]
         crew: Credit[]
@@ -67,3 +69,5 @@ export interface MovieDetailInterface {
     }
   }
 }
+
+

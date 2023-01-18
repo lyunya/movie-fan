@@ -1,3 +1,4 @@
+import { UserRouter } from './routers/user';
 import { watchListItemRouter } from './routers/watchListItem';
 import { createTRPCRouter } from "./trpc";
 /**
@@ -6,7 +7,8 @@ import { createTRPCRouter } from "./trpc";
  * All routers added in /api/routers should be manually added here
  */
 export const appRouter = createTRPCRouter({
-  movie: watchListItemRouter
+  movie: watchListItemRouter,
+  user: UserRouter
 });
 
 // export type definition of API

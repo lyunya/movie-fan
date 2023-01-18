@@ -34,6 +34,7 @@ const Signin = () => {
               src={'/shining.webp'}
               height={1080}
               width={1920}
+              priority
               alt="The Shining Jack busting through the door"
             />
           </div>

@@ -52,6 +52,7 @@ CREATE TABLE "WatchListItem" (
     "directedBy" TEXT NOT NULL,
     "durationMinutes" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
+    "emsVersionId" TEXT NOT NULL,
     "posterImage" TEXT,
     "genres" TEXT[],
     "synopsis" TEXT,
@@ -60,6 +61,7 @@ CREATE TABLE "WatchListItem" (
     "totalGross" TEXT,
     "releaseDate" TEXT,
     "motionPictureRating" TEXT,
+    "userRating" INTEGER,
 
     CONSTRAINT "WatchListItem_pkey" PRIMARY KEY ("id")
 );
@@ -78,6 +80,9 @@ CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token"
 
 -- CreateIndex
 CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "WatchListItem_userId_movieId_key" ON "WatchListItem"("userId", "movieId");
 
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
