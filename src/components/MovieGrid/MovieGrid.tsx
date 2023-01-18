@@ -3,7 +3,7 @@ import type { MovieGridProps } from './types'
 
 const MovieGrid: FC<MovieGridProps> = ({ movieCards }) => {
   return (
-    <div className="my-12 mx-auto flex w-full flex-wrap flex-start justify-evenly gap-8	sm:w-11/12 ">
+    <div className="my-12 mx-auto grid grid-cards gap-8 justify-center ">
       {movieCards}
     </div>
   )

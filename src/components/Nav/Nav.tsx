@@ -28,10 +28,10 @@ const Nav: FC = () => {
           <Link href="/profile">
             <Image
               src={sessionData?.user?.image || '/avatar.png'}
-              width={50}
-              height={50}
+              width={70}
+              height={70}
               alt="profile avatar"
-              className="h-12 w-12 rounded-full"
+              className="h-18 w-18 rounded-full"
             />
           </Link>
         ) : null}

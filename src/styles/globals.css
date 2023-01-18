@@ -6,4 +6,9 @@
   .login-btn {
     @apply bg-slate-800 py-3 px-5 rounded-lg border-pink-600 border-2 hover:bg-slate-700 transition-all;
   }
+
 }
+
+    .grid-cards {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 400px));
+  }

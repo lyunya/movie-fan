@@ -4,8 +4,9 @@ import Layout from '@layout/default'
 import { api } from '@/utils/api'
 import { useSession } from 'next-auth/react'
 import { useState } from 'react'
-import MovieGrid from '@/components/SearchResults/SearchResults'
+import MovieGrid from '@/components/MovieGrid/MovieGrid'
 import MovieCard from '@/components/MovieCard/MovieCard'
+import ProfileCard from '@/components/ProfileCard/ProfileCard'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 const Profile = () => {
@@ -43,10 +44,11 @@ const Profile = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto" ref={animationParent}>
-        <h1 className="text-center text-3xl text-white xl:text-5xl mb-8">
+      <div className="w-11/12 mx-auto" ref={animationParent}>
+        {/* <h1 className="text-center text-3xl text-white xl:text-5xl mb-8">
           {profileData.data?.user?.name} Profile
-        </h1>
+        </h1> */}
+        <ProfileCard user={profileData.data?.user} rated={ratedMovies} watchList={watchList}  />
         <div className="mb-20 flex items-center justify-center text-white">
           <button
             className={`text-md bordered py-2 px-4 font-heading text-white sm:text-xl ${

@@ -6,7 +6,7 @@ import Link from 'next/link'
 const MovieCard: FC<MovieCardProps> = ({ name, posterImage, emsVersionId }) => {
   return (
     <Link href={`/movie/${emsVersionId}`}>
-      <div className="relative  flex min-h-[400px] w-full min-w-[300px] cursor-pointer snap-center flex-col items-center rounded-lg border bg-white sm:mx-4 sm:snap-start xl:min-h-[480px] xl:min-w-[384px]">
+      <div className="relative  flex min-h-[450px] w-full min-w-[300px] cursor-pointer snap-center flex-col items-center rounded-lg border bg-white sm:mx-4 sm:snap-start xl:min-h-[480px] xl:min-w-[384px]">
         <Image
           className="absolute inset-0 z-0 h-full w-full rounded-lg bg-cover bg-center"
           // @ts-expect-error @typescript-eslint/ban-ts-comment
