@@ -9,7 +9,8 @@ const MovieCard: FC<MovieCardProps> = ({ name, posterImage, emsVersionId }) => {
       <div className="relative  flex min-h-[400px] w-full min-w-[300px] cursor-pointer snap-center flex-col items-center rounded-lg border bg-white sm:mx-4 sm:snap-start xl:min-h-[480px] xl:min-w-[384px]">
         <Image
           className="absolute inset-0 z-0 h-full w-full rounded-lg bg-cover bg-center"
-          src={posterImage?.url || '/placeholderposter.png'}
+          // @ts-expect-error @typescript-eslint/ban-ts-comment
+          src={posterImage?.url || posterImage || '/placeholderposter.png'}
           height={480}
           width={384}
           alt="movie poster"

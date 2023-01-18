@@ -1,28 +1,32 @@
-import { useState } from "react";
-import type { GetStaticProps} from "next";
-import { type NextPage } from "next";
-import type { HomePageProps, NewStory } from "@/types/main";
-import type { ChangeEvent} from "react";
+import { useState } from 'react'
+import type { GetStaticProps } from 'next'
+import type { NextPage } from 'next'
+import type { HomePageProps } from '@/types/main'
+import type { MovieCardProps } from '@/components/MovieCard/types'
+import type { ChangeEvent } from 'react'
 
-import Layout from "@layout/default";
-import MovieCard from "@/components/MovieCard/MovieCard";
-import Carousel from "@/components/Carousel/Carousel"
-import Search from "@/components/Search/Search"
-import SearchResults from "@/components/SearchResults/SearchResults"
-import News from "@/components/News/News"
+import Layout from '@layout/default'
+import MovieCard from '@/components/MovieCard/MovieCard'
+import Carousel from '@/components/Carousel/Carousel'
+import Search from '@/components/Search/Search'
+import News from '@/components/News/News'
+import SearchResults from '@/components/SearchResults/SearchResults'
 
-import { getSearchMovies } from "@/utils/getSearchMovies"
-import { getUpcomingMovies } from "@/utils/getUpcomingMovies"
-import { getPopularMovies } from "@/utils/getPopularMovies"
-import debounce from "@/utils/debounce"
-import type { MovieCardProps } from "@/components/MovieCard/types";
-import { getNews } from "@/utils/getNews";
+import { getSearchMovies } from '@/utils/getSearchMovies'
+import { getUpcomingMovies } from '@/utils/getUpcomingMovies'
+import { getPopularMovies } from '@/utils/getPopularMovies'
+import debounce from '@/utils/debounce'
+import { getNews } from '@/utils/getNews'
 
 const Home: NextPage<HomePageProps> = ({ data }) => {
   const [results, setResults] = useState([])
   const { popularMovies, upcomingMovies, newsStories } = data
-  const { data: { opening: moviesOpening, popularity: moviesPopular } } = popularMovies
-  const { data: { upcoming: upComingMovies } } = upcomingMovies
+  const {
+    data: { opening: moviesOpening, popularity: moviesPopular },
+  } = popularMovies
+  const {
+    data: { upcoming: upComingMovies },
+  } = upcomingMovies
 
   const handleSearch = async (e: ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value
@@ -40,6 +44,7 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
   const popularMovieCards = moviesPopular.map((movie, idx) => {
     return <MovieCard key={idx} {...movie} />
   })
+  console.log(popularMovieCards, 'leon')
 
   const openingMovieCards = moviesOpening.map((movie, idx) => {
     return <MovieCard key={idx} {...movie} />
@@ -50,31 +55,40 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
   })
 
   const searchedMovieCards = results.map((movie, idx) => {
-    return <MovieCard key={idx} {...movie as MovieCardProps} />
+    return <MovieCard key={idx} {...(movie as MovieCardProps)} />
   })
 
   return (
     <Layout>
       <main className="grid items-center">
-        <div className="flex flex-col justify-between mx-auto">
-        <Search handleSearch={debouncedSearch} />
+        <div className="mx-auto flex flex-col justify-between">
+          <Search handleSearch={debouncedSearch} />
           <div className={results.length ? 'hidden' : ''}>
             <News newsStories={newsStories} />
           </div>
         </div>
-        {results.length > 0 ? <SearchResults movieCards={searchedMovieCards} /> : 
+        {results.length > 0 ? (
+          <SearchResults movieCards={searchedMovieCards} />
+        ) : (
           <>
-            <h2 className="text-white text-3xl md:text-5xl text-left pl-8 sm:pb-4 pt-2 sm:pt-8">Popular</h2>
+            <h2 className="pl-8 pt-2 text-left text-3xl text-white sm:pb-4 sm:pt-8 md:text-5xl">
+              Popular
+            </h2>
             <Carousel movieCards={popularMovieCards} />
-            <h2 className="text-white text-3xl md:text-5xl text-left pl-8 sm:pb-4">Opening this week</h2>
+            <h2 className="pl-8 text-left text-3xl text-white sm:pb-4 md:text-5xl">
+              Opening this week
+            </h2>
             <Carousel movieCards={openingMovieCards} />
-            <h2 className="text-white text-3xl md:text-5xl text-left pl-8 sm:pb-4">Upcoming</h2>
+            <h2 className="pl-8 text-left text-3xl text-white sm:pb-4 md:text-5xl">
+              Upcoming
+            </h2>
             <Carousel movieCards={upcomingMovieCards} />
-          </>}
+          </>
+        )}
       </main>
     </Layout>
-  );
-};
+  )
+}
 
 export const getStaticProps: GetStaticProps = async () => {
   try {

@@ -23,7 +23,9 @@ export const watchListItemRouter = createTRPCRouter({
           consensus: movieData.consensus,
           totalGross: movieData.totalGross,
           releaseDate: movieData.releaseDate,
+          emsVersionId: movieData.emsVersionId,
           motionPictureRating: movieData.motionPictureRating,
+          userRating: movieData.userRating,
           genres: [...movieData.genres],
           user: {
             connect: {

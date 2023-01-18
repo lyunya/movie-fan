@@ -2,8 +2,8 @@ import type { MovieCardProps } from './../components/MovieCard/types.d';
 
 export interface Image {
   url: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
 }
 
 export interface Credit {
@@ -37,4 +37,4 @@ export interface HomePageProps {
 
 export interface MoviePageProps {
   id: string;
-  }
+}

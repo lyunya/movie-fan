@@ -1,11 +1,11 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { FC } from 'react'
 import type {
   IMovieDetail,
   MovieDetailInterface,
   MovieDetailProps,
 } from './types'
-import type { MovieType } from '@/types/MovieSchema'
-import type { UseQueryResult } from '@tanstack/react-query';
+import type { UseQueryResult } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
 import Image from 'next/image'
 import Balancer from 'react-wrap-balancer'
@@ -15,6 +15,9 @@ import { useQuery } from '@tanstack/react-query'
 import { getMovieDetails } from '@/utils/getMovieDetails'
 import { api } from '@/utils/api'
 import { signIn } from 'next-auth/react'
+// @ts-ignore
+import ReactStars from 'react-rating-stars-component'
+import { createMovieObj } from '@/utils/createMovieObj'
 
 const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   const {
@@ -25,19 +28,19 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
     MovieDetailInterface,
     Error
   >(['movieDetails', id], () => getMovieDetails(id))
-   const queryClient = useQueryClient()
+  const queryClient = useQueryClient()
 
   const addMovie = api.movie.create.useMutation({
-    onSuccess: () => { 
+    onSuccess: () => {
       queryClient.invalidateQueries()
-    }
+    },
   })
   const watchlistItem = api.movie.query.useQuery({ movieId: id })
   const removeMovie = api.movie.delete.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries()
     },
-  })  
+  })
   // refactor into better error handling
   if (isError) {
     return (
@@ -58,26 +61,38 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
     (genre: { name: string }) => genre.name
   )
 
-  const handleAddMovie = (movie: IMovieDetail, genres: string[]) => {
-    const movieData: MovieType = {
-      movieId: id,
-      name: movie.name,
-      synopsis: movie.synopsis,
-      consensus: movie.tomatoRating?.consensus || null,
-      durationMinutes: movie.durationMinutes,
-      releaseDate: movie.releaseDate,
-      directedBy: movie.directedBy,
-      genres: genres,
-      posterImage: movie.posterImage.url,
-      tomatoMeter: movie.tomatoRating?.tomatometer || null,
-      totalGross: movie.totalGross,
-      motionPictureRating: movie.motionPictureRating?.code || 'Not Rated',
-    }
+  const handleAddMovie = (
+    movie: IMovieDetail,
+    id: string,
+    genres: string[]
+  ) => {
+    const movieData = createMovieObj(movie, id, genres)
     addMovie.mutateAsync({ movieData })
   }
 
-  const handleRemoveMovie = (movieId: string) => { 
+  const handleRemoveMovie = (movieId: string) => {
     removeMovie.mutateAsync({ movieId })
+  }
+
+  const handleSeenMovie = (
+    movie: IMovieDetail,
+    id: string,
+    genres: string[],
+    userRating: number
+  ) => {
+    handleRemoveMovie(id)
+    const movieData = createMovieObj(movie, id, genres, userRating)
+    addMovie.mutateAsync({ movieData })
+  }
+  //if user has reated movied, remove 'remove from watchlist' button
+
+  const starsConfig = {
+    size: 30,
+    count: 5,
+    value: watchlistItem?.data?.movie[0]?.userRating || 0,
+    onChange: (userRating: number) => {
+      handleSeenMovie(movie, id, genres, userRating)
+    },
   }
 
   return (
@@ -111,7 +126,9 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
           <div></div>
           <p className="pb-4">{movie.synopsis}</p>
           <div className="flex flex-col sm:flex-row">
-        {movie.durationMinutes && <p className="mr-4">{movie.durationMinutes} minutes</p>}
+            {movie.durationMinutes && (
+              <p className="mr-4">{movie.durationMinutes} minutes</p>
+            )}
             <div className="flex">
               {genres.slice(0, 3).map((genre: string, idx: number) => (
                 <p key={idx} className="mx-2 first:ml-0 sm:first:ml-2">
@@ -125,34 +142,47 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
               </p>
             )}
           </div>
-          {!!watchlistItem.data?.movie.length ? (
-            <button
-              className="bordered
-              mt-8
-              rounded
-              bg-red-500
-              py-2
-              px-4
-              font-heading
-              text-xl
-              text-white
-              hover:bg-red-700"
-              onClick={() => handleRemoveMovie(id)}
-            >
-              Remove From Watchlist
-            </button>
-          ) : (
-            <button
-              className="bordered mt-8 rounded bg-blue-500 py-2 px-4 font-heading text-xl text-white hover:bg-blue-700"
-              onClick={
-                sessionData
-                  ? () => handleAddMovie(movie, genres)
-                  : () => signIn()
-              }
-            >
-              {sessionData ? 'Add to Watchlist' : 'Sign In to Add to Watchlist'}
-            </button>
-          )}
+          <div className="flex flex-col items-baseline sm:flex-row sm:items-end	sm:justify-between h-20 my-8">
+            {!!watchlistItem.data?.movie.length ? (
+              <>
+                <ReactStars {...starsConfig} />
+                {!watchlistItem.data.movie[0]?.userRating && (
+                  <button
+                    className="
+                    bordered
+                    mt-8
+                    rounded
+                    bg-red-500
+                    py-2
+                    px-4
+                    font-heading
+                    text-xl
+                    text-white
+                    hover:bg-red-700"
+                    onClick={() => handleRemoveMovie(id)}
+                  >
+                    Remove From Watchlist
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                {sessionData && <ReactStars {...starsConfig} />}
+                <button
+                  className="bordered mt-8 rounded bg-blue-500 py-2 px-4 font-heading text-xl text-white hover:bg-blue-700"
+                  onClick={
+                    sessionData
+                      ? () => handleAddMovie(movie, id, genres)
+                      : () => signIn()
+                  }
+                >
+                  {sessionData
+                    ? 'Add to Watchlist'
+                    : 'Sign In to Add to Watchlist/Rate Movie'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
         {!!movie.posterImage && (
           <div className="lg:col-start-5 lg:col-end-7">
@@ -160,6 +190,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
               src={movie.posterImage.url}
               height={300}
               width={450}
+              priority
               alt="Movie Backdrop"
             />
           </div>
