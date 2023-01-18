@@ -44,14 +44,9 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container mx-auto" ref={animationParent}>
-        <h1 className="text-center text-3xl text-white xl:text-5xl">
+        <h1 className="text-center text-3xl text-white xl:text-5xl mb-8">
           {profileData.data?.user?.name} Profile
         </h1>
-        <div className="flex gap-4 text-center text-white">
-          <p>{ratedMovies?.length || 0} Movies Rated</p>
-          <p>{watchList?.length || 0} Movies in WatchList</p>
-        </div>
-
         <div className="mb-20 flex items-center justify-center text-white">
           <button
             className={`text-md bordered py-2 px-4 font-heading text-white sm:text-xl ${
