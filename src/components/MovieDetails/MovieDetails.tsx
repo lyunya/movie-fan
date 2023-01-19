@@ -18,6 +18,7 @@ import { signIn } from 'next-auth/react'
 // @ts-ignore
 import ReactStars from 'react-rating-stars-component'
 import { createMovieObj } from '@/utils/createMovieObj'
+import CastGrid from '../CastGrid/CastGrid'
 
 const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   const {
@@ -60,6 +61,8 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   const genres: string[] = movie?.genres.map(
     (genre: { name: string }) => genre.name
   )
+
+  console.log(movie.cast)
 
   const handleAddMovie = (
     movie: IMovieDetail,
@@ -117,6 +120,17 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
               </div>
             )}
           </div>
+          {!!movie.posterImage && (
+            <div className="my-4 flex content-center lg:hidden">
+              <Image
+                src={movie.posterImage.url}
+                height={300}
+                width={450}
+                priority
+                alt="Movie Backdrop"
+              />
+            </div>
+          )}
           <div className="sm:pt-0pb-4 flex pt-2 align-middle">
             <p className="pr-4 text-lg xl:text-xl">
               {movie.releaseDate.slice(0, 4)}
@@ -125,7 +139,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
           </div>
           <div></div>
           <p className="pb-4">{movie.synopsis}</p>
-          <div className="flex flex-col sm:flex-row">
+          <div className="mb-2 flex flex-col sm:flex-row">
             {movie.durationMinutes && (
               <p className="mr-4">{movie.durationMinutes} minutes</p>
             )}
@@ -142,7 +156,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
               </p>
             )}
           </div>
-          <div className="flex flex-col items-baseline sm:flex-row sm:items-end	sm:justify-between h-20 my-8">
+          <div className="my-8 flex h-20 flex-col items-baseline	sm:flex-row sm:items-end sm:justify-between">
             {!!watchlistItem.data?.movie.length ? (
               <>
                 <ReactStars {...starsConfig} />
@@ -183,9 +197,10 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
               </>
             )}
           </div>
+          <CastGrid cast={movie.cast} />
         </div>
         {!!movie.posterImage && (
-          <div className="lg:col-start-5 lg:col-end-7">
+          <div className="hidden lg:col-start-5 lg:col-end-7 lg:inline">
             <Image
               src={movie.posterImage.url}
               height={300}

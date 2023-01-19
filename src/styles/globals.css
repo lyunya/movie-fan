@@ -12,3 +12,7 @@
     .grid-cards {
     grid-template-columns: repeat(auto-fill, minmax(300px, 400px));
   }
+
+  .grid-credit-cards {
+    grid-template-columns: repeat(auto-fit, 196px);
+  }
