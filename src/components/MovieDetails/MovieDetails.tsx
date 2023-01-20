@@ -219,7 +219,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
         </div>
       )}
       {!!movie.trailer?.url && (
-        <video width={1000} height={500} controls className="mx-auto">
+        <video width={1000} height={500} controls poster='/trailer_placeholder.webp' className="mx-auto">
           <source src={movie.trailer.url} type="video/mp4" />
         </video>
       )}
