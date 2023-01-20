@@ -20,6 +20,7 @@ import { getNews } from '@/utils/getNews'
 
 const Home: NextPage<HomePageProps> = ({ data }) => {
   const [results, setResults] = useState([])
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const { popularMovies, upcomingMovies, newsStories } = data
   const {
     data: { opening: moviesOpening, popularity: moviesPopular },
@@ -34,17 +35,18 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
       setResults([])
       return
     }
+    setIsLoadingSearch(true)
     const results = await getSearchMovies(query)
     const movies = results.data.search.movies
+    setIsLoadingSearch(false)
     setResults(movies)
   }
 
-  const debouncedSearch = debounce(handleSearch, 500)
+  const debouncedSearch = debounce(handleSearch, 750)
 
   const popularMovieCards = moviesPopular.map((movie, idx) => {
     return <MovieCard key={idx} {...movie} />
   })
-  console.log(popularMovieCards, 'leon')
 
   const openingMovieCards = moviesOpening.map((movie, idx) => {
     return <MovieCard key={idx} {...movie} />
@@ -62,7 +64,7 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
     <Layout>
       <main className="grid items-center">
         <div className="mx-auto flex flex-col justify-between">
-          <Search handleSearch={debouncedSearch} />
+          <Search loading={isLoadingSearch} handleSearch={debouncedSearch} />
           <div className={results.length ? 'hidden' : ''}>
             <News newsStories={newsStories} />
           </div>

@@ -1,16 +1,22 @@
 import type { FC } from 'react'
 import type { SearchProps } from './types'
 
-const Search: FC<SearchProps> = ({ handleSearch }) => {
+const Search: FC<SearchProps> = ({ loading, handleSearch }) => {
+  console.log(loading)
   return (
     <>
-      <label className='sr-only' htmlFor='search'>Search For Movies</label> 
-      <input className='min-w-[200px] max-w-[800px] max-h-14 mx-auto rounded pl-6 pr-6 py-2 my-6 text-2xl xl:text-3xl pt-2' onChange={(e) => handleSearch(e)}
+      <label className="sr-only" htmlFor="search">
+        Search For Movies
+      </label>
+      <input
+        className={`mx-auto my-6 max-h-14 min-w-[200px] max-w-[800px] rounded py-2 pl-6 pr-6 pt-2 text-2xl xl:text-3xl ${loading ? 'animate-border bg-white from-teal-500 via-purple-500 to-pink-500 transition bg-gradient-to-r  text-white' : ''}
+        `}
+        onChange={(e) => handleSearch(e)}
         id="search"
-      placeholder="Search for Movies"
-      type='search' />
+        placeholder="Search for Movies"
+        type="search"
+      />
     </>
-
   )
 }
 
