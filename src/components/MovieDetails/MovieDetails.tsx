@@ -197,7 +197,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
               </>
             )}
           </div>
-          <CastGrid cast={movie.cast} />
+          {!!movie.cast && <CastGrid cast={movie.cast} />}
         </div>
         {!!movie.posterImage && (
           <div className="hidden lg:col-start-5 lg:col-end-7 lg:inline">
