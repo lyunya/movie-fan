@@ -19,8 +19,11 @@ import debounce from '@/utils/debounce'
 import { getNews } from '@/utils/getNews'
 
 const Home: NextPage<HomePageProps> = ({ data }) => {
-  const [results, setResults] = useState([])
-  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
+  const [searchResults, setSearchResults] = useState({
+    results: [],
+    isLoading: false,
+    noResults: false,
+  })
   const { popularMovies, upcomingMovies, newsStories } = data
   const {
     data: { opening: moviesOpening, popularity: moviesPopular },
@@ -31,15 +34,22 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
 
   const handleSearch = async (e: ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value
-    if (query === '') {
-      setResults([])
+    if (query === '' || query.trim() === '') {
+      setSearchResults((prevState) => ({...prevState, noResults: false, results: []}))
       return
     }
-    setIsLoadingSearch(true)
+    setSearchResults((prevState) => ({ ...prevState, isLoading: true }))
     const results = await getSearchMovies(query)
     const movies = results.data.search.movies
-    setIsLoadingSearch(false)
-    setResults(movies)
+    if (movies.length === 0) { 
+      setSearchResults((prevState) => ({...prevState, isLoading: false, noResults: true}))
+      return
+    }
+    setSearchResults({
+      noResults: false,
+      results: movies,
+      isLoading: false
+    })
   }
 
   const debouncedSearch = debounce(handleSearch, 750)
@@ -56,7 +66,7 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
     return <MovieCard key={idx} {...movie} />
   })
 
-  const searchedMovieCards = results.map((movie, idx) => {
+  const searchedMovieCards = searchResults.results.map((movie, idx) => {
     return <MovieCard key={idx} {...(movie as MovieCardProps)} />
   })
 
@@ -64,12 +74,13 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
     <Layout>
       <main className="grid items-center">
         <div className="mx-auto flex flex-col justify-between">
-          <Search loading={isLoadingSearch} handleSearch={debouncedSearch} />
-          <div className={results.length ? 'hidden' : ''}>
+          <Search loading={searchResults.isLoading} handleSearch={debouncedSearch} />
+          {searchResults.noResults && <p className="text-center text-white text-2xl">No results found</p>}
+          <div className={searchResults.results.length ? 'hidden' : ''}>
             <News newsStories={newsStories} />
           </div>
         </div>
-        {results.length > 0 ? (
+        {searchResults.results.length > 0 ? (
           <SearchResults movieCards={searchedMovieCards} />
         ) : (
           <>

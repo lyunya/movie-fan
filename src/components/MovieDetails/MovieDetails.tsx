@@ -62,8 +62,6 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
     (genre: { name: string }) => genre.name
   )
 
-  console.log(movie.cast)
-
   const handleAddMovie = (
     movie: IMovieDetail,
     id: string,
