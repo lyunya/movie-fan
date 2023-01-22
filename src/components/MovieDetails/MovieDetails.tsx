@@ -188,9 +188,13 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
                       : () => signIn()
                   }
                 >
-                  {sessionData
-                    ? 'Add to Watchlist'
-                    : 'Sign In to Add to Watchlist/Rate Movie'}
+                  {sessionData ? (
+                    <Balancer>{'Add to Watchlist'}</Balancer>
+                  ) : (
+                    <Balancer>
+                      {'Sign in to Add to Watchlist/Rate Movie'
+                  }</Balancer>
+                  )}
                 </button>
               </>
             )}
@@ -217,7 +221,13 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
         </div>
       )}
       {!!movie.trailer?.url && (
-        <video width={1000} height={500} controls poster='/trailer_placeholder.webp' className="mx-auto">
+        <video
+          width={1000}
+          height={500}
+          controls
+          poster="/trailer_placeholder.webp"
+          className="mx-auto"
+        >
           <source src={movie.trailer.url} type="video/mp4" />
         </video>
       )}

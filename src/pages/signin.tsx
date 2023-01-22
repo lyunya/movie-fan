@@ -8,6 +8,7 @@ import {
 } from 'react-icons/ai'
 import Footer from '@/components/Footer/Footer'
 import Image from 'next/image'
+import Link from 'next/link'
 
 const Signin = () => {
   const [email, setEmail] = useState('')
@@ -21,9 +22,11 @@ const Signin = () => {
   return (
     <div className="flex flex-col items-center bg-gradient-to-b from-[#000000] to-[#1e1e1e] px-4">
       <div className="container flex min-h-screen w-full flex-col items-start justify-between px-7 pb-7 pt-3 text-white xl:w-5/12">
-        <h1 className="mx-auto mt-8 bg-gradient-to-br from-pink-400 to-red-600 bg-clip-text font-heading text-4xl font-extrabold text-transparent sm:text-3xl">
-          Movie Fan
-        </h1>
+        <Link className="mx-auto" href="/">
+          <h1 className="mt-8 bg-gradient-to-br from-pink-400 to-red-600 bg-clip-text font-heading text-5xl font-extrabold text-transparent sm:text-3xl">
+            Movie Fan
+          </h1>
+        </Link>
         <main className="mx-auto lg:my-12">
           <h2 className="text-outline-violet-700 my-4 bg-gradient-to-br from-pink-400 to-red-600 bg-clip-text text-center font-heading text-2xl font-extrabold text-transparent sm:text-3xl lg:text-6xl">
             Create account, <br /> Add movies to watch, <br />
@@ -71,8 +74,11 @@ const Signin = () => {
               Login with Facebook{' '}
               <AiFillFacebook style={{ marginLeft: '8px' }} />{' '}
             </button>
-            <span className="bg-divider inline-block h-1.5 w-3/6" />
-            <form onSubmit={handleEmailSubmit} className="flex flex-col justify-center">
+            <span className="inline-block h-1.5 w-3/6 bg-divider" />
+            <form
+              onSubmit={handleEmailSubmit}
+              className="flex flex-col justify-center"
+            >
               <label className="sr-only" htmlFor="email">
                 Email Address
               </label>
@@ -80,11 +86,14 @@ const Signin = () => {
                 type="email"
                 name="email"
                 id="email"
-                placeholder='Email Address'
-                className="px-1 text-black rounded"
+                placeholder="Email Address"
+                className="rounded px-1 text-black"
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <button type="submit" className="login-btn flex items-center mt-4">
+              <button
+                type="submit"
+                className="login-btn mt-4 flex items-center"
+              >
                 Login with Email <AiOutlineMail style={{ marginLeft: '8px' }} />{' '}
               </button>
             </form>

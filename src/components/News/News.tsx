@@ -36,18 +36,19 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
               </a>
             </div>
           )}
-          <div className="col-span-full	flex flex-col mx-1 xl:ml-12 xl:col-end-2 xl:row-start-1">
+          <div className="col-span-full	flex flex-col mx-1 xl:ml-12 xl:col-end-2 xl:row-start-1 w-full">
             {news.slice(0, 10).map((story: NewStory) => {
               return (
-                <a
-                  className="py-2 text-lg lg:text-xl"
-                  key={story.id}
-                  href={story.link}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Balancer>{parse(story.title)}</Balancer>
-                </a>
+                <Balancer key={story.id} className='my-2'>
+                  <a
+                    className="text-lg lg:text-xl hover:text-blue-400"
+                    href={story.link}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {parse(story.title)}
+                  </a>
+                </Balancer>
               )
             })}
           </div>
