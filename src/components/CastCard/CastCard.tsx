@@ -15,7 +15,7 @@ const CastCard: FC<CastCardProps> = ({
       <div className='min-h-fit'>
         <Image
           src={headShotImage?.url || '/Default-Avatar.png'}
-          className="z-20 mx-auto mb-2 aspect-auto h-60 rounded"
+          className="z-20 mx-auto mb-2 aspect-auto h-60 rounded object-cover"
           height={240}
           width={176}
           alt={`${name} headshot`}
