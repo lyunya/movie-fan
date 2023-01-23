@@ -36,7 +36,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
               </a>
             </div>
           )}
-          <div className="col-span-full	flex flex-col mx-1 xl:ml-12 xl:col-end-2 xl:row-start-1 w-full">
+          <div className="col-span-full	flex flex-col mx-1 xl:ml-12 xl:col-end-2 xl:row-start-1 w-fit">
             {news.slice(0, 10).map((story: NewStory) => {
               return (
                 <Balancer key={story.id} className='my-2'>
