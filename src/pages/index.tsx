@@ -35,32 +35,42 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
   const handleSearch = async (e: ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value
     if (query === '' || query.trim() === '') {
-      setSearchResults((prevState) => ({...prevState, noResults: false, results: []}))
+      setSearchResults((prevState) => ({
+        ...prevState,
+        noResults: false,
+        results: [],
+      }))
       return
     }
     setSearchResults((prevState) => ({ ...prevState, isLoading: true }))
     const results = await getSearchMovies(query)
     const movies = results.data.search.movies
-    if (movies.length === 0) { 
-      setSearchResults((prevState) => ({...prevState, isLoading: false, noResults: true}))
+    if (movies.length === 0) {
+      setSearchResults((prevState) => ({
+        ...prevState,
+        isLoading: false,
+        noResults: true,
+      }))
       return
     }
     setSearchResults({
       noResults: false,
       results: movies,
-      isLoading: false
+      isLoading: false,
     })
   }
 
   const debouncedSearch = debounce(handleSearch, 750)
 
-  const popularMovieCards = moviesPopular.map((movie, idx) => {
-    return <MovieCard key={idx} {...movie} />
-  })
+  const popularMovieCards =
+    moviesPopular.map((movie, idx) => {
+      return <MovieCard key={idx} {...movie} />
+    }) || []
 
-  const openingMovieCards = moviesOpening.map((movie, idx) => {
-    return <MovieCard key={idx} {...movie} />
-  })
+  const openingMovieCards =
+    moviesOpening?.map((movie, idx) => {
+      return <MovieCard key={idx} {...movie} />
+    }) || []
 
   const upcomingMovieCards = upComingMovies.map((movie, idx) => {
     return <MovieCard key={idx} {...movie} />
@@ -74,8 +84,13 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
     <Layout>
       <main className="grid items-center">
         <div className="mx-auto flex flex-col justify-between">
-          <Search loading={searchResults.isLoading} handleSearch={debouncedSearch} />
-          {searchResults.noResults && <p className="text-center text-white text-2xl">No results found</p>}
+          <Search
+            loading={searchResults.isLoading}
+            handleSearch={debouncedSearch}
+          />
+          {searchResults.noResults && (
+            <p className="text-center text-2xl text-white">No results found</p>
+          )}
           <div className={searchResults.results.length ? 'hidden' : ''}>
             <News newsStories={newsStories} />
           </div>
@@ -84,14 +99,22 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
           <SearchResults movieCards={searchedMovieCards} />
         ) : (
           <>
-            <h2 className="pl-8 pt-2 text-left text-3xl text-white sm:pb-4 sm:pt-8 md:text-5xl">
-              Popular
-            </h2>
-            <Carousel movieCards={popularMovieCards} />
-            <h2 className="pl-8 text-left text-3xl text-white sm:pb-4 md:text-5xl">
-              Opening this week
-            </h2>
-            <Carousel movieCards={openingMovieCards} />
+            {!!popularMovieCards.length && (
+              <>
+                <h2 className="pl-8 pt-2 text-left text-3xl text-white sm:pb-4 sm:pt-8 md:text-5xl">
+                  Popular
+                </h2>
+                <Carousel movieCards={popularMovieCards} />
+              </>
+            )}
+            {!!openingMovieCards.length && (
+              <>
+                <h2 className="pl-8 text-left text-3xl text-white sm:pb-4 md:text-5xl">
+                  Opening this week
+                </h2>
+                <Carousel movieCards={openingMovieCards} />
+              </>
+            )}
             <h2 className="pl-8 text-left text-3xl text-white sm:pb-4 md:text-5xl">
               Upcoming
             </h2>

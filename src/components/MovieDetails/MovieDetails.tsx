@@ -19,6 +19,7 @@ import { signIn } from 'next-auth/react'
 import ReactStars from 'react-rating-stars-component'
 import { createMovieObj } from '@/utils/createMovieObj'
 import CastGrid from '../CastGrid/CastGrid'
+import { notFound } from 'next/navigation'
 
 const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   const {
@@ -30,6 +31,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
     Error
   >(['movieDetails', id], () => getMovieDetails(id))
   const queryClient = useQueryClient()
+
 
   const addMovie = api.movie.create.useMutation({
     onSuccess: () => {
@@ -61,6 +63,14 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   const genres: string[] = movie?.genres.map(
     (genre: { name: string }) => genre.name
   )
+
+  if (!movie) {
+    return (
+      <div>
+        <p className="text-center text-4xl text-white ">Movie not found</p>
+      </div>
+    )
+  }
 
   const handleAddMovie = (
     movie: IMovieDetail,
