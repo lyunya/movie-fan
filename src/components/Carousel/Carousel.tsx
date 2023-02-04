@@ -97,7 +97,7 @@ const Carousel: FC<CarouselProps> = ({ movieCards }) => {
         </div>
         <div
           ref={carousel}
-          className="relative flex overflow-x-auto gap-4 scroll-smooth snap-x snap-mandatory touch-pan-x z-0 w-full pb-4"
+          className="relative flex overflow-x-auto gap-4 sm:gap-0 scroll-smooth snap-x snap-mandatory touch-pan-x z-0 w-full pb-4"
         >
         {movieCards}
         </div>
