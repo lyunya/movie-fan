@@ -7,7 +7,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 import { api } from "../utils/api";
 
-import "../styles/globals.css";
+import "@/styles/globals.css"
 
 const kronaOne = Krona_One({
   subsets: ['latin'],

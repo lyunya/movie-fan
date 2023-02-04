@@ -63,7 +63,7 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
   const debouncedSearch = debounce(handleSearch, 750)
 
   const popularMovieCards =
-    moviesPopular.map((movie, idx) => {
+    moviesPopular?.map((movie, idx) => {
       return <MovieCard key={idx} {...movie} />
     }) || []
 

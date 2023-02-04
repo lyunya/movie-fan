@@ -6,12 +6,15 @@ import Link from 'next/link'
 const MovieCard: FC<MovieCardProps> = ({ name, posterImage, emsVersionId }) => {
   return (
     <Link href={`/movie/${emsVersionId}`}>
-      <div className="relative flex min-h-[225px] w-full min-w-[150px] cursor-pointer snap-center flex-col items-center rounded-lg border bg-white sm:mx-4 sm:min-h-[450px] sm:min-w-[300px] sm:snap-start xl:min-h-[480px] xl:min-w-[384px]">
+      <div className="relative flex aspect-[489/725] h-72 max-h-96 w-full cursor-pointer snap-center flex-col items-center rounded-lg border bg-white sm:mx-4 sm:snap-start">
         <Image
           className="absolute inset-0 z-0 h-full w-full rounded-lg bg-cover bg-center"
           // @ts-expect-error @typescript-eslint/ban-ts-comment
           src={posterImage?.url || posterImage || '/placeholderposter.png'}
           fill
+          sizes="(max-width: 768px) 75vw,
+            (max-width: 1200px) 25vw,
+            20vw"
           alt="movie poster"
         />
         <div className="absolute inset-0	 z-10 grid h-full place-items-center items-center  rounded-lg p-4 text-white opacity-0 hover:from-cyan-500 hover:to-blue-500 md:hover:bg-gradient-to-r lg:hover:opacity-90">
