@@ -49,7 +49,7 @@ const Carousel: FC<CarouselProps> = ({ movieCards }) => {
   }, []);
 
   return (
-    <div className="carousel my-12 mx-auto w-10/12 sm:w-11/12 overflow-x-auto">
+    <div className="carousel my-6 mx-auto w-10/12 sm:w-11/12 overflow-x-auto">
       <div className="relative overflow-hidden w-full">
         <div className="flex justify-between absolute top left w-full h-full">
           <button
@@ -97,7 +97,7 @@ const Carousel: FC<CarouselProps> = ({ movieCards }) => {
         </div>
         <div
           ref={carousel}
-          className="relative flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory touch-pan-x z-0 w-full pb-8"
+          className="relative flex overflow-x-auto scroll-smooth snap-x snap-mandatory touch-pan-x z-0 w-full pb-4"
         >
         {movieCards}
         </div>

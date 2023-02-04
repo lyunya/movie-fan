@@ -191,7 +191,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
               <>
                 {sessionData && <ReactStars {...starsConfig} />}
                 <button
-                  className="bordered mt-8 rounded bg-blue-500 py-2 px-4 font-heading text-xl text-white hover:bg-blue-700"
+                  className="bordered mt-8 rounded bg-blue-500 py-2 px-4 font-heading text-xl text-white hover:bg-blue-600"
                   onClick={
                     sessionData
                       ? () => handleAddMovie(movie, id, genres)

@@ -19,7 +19,7 @@ const Nav: FC = () => {
       <div className="flex gap-8">
         {sessionData && profilePage ? (
           <button
-            className="text-md bordered rounded bg-blue-500 py-2 px-4 font-heading text-white hover:bg-blue-700 sm:text-xl"
+            className="text-md bordered rounded bg-blue-500 py-2 px-4 font-heading text-white hover:bg-blue-600 sm:text-xl"
             onClick={() => signOut({ callbackUrl: '/' })}
           >
             Sign Out
@@ -47,7 +47,7 @@ const AuthShowcase: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center gap-4">
       <button
-        className="text-md bordered rounded bg-blue-500 py-2 px-4 font-heading text-white hover:bg-blue-700 sm:text-xl"
+        className="text-md bordered rounded bg-blue-500 py-2 px-4 font-heading text-white hover:bg-blue-600 sm:text-xl"
         onClick={sessionData ? () => signOut() : () => signIn()}
       >
         {sessionData ? 'Sign out' : 'Sign in'}
