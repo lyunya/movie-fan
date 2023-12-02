@@ -131,7 +131,6 @@ export const getStaticProps: GetStaticProps = async () => {
     const upcomingMovies = await getUpcomingMovies()
     const popularMovies = await getPopularMovies()
     const news = await getNews()
-    console.log(news)
     const newsStories = news.data.newsStories
     return {
       props: { data: { upcomingMovies, popularMovies, newsStories } },
