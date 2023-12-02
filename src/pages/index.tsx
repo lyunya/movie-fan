@@ -22,7 +22,7 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
   const [searchResults, setSearchResults] = useState({
     results: [],
     isLoading: false,
-    noResults: false,
+    noResultsFound: false,
   })
   const { popularMovies, upcomingMovies, newsStories } = data
   const {
@@ -37,7 +37,7 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
     if (query === '' || query.trim() === '') {
       setSearchResults((prevState) => ({
         ...prevState,
-        noResults: false,
+        noResultsFound: false,
         results: [],
       }))
       return
@@ -49,12 +49,12 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
       setSearchResults((prevState) => ({
         ...prevState,
         isLoading: false,
-        noResults: true,
+        noResultsFound: true,
       }))
       return
     }
     setSearchResults({
-      noResults: false,
+      noResultsFound: false,
       results: movies,
       isLoading: false,
     })
@@ -88,7 +88,7 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
             loading={searchResults.isLoading}
             handleSearch={debouncedSearch}
           />
-          {searchResults.noResults && (
+          {searchResults.noResultsFound && (
             <p className="text-center text-2xl text-white">No results found</p>
           )}
           <div className={searchResults.results.length ? 'hidden' : ''}>
@@ -131,12 +131,14 @@ export const getStaticProps: GetStaticProps = async () => {
     const upcomingMovies = await getUpcomingMovies()
     const popularMovies = await getPopularMovies()
     const news = await getNews()
+    console.log(news)
     const newsStories = news.data.newsStories
     return {
       props: { data: { upcomingMovies, popularMovies, newsStories } },
       revalidate: 60 * 60,
     }
   } catch (error) {
+    console.log(error)
     return { props: { error } }
   }
 }
