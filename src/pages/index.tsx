@@ -45,14 +45,13 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
     setSearchResults((prevState) => ({ ...prevState, isLoading: true }))
     const results = await getSearchMovies(query)
     const movies = results.data.search.movies
-    if (movies.length === 0) {
+    movies.length === 0 ?
       setSearchResults((prevState) => ({
         ...prevState,
         isLoading: false,
         noResultsFound: true,
       }))
-      return
-    }
+    :
     setSearchResults({
       noResultsFound: false,
       results: movies,

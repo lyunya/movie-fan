@@ -22,8 +22,6 @@ const Movie: NextPage<MoviePageProps> = ({ id }) => {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const id = context.query.id as string
 
-
-
   try {
     return { props: { id } }
   } catch (error) {
