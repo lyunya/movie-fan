@@ -13,63 +13,51 @@ export const watchListItemRouter = createTRPCRouter({
       const { movieData } = input;
 
       try {
-        const movieExists = await prisma.watchListItem.findUnique({
+        const movie = await prisma.watchListItem.upsert({
           where: {
-            id: userIdNum,
-          }
-        })
-        if (movieExists) {
-          const updatedMovie = await prisma.watchListItem.update({
-            where: {
-              id: userIdNum,
-            },
-            data: {
+            userId_movieId: {
+              userId: userIdNum,
               movieId: movieData.movieId,
-              directedBy: movieData.directedBy,
-              durationMinutes: movieData.durationMinutes,
-              name: movieData.name,
-              posterImage: movieData.posterImage,
-              synopsis: movieData.synopsis,
-              tomatoMeter: movieData.tomatoMeter,
-              consensus: movieData.consensus,
-              totalGross: movieData.totalGross,
-              releaseDate: movieData.releaseDate,
-              emsVersionId: movieData.emsVersionId,
-              motionPictureRating: movieData.motionPictureRating,
-              userRating: movieData.userRating,
-              genres: [...movieData.genres],
-              user: {
-                connect: {
-                  id: userIdNum
-                }
-              }
-            }
-          })
-          return updatedMovie
-        }
-            return prisma.watchListItem.create({
-              data: {
-                movieId: movieData.movieId,
-                directedBy: movieData.directedBy,
-                durationMinutes: movieData.durationMinutes,
-                name: movieData.name,
-                posterImage: movieData.posterImage,
-                synopsis: movieData.synopsis,
-                tomatoMeter: movieData.tomatoMeter,
-                consensus: movieData.consensus,
-                totalGross: movieData.totalGross,
-                releaseDate: movieData.releaseDate,
-                emsVersionId: movieData.emsVersionId,
-                motionPictureRating: movieData.motionPictureRating,
-                userRating: movieData.userRating,
-                genres: [...movieData.genres],
-                user: {
-                  connect: {
-                    id: userIdNum,
-                  },
-                },
+            },
+          },
+          create: {
+            movieId: movieData.movieId,
+            directedBy: movieData.directedBy,
+            durationMinutes: movieData.durationMinutes,
+            name: movieData.name,
+            posterImage: movieData.posterImage,
+            synopsis: movieData.synopsis,
+            tomatoMeter: movieData.tomatoMeter,
+            consensus: movieData.consensus,
+            totalGross: movieData.totalGross,
+            releaseDate: movieData.releaseDate,
+            emsVersionId: movieData.emsVersionId,
+            motionPictureRating: movieData.motionPictureRating,
+            userRating: movieData.userRating,
+            genres: [...movieData.genres],
+            user: {
+              connect: {
+                id: userIdNum,
               },
-            })
+            },
+          },
+          update: {
+            directedBy: movieData.directedBy,
+            durationMinutes: movieData.durationMinutes,
+            name: movieData.name,
+            posterImage: movieData.posterImage,
+            synopsis: movieData.synopsis,
+            tomatoMeter: movieData.tomatoMeter,
+            consensus: movieData.consensus,
+            totalGross: movieData.totalGross,
+            releaseDate: movieData.releaseDate,
+            emsVersionId: movieData.emsVersionId,
+            motionPictureRating: movieData.motionPictureRating,
+            userRating: movieData.userRating,
+            genres: [...movieData.genres],
+          },
+        })
+        return movie
         
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error:any) {
