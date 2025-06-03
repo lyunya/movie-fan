@@ -1,4 +1,4 @@
-import { FLIXSTER_API_MOVIE_DETAILS_URL, RAPID_API_HOST } from "@/data/Contstants"
+import { FLIXSTER_API_MOVIE_DETAILS_URL, RAPID_API_HOST } from "@/data/Constants"
 
 const options = {
   method: 'GET',
