@@ -91,7 +91,6 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
     genres: string[],
     userRating: number
   ) => {
-    handleRemoveMovie(id)
     const movieData = createMovieObj(movie, id, genres, userRating)
     addMovie.mutateAsync({ movieData })
   }
