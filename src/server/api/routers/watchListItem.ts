@@ -61,7 +61,7 @@ export const watchListItemRouter = createTRPCRouter({
         
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error:any) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to save movie to watchlist' })
       }
 
     
@@ -80,11 +80,11 @@ export const watchListItemRouter = createTRPCRouter({
       }
     })
   }),
-  query: publicProcedure.input(z.object({
+  query: protectedProcedure.input(z.object({
     movieId: z.string()
   })).query(async ({ ctx, input }) => {
     const { prisma, session } = ctx;
-    const userIdNum = session?.user?.id;
+    const userIdNum = session.user.id;
     const { movieId } = input;
 
     const movie = await prisma.watchListItem.findMany({

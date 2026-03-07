@@ -9,7 +9,7 @@ import type { UseQueryResult } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
 import Image from 'next/image'
 import Balancer from 'react-wrap-balancer'
-import parse from 'html-react-parser'
+import parse, { domToReact } from 'html-react-parser'
 import MovieSkeleton from './Skeleton'
 import { useQuery } from '@tanstack/react-query'
 import { getMovieDetails } from '@/utils/getMovieDetails'
@@ -225,7 +225,13 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
       {!!movie?.tomatoRating?.consensus && (
         <div className="flex w-full">
           <Balancer className="mx-auto mb-8 text-xl text-white md:text-3xl xl:text-5xl">
-            {parse(movie.tomatoRating.consensus)}
+            {parse(movie.tomatoRating.consensus, {
+              replace(domNode: any) {
+                if (domNode.type === 'tag' && !['em', 'strong', 'b', 'i'].includes(domNode.name)) {
+                  return <>{domToReact(domNode.children || [])}</>
+                }
+              },
+            })}
           </Balancer>
         </div>
       )}
