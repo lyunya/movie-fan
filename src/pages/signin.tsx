@@ -23,7 +23,7 @@ const Signin = () => {
     <div className="flex flex-col items-center bg-gradient-to-b from-[#000000] to-[#1e1e1e] px-4">
       <div className="container flex min-h-screen w-full flex-col items-start justify-between px-7 pb-7 pt-3 text-white xl:w-5/12">
         <Link className="mx-auto" href="/">
-          <h1 className="mt-8 bg-gradient-to-br from-pink-400 to-red-600 bg-clip-text font-heading text-5xl font-extrabold text-transparent sm:text-3xl">
+          <h1 className="gradient-text mt-8 font-heading text-4xl font-extrabold sm:text-5xl">
             Movie Fan
           </h1>
         </Link>

@@ -1,78 +1,144 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck 
+import Link from 'next/link'
+import { useState } from 'react'
+import type { WatchListItem } from '@prisma/client'
 import Layout from '@layout/default'
 import { api } from '@/utils/api'
 import { useSession } from 'next-auth/react'
-import { useState } from 'react'
 import MovieGrid from '@/components/MovieGrid/MovieGrid'
 import MovieCard from '@/components/MovieCard/MovieCard'
+import MovieCardSkeleton from '@/components/MovieCard/MovieCardSkeleton'
 import ProfileCard from '@/components/ProfileCard/ProfileCard'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 
+type Tab = 'watchlist' | 'seen'
+type SortKey = 'title' | 'rating' | 'tomato'
+
+const sorters: Record<SortKey, (a: WatchListItem, b: WatchListItem) => number> = {
+  title: (a, b) => a.name.localeCompare(b.name),
+  rating: (a, b) => (b.userRating ?? 0) - (a.userRating ?? 0),
+  tomato: (a, b) => (b.tomatoMeter ?? 0) - (a.tomatoMeter ?? 0),
+}
+
 const Profile = () => {
-  const [animationParent] = useAutoAnimate()
+  const [animationParent] = useAutoAnimate<HTMLDivElement>()
+  const [selected, setSelected] = useState<Tab>('watchlist')
+  const [sort, setSort] = useState<SortKey>('title')
+  const { data: sessionData, status } = useSession()
 
-  const [selected, setSelected] = useState('watchlist')
-  const { data: sessionData } = useSession()
-  const profileData = api.user.query.useQuery()
-  const ratedMovies = profileData.data?.movies.filter(
-    (movie) => movie.userRating
-  )
-  const watchList = profileData.data?.movies.filter(
-    (movie) => !movie.userRating
-  )
+  const profileData = api.user.query.useQuery(undefined, {
+    enabled: !!sessionData,
+  })
 
-  const ratedMovieCards =
-    ratedMovies?.map((movie, idx) => {
-      return <MovieCard key={idx} {...movie} />
-    }) || null
-
-  const watchListMovieCards =
-    watchList?.map((movie, idx) => {
-      return <MovieCard key={idx} {...movie} />
-    }) || null
-
-  if (!sessionData) {
+  if (status === 'loading') {
     return (
       <Layout>
-        <h1 className="text-center text-3xl text-white xl:text-5xl">
-          Please sign in to view your profile
-        </h1>
+        <p className="py-20 text-center text-xl text-zinc-400">Loading…</p>
       </Layout>
     )
   }
 
+  if (!sessionData) {
+    return (
+      <Layout>
+        <div className="px-4 py-24 text-center">
+          <h1 className="mb-4 text-3xl font-bold text-white xl:text-4xl">
+            Please sign in to view your profile
+          </h1>
+          <Link href="/" className="text-pink-400 underline">
+            Back to home
+          </Link>
+        </div>
+      </Layout>
+    )
+  }
+
+  const movies = profileData.data?.movies ?? []
+  const rated = movies.filter((movie) => movie.userRating)
+  const watchList = movies.filter((movie) => !movie.userRating)
+  const active = selected === 'seen' ? rated : watchList
+  const sorted = [...active].sort(sorters[sort])
+  const isLoading = profileData.isLoading
+
+  const tabs: { key: Tab; label: string; count: number }[] = [
+    { key: 'watchlist', label: 'Watchlist', count: watchList.length },
+    { key: 'seen', label: 'Seen', count: rated.length },
+  ]
+
   return (
     <Layout>
-      <div className="w-11/12 mx-auto" ref={animationParent}>
-        {/* <h1 className="text-center text-3xl text-white xl:text-5xl mb-8">
-          {profileData.data?.user?.name} Profile
-        </h1> */}
-        <ProfileCard user={profileData.data?.user} rated={ratedMovies} watchList={watchList}  />
-        <div className="mb-20 flex items-center justify-center text-white">
-          <button
-            className={`text-md bordered py-2 px-4 font-heading text-white sm:text-xl ${
-              selected === 'watchlist' && 'rounded bg-gray-800'
-            }`}
-            onClick={() => setSelected('watchlist')}
-          >
-            WatchList
-          </button>
-          <button
-            className={`text-md bordered py-2 px-4 font-heading text-white sm:text-xl ${
-              selected === 'seen' && 'rounded bg-gray-800'
-            }`}
-            onClick={() => setSelected('seen')}
-          >
-            Seen
-          </button>
+      <div className="mx-auto w-11/12 max-w-screen-xl pb-16">
+        <ProfileCard
+          user={profileData.data?.user}
+          rated={rated}
+          watchList={watchList}
+        />
+
+        <div className="mb-8 flex flex-col items-center justify-between gap-4 sm:flex-row">
+          {/* Segmented tabs */}
+          <div className="inline-flex rounded-full border border-zinc-800 bg-zinc-900/70 p-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setSelected(tab.key)}
+                className={`rounded-full px-5 py-2 font-heading text-sm font-semibold transition sm:text-base ${
+                  selected === tab.key
+                    ? 'bg-gradient-to-br from-pink-500 to-red-600 text-white'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                {tab.label}{' '}
+                <span
+                  className={
+                    selected === tab.key ? 'text-white/80' : 'text-zinc-500'
+                  }
+                >
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Sort */}
+          <label className="flex items-center gap-2 text-sm text-zinc-400">
+            Sort by
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-white outline-none focus:border-pink-500"
+            >
+              <option value="title">Title (A–Z)</option>
+              {selected === 'seen' && <option value="rating">Your rating</option>}
+              <option value="tomato">Tomatometer</option>
+            </select>
+          </label>
         </div>
-        {selected === 'watchlist' && watchListMovieCards?.length && (
-          <MovieGrid movieCards={watchListMovieCards} />
-        )}
-        {selected === 'seen' && ratedMovieCards?.length && (
-          <MovieGrid movieCards={ratedMovieCards} />
-        )}
+
+        <div ref={animationParent}>
+          {isLoading ? (
+            <MovieGrid
+              movieCards={Array.from({ length: 6 }).map((_, idx) => (
+                <MovieCardSkeleton key={idx} />
+              ))}
+            />
+          ) : sorted.length > 0 ? (
+            <MovieGrid
+              movieCards={sorted.map((movie) => (
+                <MovieCard key={movie.id} {...movie} />
+              ))}
+            />
+          ) : (
+            <div className="py-16 text-center">
+              <p className="mb-3 text-xl text-zinc-300">
+                {selected === 'seen'
+                  ? "You haven't rated any movies yet."
+                  : 'Your watchlist is empty.'}
+              </p>
+              <Link href="/" className="btn-brand">
+                Find movies
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   )
