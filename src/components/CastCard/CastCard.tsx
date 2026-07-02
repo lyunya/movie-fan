@@ -31,12 +31,12 @@ const CastCard: FC<CastCardProps> = ({
     </>
   )
 
-  // Clicking a person searches their name — an easy way to find their other movies
+  // Clicking a person opens their in-app profile with a filmography
   if (name) {
     return (
       <Link
-        href={`/?q=${encodeURIComponent(name)}`}
-        title={`Search for ${name}`}
+        href={`/person/${encodeURIComponent(name)}`}
+        title={`See movies with ${name}`}
         className="group w-28 shrink-0 text-center sm:w-full"
       >
         {card}

@@ -45,10 +45,16 @@ const Hero: FC<HeroProps> = ({ movies }) => {
 
   if (slides.length === 0) return null
 
+  // Only hover-capable devices pause on mouseenter — mobile taps also fire
+  // mouseenter but never mouseleave, which froze the rotation on touch
+  const pauseIfHoverDevice = () => {
+    if (window.matchMedia('(hover: hover)').matches) setPaused(true)
+  }
+
   return (
     <section
       className="group/hero relative h-full overflow-hidden rounded-2xl"
-      onMouseEnter={() => setPaused(true)}
+      onMouseEnter={pauseIfHoverDevice}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
       aria-label="Popular movies spotlight"
@@ -88,28 +94,28 @@ const Hero: FC<HeroProps> = ({ movies }) => {
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
             </div>
 
-            <div className="relative mx-auto flex max-w-screen-xl flex-col items-center gap-6 px-4 py-10 pb-14 sm:flex-row sm:items-end sm:px-8 sm:py-16 sm:pb-16">
-              <div className="relative aspect-[2/3] w-36 shrink-0 overflow-hidden rounded-xl border border-zinc-700 shadow-2xl sm:w-52">
+            <div className="relative mx-auto flex max-w-screen-xl flex-col items-center gap-5 px-4 py-8 pb-12 sm:flex-row sm:items-end sm:px-8 sm:py-10 sm:pb-12">
+              <div className="relative aspect-[2/3] w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-700 shadow-2xl sm:w-40">
                 <Image
                   src={poster}
                   fill
                   priority={i === 0}
-                  sizes="(max-width: 640px) 40vw, 210px"
+                  sizes="(max-width: 640px) 30vw, 160px"
                   alt={`${movie.name} poster`}
                   className="object-cover"
                 />
               </div>
               <div className="text-center sm:text-left">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-pink-400">
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-pink-400">
                   #{i + 1} Popular
                 </p>
-                <h2 className="font-heading text-3xl font-bold text-white sm:text-5xl">
+                <h2 className="font-heading text-2xl font-bold text-white sm:text-3xl xl:text-4xl">
                   {movie.name}
                 </h2>
                 {score != null && (
-                  <p className="chip mt-4 text-base">🍅 {score}%</p>
+                  <p className="chip mt-3 text-sm">🍅 {score}%</p>
                 )}
-                <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
                   <Link
                     href={`/movie/${movie.emsVersionId}`}
                     className="btn-brand"
