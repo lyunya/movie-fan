@@ -1,8 +1,7 @@
 import { type AppType } from "next/app";
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
-import { Krona_One, Overpass } from '@next/font/google'
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Krona_One, Overpass } from 'next/font/google'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 import { api } from "../utils/api";
@@ -26,16 +25,14 @@ const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
-  const client = new QueryClient();
-
+  // withTRPC (see the export below) provides the QueryClient for the whole
+  // app; creating a second one here would split the cache in two
   return (
     <SessionProvider session={session}>
-      <QueryClientProvider client={client}>
-        <main className={`${kronaOne.variable} ${overPass.variable} font-sans`}>
-          <Component {...pageProps} />
-        </main>
-         <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
+      <main className={`${kronaOne.variable} ${overPass.variable} font-sans`}>
+        <Component {...pageProps} />
+      </main>
+      <ReactQueryDevtools initialIsOpen={false} />
     </SessionProvider>
   );
 };

@@ -1,48 +1,36 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { FC } from 'react'
-import type {
-  IMovieDetail,
-  MovieDetailInterface,
-  MovieDetailProps,
-} from './types'
-import type { UseQueryResult } from '@tanstack/react-query'
-import { useQueryClient } from '@tanstack/react-query'
+import type { IMovieDetail, MovieDetailProps } from './types'
 import Image from 'next/image'
 import Balancer from 'react-wrap-balancer'
 import parse from 'html-react-parser'
 import MovieSkeleton from './Skeleton'
-import { useQuery } from '@tanstack/react-query'
-import { getMovieDetails } from '@/utils/getMovieDetails'
 import { api } from '@/utils/api'
 import { signIn } from 'next-auth/react'
 // @ts-ignore
 import ReactStars from 'react-rating-stars-component'
 import { createMovieObj } from '@/utils/createMovieObj'
 import CastGrid from '../CastGrid/CastGrid'
-import { notFound } from 'next/navigation'
 
 const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
-  const {
-    data,
-    isLoading,
-    isError,
-  }: UseQueryResult<MovieDetailInterface, Error> = useQuery<
-    MovieDetailInterface,
-    Error
-  >(['movieDetails', id], () => getMovieDetails(id))
-  const queryClient = useQueryClient()
+  const { data, isLoading, isError } = api.flixster.details.useQuery(
+    { id },
+    // retry is capped so a failing lookup doesn't burn RapidAPI quota
+    { retry: 1 }
+  )
+  const utils = api.useContext()
 
+  const invalidateWatchlist = () => {
+    utils.movie.query.invalidate({ movieId: id })
+    utils.user.query.invalidate()
+  }
 
   const addMovie = api.movie.create.useMutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries()
-    },
+    onSuccess: invalidateWatchlist,
   })
   const watchlistItem = api.movie.query.useQuery({ movieId: id })
   const removeMovie = api.movie.delete.useMutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries()
-    },
+    onSuccess: invalidateWatchlist,
   })
   // refactor into better error handling
   if (isError) {
@@ -57,12 +45,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   if (isLoading) {
     return <MovieSkeleton />
   }
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore-next-line
-  const { movie } = data.data
-  const genres: string[] = movie?.genres.map(
-    (genre: { name: string }) => genre.name
-  )
+  const movie = data?.movie
 
   if (!movie) {
     return (
@@ -72,28 +55,33 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
     )
   }
 
+  const genres: string[] = movie.genres.map(
+    (genre: { name: string }) => genre.name
+  )
+
   const handleAddMovie = (
     movie: IMovieDetail,
     id: string,
     genres: string[]
   ) => {
     const movieData = createMovieObj(movie, id, genres)
-    addMovie.mutateAsync({ movieData })
+    addMovie.mutate({ movieData })
   }
 
   const handleRemoveMovie = (movieId: string) => {
-    removeMovie.mutateAsync({ movieId })
+    removeMovie.mutate({ movieId })
   }
 
+  // The server upserts on [userId, movieId], so rating a movie is a single
+  // mutation whether or not it is already on the watchlist
   const handleSeenMovie = (
     movie: IMovieDetail,
     id: string,
     genres: string[],
     userRating: number
   ) => {
-    handleRemoveMovie(id)
     const movieData = createMovieObj(movie, id, genres, userRating)
-    addMovie.mutateAsync({ movieData })
+    addMovie.mutate({ movieData })
   }
   //if user has reated movied, remove 'remove from watchlist' button
 
