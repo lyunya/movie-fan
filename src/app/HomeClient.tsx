@@ -72,10 +72,16 @@ export default function HomeClient({ data }: { data: HomeData }) {
   const showSkeletons = isSearching && searchQuery.isLoading
   const noResults = isSearching && searchQuery.isSuccess && results.length === 0
   const featured = popular[0]
+  const hasNews = (news?.length ?? 0) > 0
 
   return (
     <main className="pb-10">
-      {!isSearching && featured && <Hero movie={featured} />}
+      {!isSearching && (featured || hasNews) && (
+        <div className="mx-auto grid max-w-screen-2xl grid-cols-1 items-start gap-6 px-4 py-6 sm:px-8 lg:grid-cols-2">
+          {featured && <Hero movie={featured} />}
+          {hasNews && <News newsStories={news} />}
+        </div>
+      )}
 
       <div className="px-4 py-6 sm:px-8">
         <Search
@@ -136,7 +142,6 @@ export default function HomeClient({ data }: { data: HomeData }) {
           <MovieRow title="Popular" movies={popular} />
           <MovieRow title="Opening this week" movies={opening} />
           <MovieRow title="Upcoming" movies={upcoming} />
-          <News newsStories={news} />
         </>
       )}
     </main>

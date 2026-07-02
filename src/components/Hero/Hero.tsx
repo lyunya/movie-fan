@@ -15,7 +15,7 @@ const Hero: FC<HeroProps> = ({ movie }) => {
   const score = movie.tomatoMeter ?? movie.tomatoRating?.tomatometer ?? null
 
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative h-full overflow-hidden rounded-2xl">
       {/* Blurred, darkened poster as an ambient backdrop */}
       <div className="absolute inset-0">
         <Image
