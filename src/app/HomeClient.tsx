@@ -118,7 +118,9 @@ const MoreHeadlines = ({ stories }: { stories: NewStory[] }) => {
         {stories.map((story) => (
           <li key={story.id}>
             <a
-              className="block px-4 py-3 text-sm transition hover:bg-zinc-800/60 hover:text-pink-400"
+              // Same row styling as News's headline list, so a row here
+              // takes up the same vertical space as one over there
+              className="block px-4 py-3 text-base transition hover:bg-zinc-800/60 hover:text-pink-400 lg:text-lg"
               href={story.link}
               target="_blank"
               rel="noreferrer"
@@ -190,14 +192,16 @@ export default function HomeClient({ data }: { data: HomeData }) {
 
   const hasNews = (news?.length ?? 0) > 0
 
-  // The News column is naturally taller than the compact hero, so the next
-  // batch of headlines (beyond what News already shows) spills into the
-  // leftover space in the left column instead of leaving it empty. Not
-  // memoized off `failedImages` (News tracks that internally) — worst case
-  // is one headline briefly appearing on both sides if a feed image 404s.
+  // The News column is naturally taller than the compact hero, so every
+  // headline beyond what News already shows spills into the leftover space
+  // in the left column instead of leaving it empty (fetchNews caps the feed
+  // at 20 stories, so this list is bounded even without a slice end here).
+  // Not memoized off `failedImages` (News tracks that internally) — worst
+  // case is one headline briefly appearing on both sides if a feed image
+  // 404s.
   const moreHeadlines = useMemo(() => {
     const { restStories } = partitionNews(news)
-    return restStories.slice(INITIAL_HEADLINES, INITIAL_HEADLINES * 2)
+    return restStories.slice(INITIAL_HEADLINES)
   }, [news])
 
   return (
