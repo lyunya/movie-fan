@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import parse from 'html-react-parser'
+import Balancer from 'react-wrap-balancer'
 import { keepPreviousData } from '@tanstack/react-query'
-import type { HomeData } from '@/types/main'
+import type { HomeData, NewStory } from '@/types/main'
 import type { MovieCardProps } from '@/components/MovieCard/types'
 
 import MovieCard from '@/components/MovieCard/MovieCard'
@@ -17,6 +19,7 @@ import SearchResults from '@/components/SearchResults/SearchResults'
 
 import { api } from '@/utils/api'
 import debounce from '@/utils/debounce'
+import { partitionNews, INITIAL_HEADLINES } from '@/utils/news'
 
 const MovieRow = ({
   title,
@@ -98,6 +101,37 @@ const MiniStrip = ({
   )
 }
 
+/**
+ * The next batch of headlines beyond what News already shows, spilled into
+ * the leftover space below the hero/strip on desktop (the News column is
+ * naturally taller). Hidden on mobile, where News's own "More news" toggle
+ * covers the same stories in place.
+ */
+const MoreHeadlines = ({ stories }: { stories: NewStory[] }) => {
+  if (stories.length === 0) return null
+  return (
+    <section className="hidden lg:block">
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
+        More headlines
+      </h2>
+      <ul className="surface flex flex-col divide-y divide-zinc-800">
+        {stories.map((story) => (
+          <li key={story.id}>
+            <a
+              className="block px-4 py-3 text-sm transition hover:bg-zinc-800/60 hover:text-pink-400"
+              href={story.link}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Balancer>{parse(story.title)}</Balancer>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 export default function HomeClient({ data }: { data: HomeData }) {
   // inputValue is what's in the box; query is the debounced value that
   // actually drives the API request
@@ -156,6 +190,16 @@ export default function HomeClient({ data }: { data: HomeData }) {
 
   const hasNews = (news?.length ?? 0) > 0
 
+  // The News column is naturally taller than the compact hero, so the next
+  // batch of headlines (beyond what News already shows) spills into the
+  // leftover space in the left column instead of leaving it empty. Not
+  // memoized off `failedImages` (News tracks that internally) — worst case
+  // is one headline briefly appearing on both sides if a feed image 404s.
+  const moreHeadlines = useMemo(() => {
+    const { restStories } = partitionNews(news)
+    return restStories.slice(INITIAL_HEADLINES, INITIAL_HEADLINES * 2)
+  }, [news])
+
   return (
     <main className="pb-10">
       {!isSearching && (popular.length > 0 || hasNews) && (
@@ -168,6 +212,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
                 title={opening.length > 0 ? 'Opening this week' : 'Coming soon'}
                 movies={opening.length > 0 ? opening : upcoming}
               />
+              <MoreHeadlines stories={moreHeadlines} />
             </div>
           )}
           {hasNews && <News newsStories={news} />}

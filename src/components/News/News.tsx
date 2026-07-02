@@ -8,25 +8,21 @@ import { useState } from 'react'
 import Image from 'next/image'
 import parse from 'html-react-parser'
 import Balancer from 'react-wrap-balancer'
-
-const INITIAL_STORIES = 8
+import { partitionNews, INITIAL_HEADLINES } from '@/utils/news'
 
 const News: FC<NewsStoryProps> = ({ newsStories }) => {
   const [expanded, setExpanded] = useState(false)
   // Feed images can 404 or come from a host we can't render — when one
   // fails, fall back to the next story that has a working image
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
-  const stories = (newsStories || []).filter(
-    (story) => !story.title?.toLowerCase().includes('tv')
+  const { stories, mainStory, restStories } = partitionNews(
+    newsStories,
+    failedImages
   )
-  const mainStory = stories.find(
-    (story) => story.mainImage?.url && !failedImages.has(story.mainImage.url)
-  )
-  const restStories = stories.filter((story) => story.id !== mainStory?.id)
   const visibleStories = expanded
     ? restStories
-    : restStories.slice(0, INITIAL_STORIES)
-  const hiddenCount = restStories.length - INITIAL_STORIES
+    : restStories.slice(0, INITIAL_HEADLINES)
+  const hiddenCount = restStories.length - INITIAL_HEADLINES
 
   // Nothing to show (the news feed is sometimes empty) — render nothing
   // rather than a stray heading
@@ -80,10 +76,12 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
               </li>
             ))}
           </ul>
+          {/* On desktop the overflow already fills the space beside the
+              hero (see HomeClient), so this toggle is mobile-only there */}
           {hiddenCount > 0 && (
             <button
               onClick={() => setExpanded((current) => !current)}
-              className="border-t border-zinc-800 px-4 py-3 text-sm font-semibold text-pink-400 transition hover:bg-zinc-800/60 hover:text-pink-300"
+              className="border-t border-zinc-800 px-4 py-3 text-sm font-semibold text-pink-400 transition hover:bg-zinc-800/60 hover:text-pink-300 lg:hidden"
             >
               {expanded ? 'Show less' : `More news (${hiddenCount})`}
             </button>
