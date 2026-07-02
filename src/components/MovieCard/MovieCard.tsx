@@ -4,13 +4,18 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 const MovieCard: FC<MovieCardProps> = ({ name, posterImage, emsVersionId }) => {
+  // posterImage is a string for watchlist items and an { url } object (whose
+  // url may be missing) for API results
+  const posterSrc =
+    (typeof posterImage === 'string' ? posterImage : posterImage?.url) ||
+    '/placeholderposter.png'
+
   return (
     <Link href={`/movie/${emsVersionId}`}>
       <div className="relative flex aspect-[489/725] h-72 max-h-96 max-w-[195] cursor-pointer snap-center flex-col items-center rounded-lg border bg-white sm:mx-4 sm:snap-start">
         <Image
           className="absolute inset-0 z-0 rounded-lg bg-cover bg-center"
-          // @ts-expect-error @typescript-eslint/ban-ts-comment
-          src={posterImage?.url || posterImage || '/placeholderposter.png'}
+          src={posterSrc}
           fill
           sizes="(max-width: 768px) 75vw,
             (max-width: 1200px) 25vw,

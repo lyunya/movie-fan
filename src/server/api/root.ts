@@ -1,5 +1,6 @@
 import { UserRouter } from './routers/user';
 import { watchListItemRouter } from './routers/watchListItem';
+import { flixsterRouter } from './routers/flixster';
 import { createTRPCRouter } from "./trpc";
 /**
  * This is the primary router for your server.
@@ -8,7 +9,8 @@ import { createTRPCRouter } from "./trpc";
  */
 export const appRouter = createTRPCRouter({
   movie: watchListItemRouter,
-  user: UserRouter
+  user: UserRouter,
+  flixster: flixsterRouter
 });
 
 // export type definition of API

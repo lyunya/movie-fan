@@ -8,8 +8,11 @@ const options = {
 	}
 };
 
-export const getUpcomingMovies = async () => { 
+export const getUpcomingMovies = async () => {
   const res = await fetch(FLIXSTER_API_UPCOMING_URL, options)
+  if (!res.ok) {
+    throw new Error(`Upcoming movies request failed with status ${res.status}`)
+  }
   const data = await res.json()
   return data
 }

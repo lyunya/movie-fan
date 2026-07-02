@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { GetStaticProps } from 'next'
 import type { NextPage } from 'next'
 import type { HomePageProps } from '@/types/main'
@@ -12,18 +12,14 @@ import Search from '@/components/Search/Search'
 import News from '@/components/News/News'
 import SearchResults from '@/components/SearchResults/SearchResults'
 
-import { getSearchMovies } from '@/utils/getSearchMovies'
+import { api } from '@/utils/api'
 import { getUpcomingMovies } from '@/utils/getUpcomingMovies'
 import { getPopularMovies } from '@/utils/getPopularMovies'
 import debounce from '@/utils/debounce'
 import { getNews } from '@/utils/getNews'
 
 const Home: NextPage<HomePageProps> = ({ data }) => {
-  const [searchResults, setSearchResults] = useState({
-    results: [],
-    isLoading: false,
-    noResultsFound: false,
-  })
+  const [query, setQuery] = useState('')
   const { popularMovies, upcomingMovies, newsStories } = data
   const {
     data: { opening: moviesOpening, popularity: moviesPopular },
@@ -32,34 +28,26 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
     data: { upcoming: upComingMovies },
   } = upcomingMovies
 
-  const handleSearch = async (e: ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value
-    if (query === '' || query.trim() === '') {
-      setSearchResults((prevState) => ({
-        ...prevState,
-        noResultsFound: false,
-        results: [],
-      }))
-      return
-    }
-    setSearchResults((prevState) => ({ ...prevState, isLoading: true }))
-    const results = await getSearchMovies(query)
-    const movies = results.data.search.movies
-    movies.length === 0 ?
-      setSearchResults((prevState) => ({
-        ...prevState,
-        isLoading: false,
-        noResultsFound: true,
-      }))
-    :
-    setSearchResults({
-      noResultsFound: false,
-      results: movies,
-      isLoading: false,
-    })
+  // React Query keys the request on the debounced query, so stale responses
+  // can't overwrite newer ones and errors don't escape as unhandled rejections
+  const searchQuery = api.flixster.search.useQuery(
+    { query },
+    // retry is capped so a failing search doesn't burn RapidAPI quota
+    { enabled: query.length > 0, keepPreviousData: true, retry: 1 }
+  )
+
+  const debouncedSetQuery = useRef(
+    debounce((value: string) => setQuery(value.trim()), 750)
+  ).current
+
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
+    debouncedSetQuery(e.target.value)
   }
 
-  const debouncedSearch = debounce(handleSearch, 750)
+  const searchedMovies: MovieCardProps[] =
+    (query && searchQuery.data?.movies) || []
+  const noResultsFound =
+    query.length > 0 && searchQuery.isSuccess && searchedMovies.length === 0
 
   const popularMovieCards =
     moviesPopular?.map((movie, idx) => {
@@ -71,12 +59,13 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
       return <MovieCard key={idx} {...movie} />
     }) || []
 
-  const upcomingMovieCards = upComingMovies.map((movie, idx) => {
-    return <MovieCard key={idx} {...movie} />
-  })
+  const upcomingMovieCards =
+    upComingMovies?.map((movie, idx) => {
+      return <MovieCard key={idx} {...movie} />
+    }) || []
 
-  const searchedMovieCards = searchResults.results.map((movie, idx) => {
-    return <MovieCard key={idx} {...(movie as MovieCardProps)} />
+  const searchedMovieCards = searchedMovies.map((movie, idx) => {
+    return <MovieCard key={idx} {...movie} />
   })
 
   return (
@@ -84,17 +73,22 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
       <main className="grid items-center">
         <div className="mx-auto flex flex-col justify-between">
           <Search
-            loading={searchResults.isLoading}
-            handleSearch={debouncedSearch}
+            loading={searchQuery.isFetching}
+            handleSearch={handleSearch}
           />
-          {searchResults.noResultsFound && (
+          {noResultsFound && (
             <p className="text-center text-2xl text-white">No results found</p>
           )}
-          <div className={searchResults.results.length ? 'hidden' : ''}>
+          {searchQuery.isError && (
+            <p className="text-center text-2xl text-white">
+              Something went wrong searching, please try again
+            </p>
+          )}
+          <div className={searchedMovieCards.length ? 'hidden' : ''}>
             <News newsStories={newsStories} />
           </div>
         </div>
-        {searchResults.results.length > 0 ? (
+        {searchedMovieCards.length > 0 ? (
           <SearchResults movieCards={searchedMovieCards} />
         ) : (
           <>
@@ -114,10 +108,14 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
                 <Carousel movieCards={openingMovieCards} />
               </>
             )}
-            <h2 className="pl-8 text-left text-3xl text-white sm:pb-4 md:text-5xl">
-              Upcoming
-            </h2>
-            <Carousel movieCards={upcomingMovieCards} />
+            {!!upcomingMovieCards.length && (
+              <>
+                <h2 className="pl-8 text-left text-3xl text-white sm:pb-4 md:text-5xl">
+                  Upcoming
+                </h2>
+                <Carousel movieCards={upcomingMovieCards} />
+              </>
+            )}
           </>
         )}
       </main>
@@ -126,18 +124,37 @@ const Home: NextPage<HomePageProps> = ({ data }) => {
 }
 
 export const getStaticProps: GetStaticProps = async () => {
-  try {
-    const upcomingMovies = await getUpcomingMovies()
-    const popularMovies = await getPopularMovies()
-    const news = await getNews()
-    const newsStories = news.data.newsStories
-    return {
-      props: { data: { upcomingMovies, popularMovies, newsStories } },
-      revalidate: 60 * 60,
-    }
-  } catch (error) {
-    console.log(error)
-    return { props: { error } }
+  // Each source falls back to an empty shape on its own, so one failing API
+  // call can't take down the whole page or discard the other sections
+  const [upcoming, popular, news] = await Promise.allSettled([
+    getUpcomingMovies(),
+    getPopularMovies(),
+    getNews(),
+  ])
+
+  for (const result of [upcoming, popular, news]) {
+    if (result.status === 'rejected') console.error(result.reason)
+  }
+
+  const upcomingMovies =
+    upcoming.status === 'fulfilled' && upcoming.value?.data
+      ? upcoming.value
+      : { data: { upcoming: [] } }
+  const popularMovies =
+    popular.status === 'fulfilled' && popular.value?.data
+      ? popular.value
+      : { data: { opening: [], popularity: [] } }
+  const newsStories =
+    news.status === 'fulfilled' ? news.value?.data?.newsStories ?? [] : []
+
+  const anyFailed = [upcoming, popular, news].some(
+    (result) => result.status === 'rejected'
+  )
+
+  return {
+    props: { data: { upcomingMovies, popularMovies, newsStories } },
+    // Retry sooner when a source failed
+    revalidate: anyFailed ? 60 : 60 * 60,
   }
 }
 export default Home

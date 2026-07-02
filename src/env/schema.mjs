@@ -32,6 +32,7 @@ export const serverSchema = z.object({
   EMAIL_FROM: z.string(),
   FACEBOOK_CLIENT_ID: z.string(),
   FACEBOOK_CLIENT_SECRET: z.string(),
+  RAPID_API_KEY: z.string().min(1),
 })
 
 /**
