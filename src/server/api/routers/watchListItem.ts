@@ -9,86 +9,60 @@ export const watchListItemRouter = createTRPCRouter({
   }))
     .mutation(async ({ ctx, input }) => {
       const { prisma, session } = ctx;
-      const userIdNum = session.user.id;
+      const userId = session.user.id;
       const { movieData } = input;
 
-      try {
-        const movieExists = await prisma.watchListItem.findUnique({
-          where: {
-            id: userIdNum,
-          }
-        })
-        if (movieExists) {
-          const updatedMovie = await prisma.watchListItem.update({
-            where: {
-              id: userIdNum,
-            },
-            data: {
-              movieId: movieData.movieId,
-              directedBy: movieData.directedBy,
-              durationMinutes: movieData.durationMinutes,
-              name: movieData.name,
-              posterImage: movieData.posterImage,
-              synopsis: movieData.synopsis,
-              tomatoMeter: movieData.tomatoMeter,
-              consensus: movieData.consensus,
-              totalGross: movieData.totalGross,
-              releaseDate: movieData.releaseDate,
-              emsVersionId: movieData.emsVersionId,
-              motionPictureRating: movieData.motionPictureRating,
-              userRating: movieData.userRating,
-              genres: [...movieData.genres],
-              user: {
-                connect: {
-                  id: userIdNum
-                }
-              }
-            }
-          })
-          return updatedMovie
-        }
-            return prisma.watchListItem.create({
-              data: {
-                movieId: movieData.movieId,
-                directedBy: movieData.directedBy,
-                durationMinutes: movieData.durationMinutes,
-                name: movieData.name,
-                posterImage: movieData.posterImage,
-                synopsis: movieData.synopsis,
-                tomatoMeter: movieData.tomatoMeter,
-                consensus: movieData.consensus,
-                totalGross: movieData.totalGross,
-                releaseDate: movieData.releaseDate,
-                emsVersionId: movieData.emsVersionId,
-                motionPictureRating: movieData.motionPictureRating,
-                userRating: movieData.userRating,
-                genres: [...movieData.genres],
-                user: {
-                  connect: {
-                    id: userIdNum,
-                  },
-                },
-              },
-            })
-        
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error:any) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+      const movieFields = {
+        movieId: movieData.movieId,
+        directedBy: movieData.directedBy,
+        durationMinutes: movieData.durationMinutes,
+        name: movieData.name,
+        posterImage: movieData.posterImage,
+        synopsis: movieData.synopsis,
+        tomatoMeter: movieData.tomatoMeter,
+        consensus: movieData.consensus,
+        totalGross: movieData.totalGross,
+        releaseDate: movieData.releaseDate,
+        emsVersionId: movieData.emsVersionId,
+        motionPictureRating: movieData.motionPictureRating,
+        userRating: movieData.userRating,
+        genres: [...movieData.genres],
       }
 
-    
+      try {
+        return await prisma.watchListItem.upsert({
+          where: {
+            userId_movieId: {
+              userId,
+              movieId: movieData.movieId,
+            },
+          },
+          update: movieFields,
+          create: {
+            ...movieFields,
+            user: {
+              connect: {
+                id: userId,
+              },
+            },
+          },
+        })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+      }
     }),
   delete: protectedProcedure.input(z.object({
     movieId: z.string()
-  })).mutation(async ({ ctx, input }) => { 
+  })).mutation(async ({ ctx, input }) => {
     const { prisma, session } = ctx;
-    const userIdNum = session?.user?.id;
+    const userId = session.user.id;
     const { movieId } = input;
 
     return prisma.watchListItem.deleteMany({
       where: {
         movieId: movieId,
-        userId: userIdNum
+        userId: userId
       }
     })
   }),
@@ -96,12 +70,19 @@ export const watchListItemRouter = createTRPCRouter({
     movieId: z.string()
   })).query(async ({ ctx, input }) => {
     const { prisma, session } = ctx;
-    const userIdNum = session?.user?.id;
+    const userId = session?.user?.id;
     const { movieId } = input;
+
+    // Without a session there is no watchlist to look up. Returning early
+    // also keeps Prisma from dropping the undefined userId filter and
+    // matching other users' items.
+    if (!userId) {
+      return { movie: [] }
+    }
 
     const movie = await prisma.watchListItem.findMany({
       where: {
-        userId: userIdNum,
+        userId: userId,
         movieId: movieId
       }
     })
