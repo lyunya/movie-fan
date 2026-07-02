@@ -9,6 +9,7 @@ import MovieGrid from '@/components/MovieGrid/MovieGrid'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import MovieCardSkeleton from '@/components/MovieCard/MovieCardSkeleton'
 import ProfileCard from '@/components/ProfileCard/ProfileCard'
+import ProfileStats from '@/components/ProfileStats/ProfileStats'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 type Tab = 'watchlist' | 'seen'
@@ -24,6 +25,7 @@ export default function ProfilePage() {
   const [animationParent] = useAutoAnimate<HTMLDivElement>()
   const [selected, setSelected] = useState<Tab>('watchlist')
   const [sort, setSort] = useState<SortKey>('title')
+  const [genreFilter, setGenreFilter] = useState<string | null>(null)
   const { data: sessionData, status } = useSession()
 
   const profileData = api.user.query.useQuery(undefined, {
@@ -51,7 +53,17 @@ export default function ProfilePage() {
   const rated = movies.filter((movie) => movie.userRating)
   const watchList = movies.filter((movie) => !movie.userRating)
   const active = selected === 'seen' ? rated : watchList
-  const sorted = [...active].sort(sorters[sort])
+
+  // Genre chips reflect what's actually in the active tab
+  const genres = [
+    ...new Set(active.flatMap((movie) => movie.genres || [])),
+  ].sort()
+  const effectiveFilter =
+    genreFilter && genres.includes(genreFilter) ? genreFilter : null
+  const filtered = effectiveFilter
+    ? active.filter((movie) => (movie.genres || []).includes(effectiveFilter))
+    : active
+  const sorted = [...filtered].sort(sorters[sort])
   const isLoading = profileData.isLoading
 
   const tabs: { key: Tab; label: string; count: number }[] = [
@@ -67,7 +79,9 @@ export default function ProfilePage() {
         watchList={watchList}
       />
 
-      <div className="mb-8 flex flex-col items-center justify-between gap-4 sm:flex-row">
+      <ProfileStats movies={movies} />
+
+      <div className="mb-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
         {/* Segmented tabs */}
         <div className="inline-flex rounded-full border border-zinc-800 bg-zinc-900/70 p-1">
           {tabs.map((tab) => (
@@ -107,6 +121,37 @@ export default function ProfilePage() {
         </label>
       </div>
 
+      {/* Genre filter chips */}
+      {genres.length > 1 && (
+        <div className="mb-8 flex flex-wrap justify-center gap-2 sm:justify-start">
+          <button
+            onClick={() => setGenreFilter(null)}
+            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+              effectiveFilter === null
+                ? 'bg-gradient-to-br from-pink-500 to-red-600 text-white'
+                : 'border border-zinc-700 bg-zinc-900/70 text-zinc-400 hover:border-zinc-500 hover:text-white'
+            }`}
+          >
+            All
+          </button>
+          {genres.map((genre) => (
+            <button
+              key={genre}
+              onClick={() =>
+                setGenreFilter(effectiveFilter === genre ? null : genre)
+              }
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+                effectiveFilter === genre
+                  ? 'bg-gradient-to-br from-pink-500 to-red-600 text-white'
+                  : 'border border-zinc-700 bg-zinc-900/70 text-zinc-400 hover:border-zinc-500 hover:text-white'
+              }`}
+            >
+              {genre}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div ref={animationParent}>
         {isLoading ? (
           <MovieGrid
@@ -120,6 +165,15 @@ export default function ProfilePage() {
               <MovieCard key={movie.id} {...movie} />
             ))}
           />
+        ) : effectiveFilter ? (
+          <div className="py-16 text-center">
+            <p className="mb-3 text-xl text-zinc-300">
+              No {effectiveFilter} movies here yet.
+            </p>
+            <button className="btn-ghost" onClick={() => setGenreFilter(null)}>
+              Show all genres
+            </button>
+          </div>
         ) : (
           <div className="py-16 text-center">
             <p className="mb-3 text-xl text-zinc-300">

@@ -1,21 +1,61 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState } from 'react'
 import Image from 'next/image'
 import Balancer from 'react-wrap-balancer'
 import parse, { domToReact } from 'html-react-parser'
 import { useSession, signIn } from 'next-auth/react'
+import { HiOutlineShare, HiCheck } from 'react-icons/hi'
 
 import { api } from '@/utils/api'
 import { createMovieObj } from '@/utils/createMovieObj'
 import type { IMovieDetail } from './types'
 import StarRating from '@/components/StarRating/StarRating'
 import CastGrid from '../CastGrid/CastGrid'
+import Lightbox from '@/components/Lightbox/Lightbox'
 
 const formatRuntime = (minutes?: number | null) => {
   if (!minutes) return null
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
+const formatFullDate = (dateString?: string | null) => {
+  if (!dateString) return null
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+/** The showtime payload shape varies; pull out anything usable, defensively */
+const theaterName = (theater: any): string | null =>
+  theater?.name || theater?.theaterName || theater?.title || null
+
+const theaterShowtimes = (theater: any): string[] => {
+  const raw = theater?.showtimes || theater?.showTimes || []
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((showtime: any) => {
+      const value =
+        showtime?.dateTime || showtime?.startTime || showtime?.time || showtime
+      if (typeof value !== 'string') return null
+      const date = new Date(value)
+      if (!Number.isNaN(date.getTime())) {
+        return date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      }
+      // Already a display string like "7:30pm"
+      return /^[\d:apm\s.]+$/i.test(value) ? value : null
+    })
+    .filter((time: string | null): time is string => !!time)
+    .slice(0, 6)
 }
 
 const ScoreBadge = ({
@@ -53,6 +93,8 @@ const ScoreBadge = ({
 const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
   const { data: session } = useSession()
   const utils = api.useUtils()
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const invalidateWatchlist = () => {
     utils.movie.query.invalidate({ movieId: id })
@@ -73,12 +115,44 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
   const poster = movie.posterImage?.url || '/placeholderposter.png'
   const backdrop = movie.backgroundImage?.url || poster
   const year = movie.releaseDate ? String(movie.releaseDate).slice(0, 4) : null
+  const fullReleaseDate = formatFullDate(movie.releaseDate)
   const runtime = formatRuntime(movie.durationMinutes)
-  const gallery = (movie.images || []).slice(0, 8)
+  const gallery = (movie.images || []).filter((img: any) => img?.url)
   const theaters = movie.showtimeGroupings?.theaters || []
+  const namedTheaters = theaters.filter((theater: any) => theaterName(theater))
   const ticketsUrl = `https://www.fandango.com/search?q=${encodeURIComponent(
     movie.name
   )}`
+
+  const facts: { label: string; value: string | null }[] = [
+    { label: 'Release date', value: fullReleaseDate },
+    { label: 'Runtime', value: runtime },
+    { label: 'Director', value: movie.directedBy || null },
+    { label: 'Box office', value: movie.totalGross || null },
+    {
+      label: 'Rated',
+      value: movie.motionPictureRating?.code
+        ? [movie.motionPictureRating.code, movie.motionPictureRating.description]
+            .filter(Boolean)
+            .join(' — ')
+        : null,
+    },
+  ].filter((fact) => fact.value)
+
+  const handleShare = async () => {
+    const url = window.location.href
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: movie.name, url })
+        return
+      }
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* user dismissed the share sheet — nothing to do */
+    }
+  }
 
   const handleAddMovie = () => {
     addMovie.mutate({ movieData: createMovieObj(movie as IMovieDetail, id, genres) })
@@ -191,32 +265,53 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
               </p>
             )}
 
-            {/* Watchlist / rating actions */}
+            {/* Watchlist / rating / share actions */}
             <div className="mt-8">
-              {!session ? (
-                <button className="btn-brand" onClick={() => signIn()}>
-                  Sign in to add to watchlist &amp; rate
-                </button>
-              ) : (
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-zinc-400">Your rating:</span>
-                    <StarRating
-                      value={currentUserRating}
-                      onChange={handleSeenMovie}
-                    />
-                  </div>
-                  {onWatchlist ? (
-                    <button className="btn-ghost" onClick={handleRemoveMovie}>
-                      Remove from watchlist
-                    </button>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                {!session ? (
+                  <button className="btn-brand" onClick={() => signIn()}>
+                    Sign in to add to watchlist &amp; rate
+                  </button>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-zinc-400">
+                        Your rating:
+                      </span>
+                      <StarRating
+                        value={currentUserRating}
+                        onChange={handleSeenMovie}
+                      />
+                    </div>
+                    {onWatchlist ? (
+                      <button className="btn-ghost" onClick={handleRemoveMovie}>
+                        Remove from watchlist
+                      </button>
+                    ) : (
+                      <button className="btn-brand" onClick={handleAddMovie}>
+                        + Add to watchlist
+                      </button>
+                    )}
+                  </>
+                )}
+                <button
+                  className="btn-ghost"
+                  onClick={handleShare}
+                  aria-label="Share this movie"
+                >
+                  {copied ? (
+                    <>
+                      <HiCheck className="h-5 w-5 text-green-400" />
+                      Link copied!
+                    </>
                   ) : (
-                    <button className="btn-brand" onClick={handleAddMovie}>
-                      + Add to watchlist
-                    </button>
+                    <>
+                      <HiOutlineShare className="h-5 w-5" />
+                      Share
+                    </>
                   )}
-                </div>
-              )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -255,53 +350,121 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
           </section>
         )}
 
-        {/* Photo gallery */}
+        {/* Photo gallery — click any still to open the lightbox */}
         {gallery.length > 0 && (
           <section className="my-10">
-            <h3 className="section-heading mb-4">Photos</h3>
+            <h3 className="section-heading mb-4">
+              Photos{' '}
+              <span className="text-base font-normal text-zinc-500">
+                ({gallery.length})
+              </span>
+            </h3>
             <div className="hide-scrollbar edge-fade-x flex gap-4 overflow-x-auto pb-2">
               {gallery.map((img: any, idx: number) => (
-                <div
+                <button
                   key={idx}
-                  className="relative aspect-video h-40 shrink-0 overflow-hidden rounded-lg border border-zinc-800 sm:h-52"
+                  onClick={() => setLightboxIndex(idx)}
+                  aria-label={`View photo ${idx + 1} of ${gallery.length}`}
+                  className="group relative aspect-video h-40 shrink-0 overflow-hidden rounded-lg border border-zinc-800 transition hover:border-zinc-500 sm:h-52"
                 >
                   <Image
                     src={img.url}
                     fill
                     sizes="360px"
                     alt={`${movie.name} still ${idx + 1}`}
-                    className="object-cover"
+                    className="object-cover transition duration-300 group-hover:scale-105"
                   />
-                </div>
+                </button>
               ))}
             </div>
           </section>
+        )}
+
+        {lightboxIndex != null && (
+          <Lightbox
+            images={gallery}
+            startIndex={lightboxIndex}
+            altBase={movie.name}
+            onClose={() => setLightboxIndex(null)}
+          />
         )}
 
         {/* Cast & crew */}
         {movie.cast && <CastGrid cast={movie.cast} title="Cast" />}
         {movie.crew && <CastGrid cast={movie.crew} title="Crew" />}
 
+        {/* Movie facts */}
+        {facts.length > 0 && (
+          <section className="my-10">
+            <h3 className="section-heading mb-4">Details</h3>
+            <dl className="surface grid grid-cols-1 gap-x-8 gap-y-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+              {facts.map((fact) => (
+                <div key={fact.label}>
+                  <dt className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                    {fact.label}
+                  </dt>
+                  <dd className="mt-1 text-zinc-100">{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+
         {/* Where to watch */}
         {theaters.length > 0 && (
           <section className="my-10">
             <h3 className="section-heading mb-4">Where to watch</h3>
-            <div className="surface flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-zinc-300">
-                Playing in{' '}
-                <span className="font-semibold text-white">
-                  {theaters.length}
-                </span>{' '}
-                {theaters.length === 1 ? 'theater' : 'theaters'} near you
-              </p>
-              <a
-                href={ticketsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-brand"
-              >
-                Get tickets on Fandango
-              </a>
+            <div className="surface flex flex-col gap-4 p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-zinc-300">
+                  Playing in{' '}
+                  <span className="font-semibold text-white">
+                    {theaters.length}
+                  </span>{' '}
+                  {theaters.length === 1 ? 'theater' : 'theaters'} near you
+                </p>
+                <a
+                  href={ticketsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-brand"
+                >
+                  Get tickets on Fandango
+                </a>
+              </div>
+
+              {/* Theater list when the payload names them */}
+              {namedTheaters.length > 0 && (
+                <ul className="divide-y divide-zinc-800 border-t border-zinc-800">
+                  {namedTheaters.slice(0, 6).map((theater: any, idx: number) => {
+                    const times = theaterShowtimes(theater)
+                    return (
+                      <li
+                        key={idx}
+                        className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <p className="font-semibold text-white">
+                          {theaterName(theater)}
+                        </p>
+                        {times.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {times.map((time) => (
+                              <span key={time} className="chip text-xs">
+                                {time}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </li>
+                    )
+                  })}
+                  {namedTheaters.length > 6 && (
+                    <li className="py-3 text-sm text-zinc-500">
+                      + {namedTheaters.length - 6} more on Fandango
+                    </li>
+                  )}
+                </ul>
+              )}
             </div>
           </section>
         )}

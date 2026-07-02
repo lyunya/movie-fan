@@ -11,4 +11,6 @@ export interface MovieCardProps extends ComponentPropsWithRef<'div'> {
   tomatoMeter?: number | null;
   // The signed-in user's own star rating (DB watchlist items only)
   userRating?: number | null;
+  // When set, renders a Netflix-style giant numeral beside the poster
+  rank?: number;
 }
