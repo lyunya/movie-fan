@@ -44,22 +44,23 @@ const MovieCard: FC<MovieCardProps> = ({
   return (
     <Link
       href={`/movie/${emsVersionId}`}
-      className={`group block shrink-0 snap-start ${
-        rank ? 'flex w-48 items-end sm:w-56' : 'w-36 sm:w-44'
+      className={`group relative block shrink-0 snap-start ${
+        rank ? 'w-44 sm:w-52' : 'w-36 sm:w-44'
       }`}
     >
-      {/* Netflix-style giant rank numeral behind the poster */}
+      {/* Netflix-style giant rank numeral peeking out from behind the poster.
+          Absolutely positioned so it never contributes to the card's height. */}
       {rank && (
         <span
-          aria-label={`Ranked number ${rank}`}
-          className="-mr-4 select-none font-heading text-[6.5rem] font-black leading-[0.8] text-zinc-800 transition group-hover:text-zinc-700 sm:text-[8rem]"
+          aria-hidden
+          className="pointer-events-none absolute bottom-11 left-0 z-0 select-none font-heading text-[6rem] font-black leading-none text-zinc-800 transition group-hover:text-zinc-700 sm:bottom-12 sm:text-[7.5rem]"
           style={{ WebkitTextStroke: '2px rgb(236 72 153 / 0.35)' }}
         >
           {rank}
         </span>
       )}
 
-      <div className={rank ? 'relative z-10 w-36 sm:w-44' : undefined}>
+      <div className={rank ? 'relative z-10 ml-8' : undefined}>
         <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-lg transition duration-300 group-hover:border-zinc-600 group-hover:shadow-pink-900/20">
           <Image
             className="object-cover transition duration-300 group-hover:scale-105"

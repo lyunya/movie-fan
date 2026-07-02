@@ -53,7 +53,7 @@ const Hero: FC<HeroProps> = ({ movies }) => {
 
   return (
     <section
-      className="group/hero relative h-full overflow-hidden rounded-2xl"
+      className="group/hero relative overflow-hidden rounded-2xl"
       onMouseEnter={pauseIfHoverDevice}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
