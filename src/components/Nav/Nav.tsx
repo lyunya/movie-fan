@@ -6,53 +6,46 @@ import { useRouter } from 'next/router'
 
 const Nav: FC = () => {
   const router = useRouter()
-  const profilePage = router.pathname === '/profile'
+  const onProfilePage = router.pathname === '/profile'
   const { data: sessionData } = useSession()
 
   return (
-    <nav className="h-18 relative flex w-full items-center justify-between bg-black p-8">
+    <nav className="sticky top-0 z-50 flex w-full items-center justify-between border-b border-zinc-800/80 bg-black/70 px-4 py-4 backdrop-blur-md sm:px-8">
       <Link href="/">
-        <h1 className="bg-gradient-to-br from-pink-400 to-red-600 bg-clip-text font-heading text-4xl font-extrabold text-transparent sm:text-5xl lg:text-6xl">
+        <h1 className="gradient-text font-heading text-3xl font-extrabold sm:text-4xl lg:text-5xl">
           Movie Fan
         </h1>
       </Link>
-      <div className="flex gap-8">
-        {sessionData && profilePage ? (
-          <button
-            className="text-md bordered rounded bg-blue-500 py-2 px-4 font-heading text-white hover:bg-blue-600 sm:text-xl"
-            onClick={() => signOut({ callbackUrl: '/' })}
-          >
-            Sign Out
+      <div className="flex items-center gap-4">
+        {sessionData ? (
+          <>
+            {onProfilePage ? (
+              <button className="btn-ghost" onClick={() => signOut({ callbackUrl: '/' })}>
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                href="/profile"
+                className="rounded-full ring-2 ring-transparent transition hover:ring-pink-500"
+                aria-label="Go to your profile"
+              >
+                <Image
+                  src={sessionData.user?.image || '/avatar.png'}
+                  width={48}
+                  height={48}
+                  alt="Your profile avatar"
+                  className="h-12 w-12 rounded-full object-cover"
+                />
+              </Link>
+            )}
+          </>
+        ) : (
+          <button className="btn-brand" onClick={() => signIn()}>
+            Sign in
           </button>
-        ) : sessionData ? (
-          <Link href="/profile">
-            <Image
-              src={sessionData?.user?.image || '/avatar.png'}
-              width={70}
-              height={70}
-              alt="profile avatar"
-              className="h-18 w-18 rounded-full"
-            />
-          </Link>
-        ) : null}
-        {!sessionData && <AuthShowcase />}
+        )}
       </div>
     </nav>
-  )
-}
-
-const AuthShowcase: React.FC = () => {
-  const { data: sessionData } = useSession()
-
-  return (
-    <div className="flex flex-col items-center justify-center gap-4">
-      <button
-        className="text-md bordered rounded bg-blue-500 py-2 px-4 font-heading text-white hover:bg-blue-600 sm:text-xl"
-        onClick={sessionData ? () => signOut() : () => signIn()}
-      >
-        {sessionData ? 'Sign out' : 'Sign in'}
-      </button>
-    </div>
   )
 }
 
