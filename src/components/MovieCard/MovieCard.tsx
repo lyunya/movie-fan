@@ -7,10 +7,8 @@ const MovieCard: FC<MovieCardProps> = ({ name, posterImage, emsVersionId }) => {
   // posterImage is a string for watchlist items and an { url } object (whose
   // url may be missing) for API results
   const posterSrc =
-    (typeof posterImage === 'string'
-      ? posterImage
-      : // @ts-expect-error @typescript-eslint/ban-ts-comment
-        posterImage?.url) || '/placeholderposter.png'
+    (typeof posterImage === 'string' ? posterImage : posterImage?.url) ||
+    '/placeholderposter.png'
 
   return (
     <Link href={`/movie/${emsVersionId}`}>
