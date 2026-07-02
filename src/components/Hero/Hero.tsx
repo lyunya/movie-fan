@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import type { FC } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { FC, TouchEvent } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { HiChevronLeft, HiChevronRight, HiHeart, HiOutlineHeart } from 'react-icons/hi'
@@ -23,6 +23,8 @@ const Hero: FC<HeroProps> = ({ movies }) => {
   // Bumped on manual navigation so the auto-advance interval restarts and
   // doesn't fire right after a click
   const [restartKey, setRestartKey] = useState(0)
+  // Swipe-gesture tracking (see handleTouchStart/End below)
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
 
   const goTo = useCallback(
     (next: number) => {
@@ -51,11 +53,37 @@ const Hero: FC<HeroProps> = ({ movies }) => {
     if (window.matchMedia('(hover: hover)').matches) setPaused(true)
   }
 
+  // The arrow buttons only reveal on hover, so touch devices had no way to
+  // navigate besides waiting or tapping a dot — track a swipe gesture too.
+  // No touchmove/preventDefault: we only act on total displacement at
+  // touchend, so vertical page scrolling is never interfered with.
+  const SWIPE_THRESHOLD = 40
+
+  const handleTouchStart = (e: TouchEvent) => {
+    const touch = e.touches[0]
+    touchStart.current = { x: touch.clientX, y: touch.clientY }
+  }
+
+  const handleTouchEnd = (e: TouchEvent) => {
+    const start = touchStart.current
+    touchStart.current = null
+    if (!start) return
+    const touch = e.changedTouches[0]
+    const deltaX = touch.clientX - start.x
+    const deltaY = touch.clientY - start.y
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaX) < Math.abs(deltaY)) {
+      return
+    }
+    goTo(deltaX < 0 ? index + 1 : index - 1)
+  }
+
   return (
     <section
       className="group/hero relative overflow-hidden rounded-2xl"
       onMouseEnter={pauseIfHoverDevice}
       onMouseLeave={() => setPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       aria-roledescription="carousel"
       aria-label="Popular movies spotlight"
     >
