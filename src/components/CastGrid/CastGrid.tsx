@@ -1,19 +1,19 @@
-import type { FC } from "react"
-import CastCard from "../CastCard/CastCard"
-import type { CastGridProps } from "./types"
+import type { FC } from 'react'
+import CastCard from '../CastCard/CastCard'
+import type { CastGridProps } from './types'
 
-const CastGrid:FC<CastGridProps> = ({ cast }) => {
+const CastGrid: FC<CastGridProps> = ({ cast, title = 'Cast' }) => {
+  if (!cast?.length) return null
   return (
-    <div className="my-12 text-white lg:col-start-1 lg:col-end-5">
-      <>
-        <h3 className="mb-4 text-xl">Cast</h3>
-        <div className="md:grid-credit-cards mx-auto	grid auto-rows-fr grid-cols-2 gap-x-2 gap-y-4 sm:grid-cols-3 2xl:grid-cols-4">
-          {cast.map((castMember) => {
-            return <CastCard key={castMember.id} {...castMember} />
-          })}
-        </div>
-      </>
-    </div>
+    <section className="my-10 text-white">
+      <h3 className="section-heading mb-4">{title}</h3>
+      {/* Horizontal scroll on mobile, grid on larger screens */}
+      <div className="hide-scrollbar edge-fade-x flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-4 sm:gap-x-4 sm:gap-y-6 sm:overflow-visible lg:grid-cols-6">
+        {cast.map((castMember, idx) => (
+          <CastCard key={`${castMember.id}-${idx}`} {...castMember} />
+        ))}
+      </div>
+    </section>
   )
 }
 
