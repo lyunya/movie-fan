@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { MovieSchema } from '@/types/MovieSchema';
 import { z } from 'zod';
-import { createTRPCRouter, protectedProcedure, publicProcedure } from './../trpc';
+import { createTRPCRouter, protectedProcedure } from './../trpc';
 
 export const watchListItemRouter = createTRPCRouter({
   create: protectedProcedure.input(z.object({
@@ -47,9 +47,8 @@ export const watchListItemRouter = createTRPCRouter({
             },
           },
         })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message })
+      } catch (error) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to save movie to watchlist' })
       }
     }),
   delete: protectedProcedure.input(z.object({
@@ -66,19 +65,12 @@ export const watchListItemRouter = createTRPCRouter({
       }
     })
   }),
-  query: publicProcedure.input(z.object({
+  query: protectedProcedure.input(z.object({
     movieId: z.string()
   })).query(async ({ ctx, input }) => {
     const { prisma, session } = ctx;
-    const userId = session?.user?.id;
+    const userId = session.user.id;
     const { movieId } = input;
-
-    // Without a session there is no watchlist to look up. Returning early
-    // also keeps Prisma from dropping the undefined userId filter and
-    // matching other users' items.
-    if (!userId) {
-      return { movie: [] }
-    }
 
     const movie = await prisma.watchListItem.findMany({
       where: {

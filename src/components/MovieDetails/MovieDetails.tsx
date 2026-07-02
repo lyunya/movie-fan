@@ -3,7 +3,7 @@ import type { FC } from 'react'
 import type { IMovieDetail, MovieDetailProps } from './types'
 import Image from 'next/image'
 import Balancer from 'react-wrap-balancer'
-import parse from 'html-react-parser'
+import parse, { domToReact } from 'html-react-parser'
 import MovieSkeleton from './Skeleton'
 import { api } from '@/utils/api'
 import { signIn } from 'next-auth/react'
@@ -28,7 +28,11 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   const addMovie = api.movie.create.useMutation({
     onSuccess: invalidateWatchlist,
   })
-  const watchlistItem = api.movie.query.useQuery({ movieId: id })
+  // The query is a protected procedure, so only run it when signed in
+  const watchlistItem = api.movie.query.useQuery(
+    { movieId: id },
+    { enabled: !!sessionData }
+  )
   const removeMovie = api.movie.delete.useMutation({
     onSuccess: invalidateWatchlist,
   })
@@ -214,7 +218,13 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
       {!!movie?.tomatoRating?.consensus && (
         <div className="flex w-full">
           <Balancer className="mx-auto mb-8 text-xl text-white md:text-3xl xl:text-5xl">
-            {parse(movie.tomatoRating.consensus)}
+            {parse(movie.tomatoRating.consensus, {
+              replace(domNode: any) {
+                if (domNode.type === 'tag' && !['em', 'strong', 'b', 'i'].includes(domNode.name)) {
+                  return <>{domToReact(domNode.children || [])}</>
+                }
+              },
+            })}
           </Balancer>
         </div>
       )}

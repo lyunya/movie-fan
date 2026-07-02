@@ -1,4 +1,4 @@
-import { RAPID_API_HOST, FLIXSTER_API_NEWS_URL } from "@/data/Contstants"
+import { RAPID_API_HOST, FLIXSTER_API_NEWS_URL } from "@/data/Constants"
 
 const options = {
   method: 'GET',
