@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { FC } from 'react'
 import { HiChevronLeft, HiChevronRight } from 'react-icons/hi'

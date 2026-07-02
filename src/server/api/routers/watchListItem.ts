@@ -47,7 +47,7 @@ export const watchListItemRouter = createTRPCRouter({
             },
           },
         })
-      } catch (error) {
+      } catch {
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to save movie to watchlist' })
       }
     }),
