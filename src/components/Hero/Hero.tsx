@@ -61,14 +61,15 @@ const Hero: FC<HeroProps> = ({ movies }) => {
 
   const handleTouchStart = (e: TouchEvent) => {
     const touch = e.touches[0]
+    if (!touch) return
     touchStart.current = { x: touch.clientX, y: touch.clientY }
   }
 
   const handleTouchEnd = (e: TouchEvent) => {
     const start = touchStart.current
     touchStart.current = null
-    if (!start) return
     const touch = e.changedTouches[0]
+    if (!start || !touch) return
     const deltaX = touch.clientX - start.x
     const deltaY = touch.clientY - start.y
     if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaX) < Math.abs(deltaY)) {
