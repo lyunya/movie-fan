@@ -8,8 +8,11 @@ const options = {
 	}
 };
 
-export const getNews = async () => { 
+export const getNews = async () => {
   const res = await fetch(FLIXSTER_API_NEWS_URL, options)
+  if (!res.ok) {
+    throw new Error(`News request failed with status ${res.status}`)
+  }
   const data = await res.json()
   return data
 }
