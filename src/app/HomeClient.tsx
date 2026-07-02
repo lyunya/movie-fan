@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { keepPreviousData } from '@tanstack/react-query'
 import type { HomeData } from '@/types/main'
 import type { MovieCardProps } from '@/components/MovieCard/types'
@@ -40,6 +42,58 @@ const MovieRow = ({
           />
         ))}
       />
+    </section>
+  )
+}
+
+/**
+ * Compact poster strip that fills the space under the hero in the
+ * side-by-side layout (the News column is naturally taller). Desktop-only:
+ * on single-column mobile there's no gap to fill, and the full row for the
+ * same list already renders further down the page.
+ */
+const MiniStrip = ({
+  title,
+  movies,
+}: {
+  title: string
+  movies: MovieCardProps[]
+}) => {
+  if (!movies?.length) return null
+  return (
+    <section className="hidden lg:block">
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
+        <span className="gradient-text">{title}</span>
+      </h2>
+      <div className="hide-scrollbar flex gap-3 overflow-x-auto">
+        {movies.slice(0, 6).map((movie) => {
+          const posterSrc =
+            (typeof movie.posterImage === 'string'
+              ? movie.posterImage
+              : movie.posterImage?.url) || '/placeholderposter.png'
+          return (
+            <Link
+              key={movie.emsVersionId}
+              href={`/movie/${movie.emsVersionId}`}
+              title={movie.name}
+              className="group w-24 shrink-0"
+            >
+              <div className="relative aspect-[2/3] overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition duration-300 group-hover:border-zinc-600">
+                <Image
+                  src={posterSrc}
+                  fill
+                  sizes="96px"
+                  alt={`${movie.name} poster`}
+                  className="object-cover transition duration-300 group-hover:scale-105"
+                />
+              </div>
+              <p className="mt-1.5 truncate text-xs font-semibold text-zinc-300 transition group-hover:text-pink-400">
+                {movie.name}
+              </p>
+            </Link>
+          )
+        })}
+      </div>
     </section>
   )
 }
@@ -106,7 +160,16 @@ export default function HomeClient({ data }: { data: HomeData }) {
     <main className="pb-10">
       {!isSearching && (popular.length > 0 || hasNews) && (
         <div className="mx-auto grid max-w-screen-2xl grid-cols-1 items-start gap-6 px-4 py-6 sm:px-8 lg:grid-cols-2">
-          {popular.length > 0 && <Hero movies={popular.slice(0, 5)} />}
+          {popular.length > 0 && (
+            <div className="flex flex-col gap-6">
+              <Hero movies={popular.slice(0, 5)} />
+              {/* Fills the height difference against the taller News column */}
+              <MiniStrip
+                title={opening.length > 0 ? 'Opening this week' : 'Coming soon'}
+                movies={opening.length > 0 ? opening : upcoming}
+              />
+            </div>
+          )}
           {hasNews && <News newsStories={news} />}
         </div>
       )}
