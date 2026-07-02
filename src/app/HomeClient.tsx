@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { keepPreviousData } from '@tanstack/react-query'
 import type { HomeData } from '@/types/main'
 import type { MovieCardProps } from '@/components/MovieCard/types'
@@ -9,7 +9,7 @@ import MovieCard from '@/components/MovieCard/MovieCard'
 import MovieCardSkeleton from '@/components/MovieCard/MovieCardSkeleton'
 import Carousel from '@/components/Carousel/Carousel'
 import Hero from '@/components/Hero/Hero'
-import Search from '@/components/Search/Search'
+import Search, { saveRecentSearch } from '@/components/Search/Search'
 import News from '@/components/News/News'
 import SearchResults from '@/components/SearchResults/SearchResults'
 
@@ -19,9 +19,11 @@ import debounce from '@/utils/debounce'
 const MovieRow = ({
   title,
   movies,
+  ranked = false,
 }: {
   title: string
   movies: MovieCardProps[]
+  ranked?: boolean
 }) => {
   if (!movies?.length) return null
   return (
@@ -30,8 +32,12 @@ const MovieRow = ({
         <span className="gradient-text">{title}</span>
       </h2>
       <Carousel
-        movieCards={movies.map((movie) => (
-          <MovieCard key={movie.emsVersionId} {...movie} />
+        movieCards={movies.map((movie, idx) => (
+          <MovieCard
+            key={movie.emsVersionId}
+            {...movie}
+            rank={ranked && idx < 10 ? idx + 1 : undefined}
+          />
         ))}
       />
     </section>
@@ -39,6 +45,9 @@ const MovieRow = ({
 }
 
 export default function HomeClient({ data }: { data: HomeData }) {
+  // inputValue is what's in the box; query is the debounced value that
+  // actually drives the API request
+  const [inputValue, setInputValue] = useState('')
   const [query, setQuery] = useState('')
   const { popular, opening, upcoming, news } = data
 
@@ -58,6 +67,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
   ).current
 
   const handleQueryChange = (value: string) => {
+    setInputValue(value)
     const trimmed = value.trim()
     if (trimmed === '') {
       debouncedSetQuery.cancel()
@@ -67,24 +77,43 @@ export default function HomeClient({ data }: { data: HomeData }) {
     }
   }
 
+  // Deep link: /?q=Tom+Hanks searches immediately (cast cards link here)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q')
+    if (q?.trim()) {
+      setInputValue(q)
+      setQuery(q.trim())
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const isSearching = query.length > 0
   const results: MovieCardProps[] = searchQuery.data?.movies || []
   const showSkeletons = isSearching && searchQuery.isLoading
   const noResults = isSearching && searchQuery.isSuccess && results.length === 0
-  const featured = popular[0]
+
+  // Remember searches that actually found something
+  useEffect(() => {
+    if (isSearching && searchQuery.isSuccess && results.length > 0) {
+      saveRecentSearch(query)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, isSearching, searchQuery.isSuccess, results.length])
+
   const hasNews = (news?.length ?? 0) > 0
 
   return (
     <main className="pb-10">
-      {!isSearching && (featured || hasNews) && (
+      {!isSearching && (popular.length > 0 || hasNews) && (
         <div className="mx-auto grid max-w-screen-2xl grid-cols-1 items-start gap-6 px-4 py-6 sm:px-8 lg:grid-cols-2">
-          {featured && <Hero movie={featured} />}
+          {popular.length > 0 && <Hero movies={popular.slice(0, 5)} />}
           {hasNews && <News newsStories={news} />}
         </div>
       )}
 
       <div className="px-4 py-6 sm:px-8">
         <Search
+          value={inputValue}
           loading={searchQuery.isFetching}
           onQueryChange={handleQueryChange}
         />
@@ -139,7 +168,8 @@ export default function HomeClient({ data }: { data: HomeData }) {
         </section>
       ) : (
         <>
-          <MovieRow title="Popular" movies={popular} />
+          <MovieRow title="Top 10 today" movies={popular.slice(0, 10)} ranked />
+          <MovieRow title="Popular" movies={popular.slice(10)} />
           <MovieRow title="Opening this week" movies={opening} />
           <MovieRow title="Upcoming" movies={upcoming} />
         </>

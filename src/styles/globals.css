@@ -74,3 +74,27 @@
 .grid-credit-cards {
   grid-template-columns: repeat(auto-fit, 196px);
 }
+
+/* Confetti burst for a 5-star rating (StarRating). Each piece flies out to
+   its own --tx/--ty offset and fades. */
+.confetti-piece {
+  animation: confetti-fly 700ms ease-out forwards;
+}
+
+@keyframes confetti-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0.4) rotate(200deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece {
+    animation: none;
+    display: none;
+  }
+}
