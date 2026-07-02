@@ -3,8 +3,11 @@ import { fetchPopular, fetchUpcoming } from '@/server/flixster'
 import { fetchNews } from '@/server/news'
 import HomeClient from './HomeClient'
 
-// ISR: rebuild the home data at most once an hour
-export const revalidate = 3600
+// ISR: rebuild the home data at most twice a day. Kept long on purpose —
+// each rebuild spends against the Flixster API's monthly quota even with no
+// traffic (see src/server/flixster.ts). The per-fetch cache windows there
+// govern the finer-grained freshness of each section.
+export const revalidate = 43200
 
 export default async function Page() {
   // Each source falls back independently so one failing call can't blank the page

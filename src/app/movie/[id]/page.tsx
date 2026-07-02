@@ -4,7 +4,9 @@ import { notFound } from 'next/navigation'
 import { fetchDetails } from '@/server/flixster'
 import MovieDetails from '@/components/MovieDetails/MovieDetails'
 
-export const revalidate = 3600
+// Movie facts are effectively static — regenerate at most weekly to keep
+// Flixster API usage low (see src/server/flixster.ts).
+export const revalidate = 604800
 
 type PageProps = { params: Promise<{ id: string }> }
 
