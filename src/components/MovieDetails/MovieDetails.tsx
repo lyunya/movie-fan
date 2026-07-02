@@ -1,16 +1,14 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+'use client'
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { FC } from 'react'
-import type { IMovieDetail, MovieDetailProps } from './types'
 import Image from 'next/image'
 import Balancer from 'react-wrap-balancer'
 import parse, { domToReact } from 'html-react-parser'
-import MovieSkeleton from './Skeleton'
+import { useSession, signIn } from 'next-auth/react'
+
 import { api } from '@/utils/api'
-import { signIn } from 'next-auth/react'
-// @ts-ignore
-import ReactStars from 'react-rating-stars-component'
 import { createMovieObj } from '@/utils/createMovieObj'
+import type { IMovieDetail } from './types'
+import StarRating from '@/components/StarRating/StarRating'
 import CastGrid from '../CastGrid/CastGrid'
 
 const formatRuntime = (minutes?: number | null) => {
@@ -52,13 +50,9 @@ const ScoreBadge = ({
   )
 }
 
-const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
-  const { data, isLoading, isError } = api.flixster.details.useQuery(
-    { id },
-    // retry is capped so a failing lookup doesn't burn RapidAPI quota
-    { retry: 1 }
-  )
-  const utils = api.useContext()
+const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
+  const { data: session } = useSession()
+  const utils = api.useUtils()
 
   const invalidateWatchlist = () => {
     utils.movie.query.invalidate({ movieId: id })
@@ -66,36 +60,12 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
   }
 
   const addMovie = api.movie.create.useMutation({ onSuccess: invalidateWatchlist })
+  const removeMovie = api.movie.delete.useMutation({ onSuccess: invalidateWatchlist })
   // The query is a protected procedure, so only run it when signed in
   const watchlistItem = api.movie.query.useQuery(
     { movieId: id },
-    { enabled: !!sessionData }
+    { enabled: !!session }
   )
-  const removeMovie = api.movie.delete.useMutation({ onSuccess: invalidateWatchlist })
-
-  if (isError) {
-    return (
-      <div className="mx-auto max-w-md px-4 py-20 text-center text-white">
-        <p className="mb-2 text-2xl font-bold">Something went wrong</p>
-        <p className="text-zinc-400">
-          Please let Leon know at{' '}
-          <a className="text-pink-400 underline" href="mailto:leonmarbukh@gmail.com">
-            leonmarbukh@gmail.com
-          </a>
-        </p>
-      </div>
-    )
-  }
-
-  if (isLoading) return <MovieSkeleton />
-
-  const movie: any = data?.movie
-
-  if (!movie) {
-    return (
-      <p className="px-4 py-20 text-center text-4xl text-white">Movie not found</p>
-    )
-  }
 
   const genres: string[] = (movie.genres || []).map(
     (genre: { name: string }) => genre.name
@@ -124,15 +94,6 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
 
   const onWatchlist = !!watchlistItem.data?.movie.length
   const currentUserRating = watchlistItem.data?.movie[0]?.userRating || 0
-  const starsConfig = {
-    size: 32,
-    count: 5,
-    isHalf: false,
-    value: currentUserRating,
-    activeColor: '#facc15',
-    color: '#3f3f46',
-    onChange: (userRating: number) => handleSeenMovie(userRating),
-  }
 
   return (
     <article className="pb-24 text-white">
@@ -146,7 +107,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
             sizes="100vw"
             alt=""
             aria-hidden
-            className="object-cover object-top brightness-[0.3] blur-sm"
+            className="object-cover object-top blur-sm brightness-[0.3]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40" />
         </div>
@@ -232,7 +193,7 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
 
             {/* Watchlist / rating actions */}
             <div className="mt-8">
-              {!sessionData ? (
+              {!session ? (
                 <button className="btn-brand" onClick={() => signIn()}>
                   Sign in to add to watchlist &amp; rate
                 </button>
@@ -240,7 +201,10 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-zinc-400">Your rating:</span>
-                    <ReactStars key={currentUserRating} {...starsConfig} />
+                    <StarRating
+                      value={currentUserRating}
+                      onChange={handleSeenMovie}
+                    />
                   </div>
                   {onWatchlist ? (
                     <button className="btn-ghost" onClick={handleRemoveMovie}>
@@ -343,10 +307,9 @@ const MovieDetails: FC<MovieDetailProps> = ({ id, sessionData }) => {
         )}
       </div>
 
-      {/* Sticky mobile action bar — keeps the primary action reachable while
-          scrolling through cast, photos, and showtimes */}
+      {/* Sticky mobile action bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-black/90 p-3 backdrop-blur sm:hidden">
-        {!sessionData ? (
+        {!session ? (
           <button className="btn-brand w-full" onClick={() => signIn()}>
             Sign in to add &amp; rate
           </button>

@@ -38,3 +38,10 @@ export interface HomePageProps {
 export interface MoviePageProps {
   id: string;
 }
+
+export interface HomeData {
+  popular: MovieCardProps[];
+  opening: MovieCardProps[];
+  upcoming: MovieCardProps[];
+  news: NewStory[];
+}

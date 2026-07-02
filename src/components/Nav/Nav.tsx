@@ -1,12 +1,14 @@
+'use client'
+
 import type { FC } from 'react'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/router'
+import { usePathname } from 'next/navigation'
 
 const Nav: FC = () => {
-  const router = useRouter()
-  const onProfilePage = router.pathname === '/profile'
+  const pathname = usePathname()
+  const onProfilePage = pathname === '/profile'
   const { data: sessionData } = useSession()
 
   return (
@@ -18,27 +20,25 @@ const Nav: FC = () => {
       </Link>
       <div className="flex items-center gap-4">
         {sessionData ? (
-          <>
-            {onProfilePage ? (
-              <button className="btn-ghost" onClick={() => signOut({ callbackUrl: '/' })}>
-                Sign Out
-              </button>
-            ) : (
-              <Link
-                href="/profile"
-                className="rounded-full ring-2 ring-transparent transition hover:ring-pink-500"
-                aria-label="Go to your profile"
-              >
-                <Image
-                  src={sessionData.user?.image || '/avatar.png'}
-                  width={48}
-                  height={48}
-                  alt="Your profile avatar"
-                  className="h-12 w-12 rounded-full object-cover"
-                />
-              </Link>
-            )}
-          </>
+          onProfilePage ? (
+            <button className="btn-ghost" onClick={() => signOut({ callbackUrl: '/' })}>
+              Sign Out
+            </button>
+          ) : (
+            <Link
+              href="/profile"
+              className="rounded-full ring-2 ring-transparent transition hover:ring-pink-500"
+              aria-label="Go to your profile"
+            >
+              <Image
+                src={sessionData.user?.image || '/avatar.png'}
+                width={48}
+                height={48}
+                alt="Your profile avatar"
+                className="h-12 w-12 rounded-full object-cover"
+              />
+            </Link>
+          )
         ) : (
           <button className="btn-brand" onClick={() => signIn()}>
             Sign in

@@ -1,3 +1,5 @@
+'use client'
+
 import { useRef, useState } from 'react'
 import type { FC } from 'react'
 import type { SearchProps } from './types'
