@@ -14,7 +14,10 @@ const imageHosts = [
   'lh3.googleusercontent.com',
   'raw.githubusercontent.com',
   'avatars.githubusercontent.com',
+  // News RSS feed image hosts (see src/server/news.ts FEEDS)
   'variety.com',
+  'www.hollywoodreporter.com',
+  'deadline.com',
 ];
 
 /** @type {import("next").NextConfig} */

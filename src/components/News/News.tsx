@@ -13,10 +13,15 @@ const INITIAL_STORIES = 8
 
 const News: FC<NewsStoryProps> = ({ newsStories }) => {
   const [expanded, setExpanded] = useState(false)
+  // Feed images can 404 or come from a host we can't render — when one
+  // fails, fall back to the next story that has a working image
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const stories = (newsStories || []).filter(
     (story) => !story.title?.toLowerCase().includes('tv')
   )
-  const mainStory = stories.find((story) => story.mainImage?.url)
+  const mainStory = stories.find(
+    (story) => story.mainImage?.url && !failedImages.has(story.mainImage.url)
+  )
   const restStories = stories.filter((story) => story.id !== mainStory?.id)
   const visibleStories = expanded
     ? restStories
@@ -48,6 +53,11 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
                 sizes="(max-width: 1024px) 100vw, 600px"
                 alt="Featured news story"
                 className="object-cover transition duration-300 group-hover:scale-105"
+                onError={() =>
+                  setFailedImages(
+                    (prev) => new Set(prev).add(mainStory.mainImage.url)
+                  )
+                }
               />
             </div>
             <Balancer className="block p-4 text-lg font-semibold transition group-hover:text-pink-400 lg:text-xl">
