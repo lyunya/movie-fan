@@ -9,4 +9,3 @@ export const FLIXSTER_API_UPCOMING_URL = 'https://flixster.p.rapidapi.com/movies
 export const FLIXSTER_API_MOVIE_DETAILS_URL = 'https://flixster.p.rapidapi.com/movies/detail?emsVersionId='
 export const FLIXSTER_API_POPULAR_URL = 'https://flixster.p.rapidapi.com/movies/get-popularity'
 export const FLIXSTER_API_SEARCH_URL = 'https://flixster.p.rapidapi.com/search?query='
-export const FLIXSTER_API_NEWS_URL = 'https://flixster.p.rapidapi.com/news/list'

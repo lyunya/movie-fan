@@ -8,7 +8,6 @@ import {
   RAPID_API_HOST,
   FLIXSTER_API_POPULAR_URL,
   FLIXSTER_API_UPCOMING_URL,
-  FLIXSTER_API_NEWS_URL,
   FLIXSTER_API_SEARCH_URL,
   FLIXSTER_API_MOVIE_DETAILS_URL,
 } from '@/data/Constants'
@@ -38,11 +37,6 @@ export const fetchPopular = async () => {
 export const fetchUpcoming = async () => {
   const data = await fetchFlixster(FLIXSTER_API_UPCOMING_URL)
   return data?.data?.upcoming ?? []
-}
-
-export const fetchNews = async () => {
-  const data = await fetchFlixster(FLIXSTER_API_NEWS_URL)
-  return data?.data?.newsStories ?? []
 }
 
 export const fetchSearch = async (query: string) => {

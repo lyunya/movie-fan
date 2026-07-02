@@ -1,5 +1,6 @@
 import type { HomeData } from '@/types/main'
-import { fetchPopular, fetchUpcoming, fetchNews } from '@/server/flixster'
+import { fetchPopular, fetchUpcoming } from '@/server/flixster'
+import { fetchNews } from '@/server/news'
 import HomeClient from './HomeClient'
 
 // ISR: rebuild the home data at most once an hour

@@ -14,6 +14,7 @@ const imageHosts = [
   'lh3.googleusercontent.com',
   'raw.githubusercontent.com',
   'avatars.githubusercontent.com',
+  'variety.com',
 ];
 
 /** @type {import("next").NextConfig} */
