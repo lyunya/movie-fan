@@ -7,53 +7,61 @@ import parse from 'html-react-parser'
 import Balancer from 'react-wrap-balancer'
 
 const News: FC<NewsStoryProps> = ({ newsStories }) => {
-  if (!newsStories) return null
-
-  let news = newsStories.filter(
-    (story) => !story.title.toLowerCase()?.includes('tv' || 'television')
+  const stories = (newsStories || []).filter(
+    (story) => !story.title?.toLowerCase().includes('tv')
   )
-  const mainStory = news.find((story) => story.mainImage.url)
-  news = news.filter((story) => mainStory.id !== story.id)
+  const mainStory = stories.find((story) => story.mainImage?.url)
+  const restStories = stories
+    .filter((story) => story.id !== mainStory?.id)
+    .slice(0, 8)
+
+  // Nothing to show (the news feed is sometimes empty) — render nothing
+  // rather than a stray heading
+  if (stories.length === 0) return null
 
   return (
-    <section className="mx-auto text-white w-11/12 md:w-full md:pl-8">
-      <>
-        <h2 className="mb-4 self-start text-3xl md:text-5xl">News</h2>
-        <div className="sm:w-11/12 space-between grid grid-cols-1 xl:grid-cols-2">
-          {mainStory?.mainImage.url && (
-            <div className="col-span-full flex text-center xl:col-start-2">
-              <a href={mainStory.link} target="_blank" rel="noreferrer">
-                <Image
-                  src={mainStory?.mainImage.url}
-                  height={1200}
-                  width={1200}
-                  priority
-                  alt="news story"
-                />
-                <Balancer className="my-4 text-center text-2xl lg:text-3xl">
-                  {parse( mainStory.title )}
-                </Balancer>
-              </a>
+    <section className="mx-auto w-full max-w-screen-xl px-4 py-6 text-white sm:px-8">
+      <h2 className="section-heading mb-4">
+        <span className="gradient-text">News</span>
+      </h2>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {mainStory?.mainImage?.url && (
+          <a
+            href={mainStory.link}
+            target="_blank"
+            rel="noreferrer"
+            className="surface group block overflow-hidden"
+          >
+            <div className="relative aspect-video w-full overflow-hidden">
+              <Image
+                src={mainStory.mainImage.url}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 600px"
+                alt="Featured news story"
+                className="object-cover transition duration-300 group-hover:scale-105"
+              />
             </div>
-          )}
-          <div className="col-span-full	flex flex-col mx-1 xl:ml-12 xl:col-end-2 xl:row-start-1 w-fit">
-            {news.slice(0, 10).map((story: NewStory) => {
-              return (
-                <Balancer key={story.id} className='my-2'>
-                  <a
-                    className="text-lg lg:text-xl hover:text-blue-400"
-                    href={story.link}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {parse(story.title)}
-                  </a>
-                </Balancer>
-              )
-            })}
-          </div>
-        </div>
-      </>
+            <Balancer className="block p-4 text-lg font-semibold transition group-hover:text-pink-400 lg:text-xl">
+              {parse(mainStory.title)}
+            </Balancer>
+          </a>
+        )}
+        <ul className="surface flex flex-col divide-y divide-zinc-800">
+          {restStories.map((story: NewStory) => (
+            <li key={story.id}>
+              <a
+                className="block px-4 py-3 text-base transition hover:bg-zinc-800/60 hover:text-pink-400 lg:text-lg"
+                href={story.link}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Balancer>{parse(story.title)}</Balancer>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   )
 }

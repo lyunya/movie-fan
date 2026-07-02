@@ -1,10 +1,13 @@
-import type { FC } from 'react'
-import type { SearchResultsProps } from './types'
+import type { FC, ReactNode } from 'react'
 
-const SearchResults:FC<SearchResultsProps> = ({ movieCards }) => {
+interface SearchResultsProps {
+  children: ReactNode
+}
+
+const SearchResults: FC<SearchResultsProps> = ({ children }) => {
   return (
-    <div className='flex my-6 mx-auto w-full sm:w-11/12 justify-evenly flex-wrap	gap-8'>
-      {movieCards}
+    <div className="mx-auto flex w-full max-w-screen-xl flex-wrap justify-center gap-x-4 gap-y-8 px-4 sm:px-8">
+      {children}
     </div>
   )
 }

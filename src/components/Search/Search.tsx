@@ -1,31 +1,58 @@
+import { useRef, useState } from 'react'
 import type { FC } from 'react'
 import type { SearchProps } from './types'
+import { HiOutlineSearch, HiX } from 'react-icons/hi'
+import { CgSpinner } from 'react-icons/cg'
 
-const Search: FC<SearchProps> = ({ loading, handleSearch }) => {
+const Search: FC<SearchProps> = ({ loading, onQueryChange }) => {
+  const [value, setValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleChange = (next: string) => {
+    setValue(next)
+    onQueryChange(next)
+  }
+
+  const clear = () => {
+    setValue('')
+    onQueryChange('')
+    inputRef.current?.focus()
+  }
+
   return (
-    <>
+    <div className="relative mx-auto w-full max-w-2xl">
+      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
+        <HiOutlineSearch className="h-5 w-5" />
+      </span>
       <label className="sr-only" htmlFor="search">
-        Search For Movies
+        Search for movies
       </label>
       <input
-        className={`mx-auto my-6 max-h-14 min-w-[200px] max-w-[800px] cursor-pointer rounded py-2 pl-6 pr-6 pt-2 text-2xl xl:text-3xl ${
-          loading
-            ? 'animate-border bg-white bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 text-white  transition'
-            : ''
-        }
-        `}
-        onChange={(e) => handleSearch(e)}
+        ref={inputRef}
+        className="w-full rounded-full border border-zinc-700 bg-zinc-900/80 py-3 pl-12 pr-12 text-lg text-white placeholder-zinc-500 shadow-lg outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-500/40"
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
         id="search"
-        placeholder="Search for Movies"
+        placeholder="Search for movies"
         type="search"
+        autoComplete="off"
       />
-      <a className="clear" id="clearQuery" href="#">
-        <img
-          src="data:image/gif;base64,R0lGODlhAQABAID%2FAMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw%3D%3D"
-          alt=""
-        />
-      </a>
-    </>
+      <span className="absolute right-4 top-1/2 -translate-y-1/2">
+        {loading ? (
+          <CgSpinner className="h-5 w-5 animate-spin text-pink-500" />
+        ) : (
+          value && (
+            <button
+              onClick={clear}
+              aria-label="Clear search"
+              className="text-zinc-400 transition hover:text-white"
+            >
+              <HiX className="h-5 w-5" />
+            </button>
+          )
+        )}
+      </span>
+    </div>
   )
 }
 
