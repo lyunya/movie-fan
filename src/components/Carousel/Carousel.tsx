@@ -1,109 +1,57 @@
-import { useState, useRef, useEffect } from 'react';
-import type { FC } from 'react';
-import type { CarouselProps } from './types';
+import { useState, useRef, useEffect, useCallback } from 'react'
+import type { FC } from 'react'
+import { HiChevronLeft, HiChevronRight } from 'react-icons/hi'
+import type { CarouselProps } from './types'
 
 const Carousel: FC<CarouselProps> = ({ movieCards }) => {
-  const maxScrollWidth = useRef(0);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const carousel = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null)
+  const [atStart, setAtStart] = useState(true)
+  const [atEnd, setAtEnd] = useState(false)
 
-  const movePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prevState) => prevState - 1);
-    }
-  };
-
-  const moveNext = () => {
-    if (
-      carousel.current !== null &&
-      carousel.current.offsetWidth * currentIndex <= maxScrollWidth.current
-    ) {
-      setCurrentIndex((prevState) => prevState + 1);
-    }
-  };
-
-  const isDisabled = (direction: string) => {
-    if (direction === 'prev') {
-      return currentIndex <= 0;
-    }
-
-    if (direction === 'next' && carousel.current !== null) {
-      return (
-        carousel.current.offsetWidth * currentIndex >= maxScrollWidth.current
-      );
-    }
-
-    return false;
-  };
+  const updateEdges = useCallback(() => {
+    const el = scroller.current
+    if (!el) return
+    setAtStart(el.scrollLeft <= 8)
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 8)
+  }, [])
 
   useEffect(() => {
-    if (carousel !== null && carousel.current !== null) {
-      carousel.current.scrollLeft = carousel.current.offsetWidth * currentIndex;
-    }
-  }, [currentIndex]);
+    updateEdges()
+  }, [movieCards, updateEdges])
 
-  useEffect(() => {
-    maxScrollWidth.current = carousel.current
-      ? carousel.current.scrollWidth - carousel.current.offsetWidth
-      : 0;
-  }, []);
+  const scrollByAmount = (direction: number) => {
+    const el = scroller.current
+    if (!el) return
+    el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' })
+  }
 
   return (
-    <div className="carousel my-6 mx-auto w-10/12 sm:w-11/12 overflow-x-auto">
-      <div className="relative overflow-hidden w-full">
-        <div className="flex justify-between absolute top left w-full h-full">
-          <button
-            onClick={movePrev}
-            className="text-white w-10 h-full text-center opacity-75 hover:opacity-100 disabled:opacity-25 disabled:cursor-not-allowed z-10 p-0 m-0 transition-all ease-in-out duration-300"
-            disabled={isDisabled('prev')}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-20 -ml-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            <span className="sr-only">Prev</span>
-          </button>
-          <button
-            onClick={moveNext}
-            className="text-white w-10 h-full text-center opacity-75 hover:opacity-100 disabled:opacity-25 disabled:cursor-not-allowed z-10 p-0 m-0 transition-all ease-in-out duration-300"
-            disabled={isDisabled('next')}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-20 -ml-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-            <span className="sr-only">Next</span>
-          </button>
-        </div>
-        <div
-          ref={carousel}
-          className="relative flex overflow-x-auto gap-4 sm:gap-0 scroll-smooth snap-x snap-mandatory touch-pan-x z-0 w-full pb-4"
-        >
+    <div className="group relative mx-auto w-full max-w-screen-2xl px-4 sm:px-8">
+      <button
+        onClick={() => scrollByAmount(-1)}
+        aria-label="Scroll left"
+        className="absolute left-3 top-[38%] z-20 hidden -translate-y-1/2 rounded-full bg-black/70 p-2 text-white shadow-lg backdrop-blur transition hover:bg-black/90 disabled:pointer-events-none disabled:opacity-0 sm:group-hover:flex"
+        disabled={atStart}
+      >
+        <HiChevronLeft className="h-7 w-7" />
+      </button>
+      <button
+        onClick={() => scrollByAmount(1)}
+        aria-label="Scroll right"
+        className="absolute right-3 top-[38%] z-20 hidden -translate-y-1/2 rounded-full bg-black/70 p-2 text-white shadow-lg backdrop-blur transition hover:bg-black/90 disabled:pointer-events-none disabled:opacity-0 sm:group-hover:flex"
+        disabled={atEnd}
+      >
+        <HiChevronRight className="h-7 w-7" />
+      </button>
+      <div
+        ref={scroller}
+        onScroll={updateEdges}
+        className="hide-scrollbar edge-fade-x flex snap-x gap-4 overflow-x-auto scroll-smooth pb-2"
+      >
         {movieCards}
-        </div>
       </div>
     </div>
-  );
+  )
 }
 
 export default Carousel

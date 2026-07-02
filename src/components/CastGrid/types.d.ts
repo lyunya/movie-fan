@@ -1,6 +1,7 @@
 import type { ComponentPropsWithoutRef } from "react";
+import type { Image } from "@/types/main";
 
-export interface Credit { 
+export interface Credit {
   id: string
   role?: string
   name: string
@@ -10,4 +11,5 @@ export interface Credit {
 
 export interface CastGridProps extends ComponentPropsWithoutRef<'div'>{
   cast: Credit[]
+  title?: string
 }

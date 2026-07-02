@@ -3,28 +3,55 @@ import type { MovieCardProps } from './types'
 import Image from 'next/image'
 import Link from 'next/link'
 
-const MovieCard: FC<MovieCardProps> = ({ name, posterImage, emsVersionId }) => {
+const MovieCard: FC<MovieCardProps> = ({
+  name,
+  posterImage,
+  emsVersionId,
+  releaseDate,
+  tomatoRating,
+  tomatoMeter,
+  userRating,
+}) => {
   // posterImage is a string for watchlist items and an { url } object (whose
   // url may be missing) for API results
   const posterSrc =
     (typeof posterImage === 'string' ? posterImage : posterImage?.url) ||
     '/placeholderposter.png'
 
+  const year = releaseDate ? String(releaseDate).slice(0, 4) : null
+  // tomatoMeter comes from the DB, tomatoRating.tomatometer from the API
+  const score = tomatoMeter ?? tomatoRating?.tomatometer ?? null
+  const stars = typeof userRating === 'number' ? userRating : null
+
   return (
-    <Link href={`/movie/${emsVersionId}`}>
-      <div className="relative flex aspect-[489/725] h-72 max-h-96 max-w-[195] cursor-pointer snap-center flex-col items-center rounded-lg border bg-white sm:mx-4 sm:snap-start">
+    <Link
+      href={`/movie/${emsVersionId}`}
+      className="group block w-36 shrink-0 snap-start sm:w-44"
+    >
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-lg transition duration-300 group-hover:border-zinc-600 group-hover:shadow-pink-900/20">
         <Image
-          className="absolute inset-0 z-0 rounded-lg bg-cover bg-center"
+          className="object-cover transition duration-300 group-hover:scale-105"
           src={posterSrc}
           fill
-          sizes="(max-width: 768px) 75vw,
-            (max-width: 1200px) 25vw,
-            20vw"
-          alt="movie poster"
+          sizes="(max-width: 640px) 40vw, 180px"
+          alt={`${name} poster`}
         />
-        <div className="absolute inset-0	 z-10 grid h-full place-items-center items-center  rounded-lg p-4 text-white opacity-0 hover:from-cyan-500 hover:to-blue-500 md:hover:bg-gradient-to-r lg:hover:opacity-90">
-          <h2 className="mb-4 text-center text-3xl">{name}</h2>
-        </div>
+        {score != null && (
+          <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-xs font-semibold text-white backdrop-blur">
+            🍅 {score}%
+          </span>
+        )}
+        {stars != null && (
+          <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-xs font-semibold text-yellow-400 backdrop-blur">
+            ★ {stars}
+          </span>
+        )}
+      </div>
+      <div className="mt-2 px-0.5">
+        <p className="truncate font-heading text-sm font-semibold text-white transition group-hover:text-pink-400">
+          {name}
+        </p>
+        {year && <p className="text-xs text-zinc-500">{year}</p>}
       </div>
     </Link>
   )

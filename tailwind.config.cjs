@@ -6,21 +6,28 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
   ],
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     extend: {
       fontFamily: {
         heading: [`var(--font-overPass)`],
         body: [`var(--font-kronaOne)`],
       },
-      future: {
-        hoverOnlyWhenSupported: true,
+      colors: {
+        brand: {
+          pink: '#f472b6',
+          red: '#dc2626',
+        },
+        surface: {
+          DEFAULT: '#18181b',
+          light: '#27272a',
+          border: '#3f3f46',
+        },
       },
       backgroundImage: {
         divider: "url('/divider.svg')",
-      },
-      color: {
-        transparent: 'transparent',
-        current: 'currentColor',
       },
       animation: {
         border: 'border 4s ease infinite',

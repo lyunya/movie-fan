@@ -2,17 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  .login-btn {
-    @apply bg-slate-800 py-3 px-5 rounded-lg border-pink-600 border-2 hover:bg-slate-700 transition-all;
+@layer base {
+  body {
+    @apply bg-black text-white;
   }
-
 }
 
-    .grid-cards {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 400px));
+@layer components {
+  .login-btn {
+    @apply flex items-center justify-center gap-2 rounded-lg border-2 border-pink-600 bg-slate-800 py-3 px-5 transition-all hover:bg-slate-700;
   }
 
-  .grid-credit-cards {
-    grid-template-columns: repeat(auto-fit, 196px);
+  /* Primary call to action — the brand gradient in pill form */
+  .btn-brand {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-pink-500 to-red-600 px-6 py-3 font-heading font-semibold text-white shadow-lg shadow-red-900/30 transition hover:from-pink-400 hover:to-red-500 hover:shadow-red-900/50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50;
   }
+
+  /* Secondary action — outlined on a dark surface */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/60 px-6 py-3 font-heading font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800 active:scale-95;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1 text-sm text-zinc-200;
+  }
+
+  .surface {
+    @apply rounded-2xl border border-zinc-800 bg-zinc-900/70;
+  }
+
+  .section-heading {
+    @apply font-heading text-2xl font-bold text-white sm:text-3xl;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-br from-pink-400 to-red-600 bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  /* Softly fades the left/right edges of a horizontal scroll row */
+  .edge-fade-x {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 2.5%,
+      black 97.5%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 2.5%,
+      black 97.5%,
+      transparent
+    );
+  }
+}
+
+.grid-cards {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.grid-credit-cards {
+  grid-template-columns: repeat(auto-fit, 196px);
+}
