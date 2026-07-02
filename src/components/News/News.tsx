@@ -20,11 +20,11 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
   if (stories.length === 0) return null
 
   return (
-    <section className="mx-auto w-full max-w-screen-xl px-4 py-6 text-white sm:px-8">
+    <section className="flex w-full flex-col text-white">
       <h2 className="section-heading mb-4">
         <span className="gradient-text">News</span>
       </h2>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="flex flex-1 flex-col gap-6">
         {mainStory?.mainImage?.url && (
           <a
             href={mainStory.link}
@@ -47,7 +47,7 @@ const News: FC<NewsStoryProps> = ({ newsStories }) => {
             </Balancer>
           </a>
         )}
-        <ul className="surface flex flex-col divide-y divide-zinc-800">
+        <ul className="surface flex flex-1 flex-col divide-y divide-zinc-800">
           {restStories.map((story: NewStory) => (
             <li key={story.id}>
               <a
