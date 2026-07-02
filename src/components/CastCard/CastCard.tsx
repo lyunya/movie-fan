@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 import type { CastCardProps } from './types'
 import Image from 'next/image'
+import Link from 'next/link'
 
 const CastCard: FC<CastCardProps> = ({
   role,
@@ -30,19 +31,16 @@ const CastCard: FC<CastCardProps> = ({
     </>
   )
 
-  // The in-app search only matches movie titles, so a person's name would
-  // find nothing — link to Rotten Tomatoes' people search instead
+  // Clicking a person opens their in-app profile with a filmography
   if (name) {
     return (
-      <a
-        href={`https://www.rottentomatoes.com/search?search=${encodeURIComponent(name)}`}
-        target="_blank"
-        rel="noreferrer"
-        title={`Find ${name} on Rotten Tomatoes`}
+      <Link
+        href={`/person/${encodeURIComponent(name)}`}
+        title={`See movies with ${name}`}
         className="group w-28 shrink-0 text-center sm:w-full"
       >
         {card}
-      </a>
+      </Link>
     )
   }
 

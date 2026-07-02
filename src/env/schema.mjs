@@ -31,6 +31,9 @@ export const serverSchema = z.object({
   FACEBOOK_CLIENT_ID: z.string(),
   FACEBOOK_CLIENT_SECRET: z.string(),
   RAPID_API_KEY: z.string().min(1),
+  // Optional: powers the in-app people pages (/person/...). Without it,
+  // those pages degrade to an external Rotten Tomatoes search link.
+  TMDB_API_KEY: z.string().optional(),
 })
 
 /**
