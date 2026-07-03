@@ -7,6 +7,7 @@ export interface MovieDetailProps extends ComponentPropsWithRef<'div'> {
 }
 
 export interface IGenres {
+  id?: number
   name: string
 }
 

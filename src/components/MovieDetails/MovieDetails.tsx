@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import Balancer from 'react-wrap-balancer'
 import { useSession, signIn } from 'next-auth/react'
 import { HiOutlineShare, HiCheck } from 'react-icons/hi'
@@ -12,6 +13,7 @@ import StarRating from '@/components/StarRating/StarRating'
 import CastGrid from '../CastGrid/CastGrid'
 import Lightbox from '@/components/Lightbox/Lightbox'
 import MovieRow from '@/components/MovieRow/MovieRow'
+import { toSlug } from '@/utils/slug'
 
 const formatRuntime = (minutes?: number | null) => {
   if (!minutes) return null
@@ -211,17 +213,27 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
               )}
             </div>
 
-            {/* Genres */}
-            {genres.length > 0 && (
+            {/* Genres — each links to a browsable genre page when we have its id */}
+            {movie.genres.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
-                {genres.map((genre) => (
-                  <span
-                    key={genre}
-                    className="rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300"
-                  >
-                    {genre}
-                  </span>
-                ))}
+                {movie.genres.map((genre) =>
+                  genre.id ? (
+                    <Link
+                      key={genre.name}
+                      href={`/genre/${toSlug(genre.id, genre.name)}`}
+                      className="rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300 transition hover:bg-zinc-700 hover:text-white"
+                    >
+                      {genre.name}
+                    </Link>
+                  ) : (
+                    <span
+                      key={genre.name}
+                      className="rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300"
+                    >
+                      {genre.name}
+                    </span>
+                  )
+                )}
               </div>
             )}
 

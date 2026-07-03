@@ -216,6 +216,70 @@ export const fetchSearch = async (query: string): Promise<MovieCardData[]> => {
     .map(mapSummary)
 }
 
+/* -------------------------------------------------------------------- */
+/* Genres                                                                */
+/* -------------------------------------------------------------------- */
+
+export interface Genre {
+  id: number
+  name: string
+}
+
+/** The canonical TMDB movie-genre list (id → name). Rarely changes. */
+export const fetchGenreList = cache(async (): Promise<Genre[]> => {
+  const data = await tmdbFetch(
+    '/genre/movie/list',
+    { language: 'en-US' },
+    REVALIDATE.details
+  )
+  return (data?.genres ?? []).map((g: { id: number; name: string }) => ({
+    id: g.id,
+    name: g.name,
+  }))
+})
+
+/** Resolve a genre id to its display name, or null when unknown. */
+export const fetchGenreName = async (
+  genreId: number
+): Promise<string | null> => {
+  const list = await fetchGenreList().catch(() => [] as Genre[])
+  return list.find((g) => g.id === genreId)?.name ?? null
+}
+
+export interface GenrePage {
+  movies: MovieCardData[]
+  page: number
+  totalPages: number
+}
+
+/** A page of popular movies in a genre, via TMDB discover. */
+export const fetchGenre = async (
+  genreId: number,
+  page = 1
+): Promise<GenrePage> => {
+  const data = await tmdbFetch(
+    '/discover/movie',
+    {
+      with_genres: String(genreId),
+      sort_by: 'popularity.desc',
+      include_adult: 'false',
+      language: 'en-US',
+      region: 'US',
+      'vote_count.gte': '50',
+      page: String(page),
+    },
+    REVALIDATE.popular
+  )
+  return {
+    movies: (data?.results ?? [])
+      .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
+      .map(mapSummary),
+    page: data?.page ?? page,
+    // TMDB caps discover paging at 500
+    totalPages: Math.min(data?.total_pages ?? 1, 500),
+  }
+}
+
 interface TmdbCastMember {
   id: number
   name: string
@@ -338,7 +402,10 @@ export const fetchMovieDetails = cache(
       id: String(data.id),
       name: data.title,
       synopsis: data.overview || null,
-      genres: (data.genres ?? []).map((g: { name: string }) => ({ name: g.name })),
+      genres: (data.genres ?? []).map((g: { id: number; name: string }) => ({
+        id: g.id,
+        name: g.name,
+      })),
       posterImage: {
         url: data.poster_path ? `${TMDB_POSTER_URL}${data.poster_path}` : null,
       },
