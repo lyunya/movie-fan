@@ -6,6 +6,7 @@ import '@/styles/globals.css'
 import Providers from '@/trpc/Providers'
 import Nav from '@/components/Nav/Nav'
 import Footer from '@/components/Footer/Footer'
+import { getSiteUrl } from '@/server/siteUrl'
 
 const kronaOne = Krona_One({
   subsets: ['latin'],
@@ -20,9 +21,7 @@ const overpass = Overpass({
   weight: ['400', '500', '700', '800'],
 })
 
-const siteUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : 'http://localhost:3000'
+const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

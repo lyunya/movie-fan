@@ -39,6 +39,10 @@ model User {
   email         String?         @unique
   emailVerified DateTime?
   image         String?
+  // Opt-in: expose a read-only watchlist at /u/<id>
+  publicWatchlist Boolean       @default(false)
+  // Opt-in: email when a saved title newly hits a streaming service
+  streamAlerts    Boolean       @default(false)
   accounts      Account[]
   sessions      Session[]
   watchList     WatchListItem[]
@@ -69,6 +73,9 @@ model WatchListItem {
   releaseDate         String?
   motionPictureRating String?
   userRating          Int?
+  // Last-known streaming availability, so the alerts job can detect the
+  // transition from "not streaming" to "streaming" (see api/cron/availability)
+  hasStreaming        Boolean  @default(false)
   user                User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, movieId])

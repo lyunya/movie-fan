@@ -80,42 +80,39 @@ export interface Person {
   credits: PersonCredit[]
 }
 
-/**
- * Look up a person by name and return their profile with acting credits,
- * most-popular first. Returns null when nobody matches.
- */
-export const fetchPerson = async (name: string): Promise<Person | null> => {
-  const search = await tmdbFetch('/search/person', {
-    query: name,
-    include_adult: 'false',
-    language: 'en-US',
-    page: '1',
-  })
-  const match = search?.results?.[0]
-  if (!match?.id) return null
+interface TmdbPersonCredit {
+  id?: number
+  title?: string
+  character?: string
+  release_date?: string
+  poster_path?: string
+  popularity?: number
+}
 
-  const person = await tmdbFetch(`/person/${match.id}`, {
-    append_to_response: 'movie_credits',
-    language: 'en-US',
-  })
-  if (!person?.id) return null
+interface TmdbPerson {
+  id: number
+  name: string
+  biography?: string
+  birthday?: string
+  deathday?: string
+  place_of_birth?: string
+  known_for_department?: string
+  profile_path?: string
+  movie_credits?: { cast?: TmdbPersonCredit[] }
+}
 
+const buildPerson = (person: TmdbPerson): Person => {
   const seen = new Set<number>()
   const credits: PersonCredit[] = (person.movie_credits?.cast ?? [])
-    .filter((credit: { id?: number; title?: string }) => {
-      if (!credit.id || !credit.title || seen.has(credit.id)) return false
-      seen.add(credit.id)
-      return true
-    })
+    .filter(
+      (credit): credit is TmdbPersonCredit & { id: number; title: string } => {
+        if (!credit.id || !credit.title || seen.has(credit.id)) return false
+        seen.add(credit.id)
+        return true
+      }
+    )
     .map(
-      (credit: {
-        id: number
-        title: string
-        character?: string
-        release_date?: string
-        poster_path?: string
-        popularity?: number
-      }): PersonCredit => ({
+      (credit): PersonCredit => ({
         tmdbId: credit.id,
         title: credit.title,
         year: credit.release_date ? credit.release_date.slice(0, 4) : null,
@@ -126,9 +123,7 @@ export const fetchPerson = async (name: string): Promise<Person | null> => {
         popularity: credit.popularity ?? 0,
       })
     )
-    .sort(
-      (a: PersonCredit, b: PersonCredit) => b.popularity - a.popularity
-    )
+    .sort((a, b) => b.popularity - a.popularity)
 
   return {
     id: person.id,
@@ -143,6 +138,40 @@ export const fetchPerson = async (name: string): Promise<Person | null> => {
       : null,
     credits,
   }
+}
+
+/**
+ * Fetch a person by TMDB id with acting credits, most-popular first.
+ * Returns null when the id doesn't resolve.
+ */
+export const fetchPersonById = cache(
+  async (id: number): Promise<Person | null> => {
+    const person = await tmdbFetch(`/person/${id}`, {
+      append_to_response: 'movie_credits',
+      language: 'en-US',
+    }).catch(() => null)
+    if (!person?.id) return null
+    return buildPerson(person)
+  }
+)
+
+/**
+ * Look up a person by name (legacy path). Resolves the best search hit to an
+ * id and delegates to fetchPersonById. Prefer fetchPersonById when an id is
+ * available — it's one fewer request and never picks the wrong match.
+ */
+export const fetchPersonByName = async (
+  name: string
+): Promise<Person | null> => {
+  const search = await tmdbFetch('/search/person', {
+    query: name,
+    include_adult: 'false',
+    language: 'en-US',
+    page: '1',
+  }).catch(() => null)
+  const match = search?.results?.[0]
+  if (!match?.id) return null
+  return fetchPersonById(match.id)
 }
 
 /* -------------------------------------------------------------------- */
@@ -205,15 +234,185 @@ export const fetchUpcoming = async (): Promise<MovieCardData[]> => {
   return (data?.results ?? []).map(mapSummary)
 }
 
-export const fetchSearch = async (query: string): Promise<MovieCardData[]> => {
+export type TrendingWindow = 'day' | 'week'
+
+export const fetchTrending = async (
+  window: TrendingWindow = 'week'
+): Promise<MovieCardData[]> => {
   const data = await tmdbFetch(
-    '/search/movie',
-    { query, language: 'en-US', page: '1', include_adult: 'false' },
-    REVALIDATE.search
+    `/trending/movie/${window}`,
+    { language: 'en-US' },
+    REVALIDATE.nowPlaying
   )
   return (data?.results ?? [])
-    .filter((m: TmdbMovieSummary) => m?.id && m?.title)
+    .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
     .map(mapSummary)
+}
+
+export const fetchTopRated = async (): Promise<MovieCardData[]> => {
+  const data = await tmdbFetch(
+    '/movie/top_rated',
+    { language: 'en-US', page: '1', region: 'US' },
+    REVALIDATE.upcoming
+  )
+  return (data?.results ?? [])
+    .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
+    .map(mapSummary)
+}
+
+export interface PersonResult {
+  id: number
+  name: string
+  profileUrl: string | null
+  knownFor: string | null
+}
+
+export interface SearchResult {
+  movies: MovieCardData[]
+  people: PersonResult[]
+  page: number
+  totalPages: number
+  totalResults: number
+}
+
+interface TmdbMultiResult extends TmdbMovieSummary {
+  media_type?: string
+  name?: string
+  profile_path?: string | null
+  known_for?: { title?: string; name?: string }[]
+}
+
+const mapPerson = (p: TmdbMultiResult): PersonResult => ({
+  id: p.id,
+  name: p.name ?? '',
+  profileUrl: p.profile_path ? `${TMDB_PROFILE_URL}${p.profile_path}` : null,
+  knownFor: Array.isArray(p.known_for)
+    ? p.known_for
+        .map((k) => k.title || k.name)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(', ') || null
+    : null,
+})
+
+/**
+ * Multi-search across movies and people. Movies drive the paginated grid;
+ * people (mostly on page 1) surface as a strip linking to their filmography.
+ */
+export const fetchSearch = async (
+  query: string,
+  page = 1
+): Promise<SearchResult> => {
+  const data = await tmdbFetch(
+    '/search/multi',
+    { query, language: 'en-US', page: String(page), include_adult: 'false' },
+    REVALIDATE.search
+  )
+  const results: TmdbMultiResult[] = data?.results ?? []
+  const movies = results
+    .filter((r) => r.media_type === 'movie' && r.id && r.title && r.poster_path)
+    .map(mapSummary)
+  const people = results
+    .filter((r) => r.media_type === 'person' && r.id && r.name)
+    .slice(0, 12)
+    .map(mapPerson)
+  return {
+    movies,
+    people,
+    page: data?.page ?? page,
+    totalPages: Math.min(data?.total_pages ?? 1, 500),
+    totalResults: data?.total_results ?? movies.length,
+  }
+}
+
+/* -------------------------------------------------------------------- */
+/* Genres                                                                */
+/* -------------------------------------------------------------------- */
+
+export interface Genre {
+  id: number
+  name: string
+}
+
+/** The canonical TMDB movie-genre list (id → name). Rarely changes. */
+export const fetchGenreList = cache(async (): Promise<Genre[]> => {
+  const data = await tmdbFetch(
+    '/genre/movie/list',
+    { language: 'en-US' },
+    REVALIDATE.details
+  )
+  return (data?.genres ?? []).map((g: { id: number; name: string }) => ({
+    id: g.id,
+    name: g.name,
+  }))
+})
+
+/** Resolve a genre id to its display name, or null when unknown. */
+export const fetchGenreName = async (
+  genreId: number
+): Promise<string | null> => {
+  const list = await fetchGenreList().catch(() => [] as Genre[])
+  return list.find((g) => g.id === genreId)?.name ?? null
+}
+
+export interface GenrePage {
+  movies: MovieCardData[]
+  page: number
+  totalPages: number
+}
+
+/**
+ * Popular movies spanning any of the given genres (OR-matched). Powers the
+ * personalized "For you" row. Empty in → empty out.
+ */
+export const fetchDiscoverByGenres = async (
+  genreIds: number[]
+): Promise<MovieCardData[]> => {
+  if (genreIds.length === 0) return []
+  const data = await tmdbFetch(
+    '/discover/movie',
+    {
+      with_genres: genreIds.join('|'),
+      sort_by: 'popularity.desc',
+      include_adult: 'false',
+      language: 'en-US',
+      region: 'US',
+      'vote_count.gte': '200',
+      page: '1',
+    },
+    REVALIDATE.popular
+  )
+  return (data?.results ?? [])
+    .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
+    .map(mapSummary)
+}
+
+/** A page of popular movies in a genre, via TMDB discover. */
+export const fetchGenre = async (
+  genreId: number,
+  page = 1
+): Promise<GenrePage> => {
+  const data = await tmdbFetch(
+    '/discover/movie',
+    {
+      with_genres: String(genreId),
+      sort_by: 'popularity.desc',
+      include_adult: 'false',
+      language: 'en-US',
+      region: 'US',
+      'vote_count.gte': '50',
+      page: String(page),
+    },
+    REVALIDATE.popular
+  )
+  return {
+    movies: (data?.results ?? [])
+      .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
+      .map(mapSummary),
+    page: data?.page ?? page,
+    // TMDB caps discover paging at 500
+    totalPages: Math.min(data?.total_pages ?? 1, 500),
+  }
 }
 
 interface TmdbCastMember {
@@ -256,7 +455,8 @@ export const fetchMovieDetails = cache(
         `/movie/${encodeURIComponent(id)}`,
         {
           language: 'en-US',
-          append_to_response: 'credits,videos,images,release_dates,watch/providers',
+          append_to_response:
+            'credits,videos,images,release_dates,watch/providers,recommendations',
         },
         REVALIDATE.details
       )
@@ -310,6 +510,11 @@ export const fetchMovieDetails = cache(
         url: `${TMDB_BACKDROP_THUMB_URL}${b.file_path}`,
       }))
 
+    const similar: MovieCardData[] = (data.recommendations?.results ?? [])
+      .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
+      .slice(0, 12)
+      .map(mapSummary)
+
     const usProviders = data['watch/providers']?.results?.US
     const mapProviders = (
       list?: { provider_name: string; logo_path: string }[]
@@ -332,7 +537,10 @@ export const fetchMovieDetails = cache(
       id: String(data.id),
       name: data.title,
       synopsis: data.overview || null,
-      genres: (data.genres ?? []).map((g: { name: string }) => ({ name: g.name })),
+      genres: (data.genres ?? []).map((g: { id: number; name: string }) => ({
+        id: g.id,
+        name: g.name,
+      })),
       posterImage: {
         url: data.poster_path ? `${TMDB_POSTER_URL}${data.poster_path}` : null,
       },
@@ -365,6 +573,7 @@ export const fetchMovieDetails = cache(
       cast,
       crew,
       watchProviders,
+      similar,
     }
   }
 )

@@ -1,4 +1,5 @@
 import type { Credit } from '@/components/CastGrid/types'
+import type { MovieCardProps } from '@/components/MovieCard/types'
 
 export interface MovieDetailProps extends ComponentPropsWithRef<'div'> {
   id: string
@@ -6,6 +7,7 @@ export interface MovieDetailProps extends ComponentPropsWithRef<'div'> {
 }
 
 export interface IGenres {
+  id?: number
   name: string
 }
 
@@ -42,4 +44,5 @@ export interface IMovieDetail {
   cast: Credit[]
   crew: Credit[]
   watchProviders: IWatchProviders | null
+  similar: MovieCardProps[]
 }

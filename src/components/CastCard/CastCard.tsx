@@ -2,8 +2,10 @@ import type { FC } from 'react'
 import type { CastCardProps } from './types'
 import Image from 'next/image'
 import Link from 'next/link'
+import { toSlug } from '@/utils/slug'
 
 const CastCard: FC<CastCardProps> = ({
+  id,
   role,
   name,
   characterName,
@@ -31,11 +33,13 @@ const CastCard: FC<CastCardProps> = ({
     </>
   )
 
-  // Clicking a person opens their in-app profile with a filmography
+  // Clicking a person opens their in-app profile with a filmography.
+  // Link by TMDB id when we have one so the right person always resolves.
   if (name) {
+    const href = id ? `/person/${toSlug(id, name)}` : `/person/${encodeURIComponent(name)}`
     return (
       <Link
-        href={`/person/${encodeURIComponent(name)}`}
+        href={href}
         title={`See movies with ${name}`}
         className="group w-28 shrink-0 text-center sm:w-full"
       >

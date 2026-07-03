@@ -2,35 +2,56 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 
-import { fetchPerson, isTmdbConfigured } from '@/server/tmdb'
+import {
+  fetchPersonById,
+  fetchPersonByName,
+  isTmdbConfigured,
+} from '@/server/tmdb'
+import { parseIdFromSlug } from '@/utils/slug'
 
 // People data barely changes — rebuild at most daily
 export const revalidate = 86400
 
 const MAX_CREDITS = 18
 
-type PageProps = { params: Promise<{ name: string }> }
+type PageProps = { params: Promise<{ slug: string }> }
 
 const rtSearchUrl = (name: string) =>
   `https://www.rottentomatoes.com/search?search=${encodeURIComponent(name)}`
 
+// The slug is either `<id>-<name>` (new links from cast cards) or a bare name
+// (legacy URLs). Resolve by id when present — exact and one request cheaper.
+const resolvePerson = (slug: string) => {
+  const id = parseIdFromSlug(slug)
+  return id != null
+    ? fetchPersonById(id)
+    : fetchPersonByName(decodeURIComponent(slug))
+}
+
+// A readable name for metadata / the fallback UI before TMDB data loads:
+// strip a leading id from an `<id>-<name>` slug, else use the decoded slug.
+const displayNameFromSlug = (slug: string) => {
+  const decoded = decodeURIComponent(slug)
+  return decoded.replace(/^\d+-/, '').replace(/-/g, ' ')
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { name } = await params
-  const decoded = decodeURIComponent(name)
+  const { slug } = await params
+  const label = displayNameFromSlug(slug)
   return {
-    title: decoded,
-    description: `Movies featuring ${decoded}`,
+    title: label,
+    description: `Movies featuring ${label}`,
   }
 }
 
 export default async function PersonPage({ params }: PageProps) {
-  const { name } = await params
-  const decoded = decodeURIComponent(name)
+  const { slug } = await params
+  const decoded = displayNameFromSlug(slug)
 
   const person = isTmdbConfigured()
-    ? await fetchPerson(decoded).catch(() => null)
+    ? await resolvePerson(slug).catch(() => null)
     : null
 
   if (!person) {

@@ -43,5 +43,7 @@ export interface HomeData {
   popular: MovieCardProps[];
   opening: MovieCardProps[];
   upcoming: MovieCardProps[];
+  trending: MovieCardProps[];
+  topRated: MovieCardProps[];
   news: NewStory[];
 }

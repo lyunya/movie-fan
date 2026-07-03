@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import Balancer from 'react-wrap-balancer'
 import { useSession, signIn } from 'next-auth/react'
-import { HiOutlineShare, HiCheck } from 'react-icons/hi'
+import { HiOutlineShare, HiCheck, HiPlay } from 'react-icons/hi'
 
 import { api } from '@/utils/api'
 import { createMovieObj } from '@/utils/createMovieObj'
@@ -11,6 +12,8 @@ import type { IMovieDetail } from './types'
 import StarRating from '@/components/StarRating/StarRating'
 import CastGrid from '../CastGrid/CastGrid'
 import Lightbox from '@/components/Lightbox/Lightbox'
+import MovieRow from '@/components/MovieRow/MovieRow'
+import { toSlug } from '@/utils/slug'
 
 const formatRuntime = (minutes?: number | null) => {
   if (!minutes) return null
@@ -99,6 +102,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   const utils = api.useUtils()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
+  const [showTrailer, setShowTrailer] = useState(false)
 
   const invalidateWatchlist = () => {
     utils.movie.query.invalidate({ movieId: id })
@@ -210,17 +214,27 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
               )}
             </div>
 
-            {/* Genres */}
-            {genres.length > 0 && (
+            {/* Genres — each links to a browsable genre page when we have its id */}
+            {movie.genres.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
-                {genres.map((genre) => (
-                  <span
-                    key={genre}
-                    className="rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300"
-                  >
-                    {genre}
-                  </span>
-                ))}
+                {movie.genres.map((genre) =>
+                  genre.id ? (
+                    <Link
+                      key={genre.name}
+                      href={`/genre/${toSlug(genre.id, genre.name)}`}
+                      className="rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300 transition hover:bg-zinc-700 hover:text-white"
+                    >
+                      {genre.name}
+                    </Link>
+                  ) : (
+                    <span
+                      key={genre.name}
+                      className="rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300"
+                    >
+                      {genre.name}
+                    </span>
+                  )
+                )}
               </div>
             )}
 
@@ -302,17 +316,37 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
           </blockquote>
         )}
 
-        {/* Trailer */}
+        {/* Trailer — click-to-play facade so YouTube only loads on demand */}
         {movie.trailer?.url && (
           <section className="my-10">
             <h3 className="section-heading mb-4">Trailer</h3>
-            <iframe
-              src={movie.trailer.url}
-              title={`${movie.name} trailer`}
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              className="aspect-video w-full rounded-xl border border-zinc-800 bg-black"
-            />
+            {showTrailer ? (
+              <iframe
+                src={`${movie.trailer.url}?autoplay=1`}
+                title={`${movie.name} trailer`}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                className="aspect-video w-full rounded-xl border border-zinc-800 bg-black"
+              />
+            ) : (
+              <button
+                onClick={() => setShowTrailer(true)}
+                aria-label={`Play ${movie.name} trailer`}
+                className="group relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl border border-zinc-800 bg-black"
+              >
+                <Image
+                  src={backdrop}
+                  fill
+                  sizes="100vw"
+                  alt=""
+                  aria-hidden
+                  className="object-cover opacity-50 transition duration-300 group-hover:opacity-70"
+                />
+                <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-pink-600/90 text-white shadow-lg transition duration-300 group-hover:scale-110 group-hover:bg-pink-500">
+                  <HiPlay className="h-8 w-8 translate-x-0.5" />
+                </span>
+              </button>
+            )}
           </section>
         )}
 
@@ -404,6 +438,13 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
         )}
       </div>
 
+      {/* More like this — full-bleed carousel outside the padded container */}
+      {movie.similar?.length > 0 && (
+        <div className="mt-2">
+          <MovieRow title="More like this" movies={movie.similar} />
+        </div>
+      )}
+
       {/* Sticky mobile action bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-black/90 p-3 backdrop-blur sm:hidden">
         {!session ? (
@@ -411,9 +452,23 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
             Sign in to add &amp; rate
           </button>
         ) : onWatchlist ? (
-          <button className="btn-ghost w-full" onClick={handleRemoveMovie}>
-            Remove from watchlist
-          </button>
+          // On the watchlist: rate inline (left) and remove (right)
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-400">Rate</span>
+              <StarRating
+                value={currentUserRating}
+                onChange={handleSeenMovie}
+                size={26}
+              />
+            </div>
+            <button
+              className="btn-ghost !px-4 !py-2 !text-sm"
+              onClick={handleRemoveMovie}
+            >
+              Remove
+            </button>
+          </div>
         ) : (
           <button className="btn-brand w-full" onClick={handleAddMovie}>
             + Add to watchlist

@@ -1,5 +1,12 @@
+import { Suspense } from 'react'
 import type { HomeData } from '@/types/main'
-import { fetchPopular, fetchNowPlaying, fetchUpcoming } from '@/server/tmdb'
+import {
+  fetchPopular,
+  fetchNowPlaying,
+  fetchUpcoming,
+  fetchTrending,
+  fetchTopRated,
+} from '@/server/tmdb'
 import { fetchNews } from '@/server/news'
 import HomeClient from './HomeClient'
 
@@ -9,14 +16,24 @@ export const revalidate = 21600
 
 export default async function Page() {
   // Each source falls back independently so one failing call can't blank the page
-  const [popularRes, nowPlayingRes, upcomingRes, newsRes] = await Promise.allSettled([
-    fetchPopular(),
-    fetchNowPlaying(),
-    fetchUpcoming(),
-    fetchNews(),
-  ])
+  const [popularRes, nowPlayingRes, upcomingRes, trendingRes, topRatedRes, newsRes] =
+    await Promise.allSettled([
+      fetchPopular(),
+      fetchNowPlaying(),
+      fetchUpcoming(),
+      fetchTrending('week'),
+      fetchTopRated(),
+      fetchNews(),
+    ])
 
-  for (const result of [popularRes, nowPlayingRes, upcomingRes, newsRes]) {
+  for (const result of [
+    popularRes,
+    nowPlayingRes,
+    upcomingRes,
+    trendingRes,
+    topRatedRes,
+    newsRes,
+  ]) {
     if (result.status === 'rejected') console.error(result.reason)
   }
 
@@ -24,8 +41,15 @@ export default async function Page() {
     popular: popularRes.status === 'fulfilled' ? popularRes.value : [],
     opening: nowPlayingRes.status === 'fulfilled' ? nowPlayingRes.value : [],
     upcoming: upcomingRes.status === 'fulfilled' ? upcomingRes.value : [],
+    trending: trendingRes.status === 'fulfilled' ? trendingRes.value : [],
+    topRated: topRatedRes.status === 'fulfilled' ? topRatedRes.value : [],
     news: newsRes.status === 'fulfilled' ? newsRes.value : [],
   }
 
-  return <HomeClient data={data} />
+  // useSearchParams in HomeClient requires a Suspense boundary
+  return (
+    <Suspense>
+      <HomeClient data={data} />
+    </Suspense>
+  )
 }

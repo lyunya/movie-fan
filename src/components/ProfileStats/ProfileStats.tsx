@@ -9,10 +9,10 @@
  */
 import type { FC } from 'react'
 import type { WatchListItem } from '@prisma/client'
+import { computeTasteStats } from '@/utils/profileStats'
 
 const YOU_COLOR = '#ec4899'
 const CRITICS_COLOR = '#0284c7'
-const MAX_GENRE_BARS = 6
 
 interface ProfileStatsProps {
   movies: WatchListItem[]
@@ -26,64 +26,28 @@ const formatHours = (minutes: number) => {
 const ProfileStats: FC<ProfileStatsProps> = ({ movies }) => {
   if (movies.length === 0) return null
 
-  const rated = movies.filter((movie) => movie.userRating)
-
-  // Favorite genres across everything saved
-  const genreCounts = new Map<string, number>()
-  for (const movie of movies) {
-    for (const genre of movie.genres || []) {
-      genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1)
-    }
-  }
-  const rankedGenres = [...genreCounts.entries()].sort((a, b) => b[1] - a[1])
-  const topGenres = rankedGenres.slice(0, MAX_GENRE_BARS)
-  const otherCount = rankedGenres
-    .slice(MAX_GENRE_BARS)
-    .reduce((sum, [, count]) => sum + count, 0)
-  const maxGenreCount = topGenres[0]?.[1] ?? 0
-
-  // Hours watched: runtimes of everything rated as seen
-  const minutesWatched = rated.reduce(
-    (sum, movie) => sum + (movie.durationMinutes || 0),
-    0
-  )
-
-  // You vs the critics — both on a 0–100 scale (stars are 1–5)
-  const comparable = rated.filter((movie) => movie.tomatoMeter != null)
-  const yourAvg =
-    comparable.length > 0
-      ? Math.round(
-          (comparable.reduce((sum, movie) => sum + (movie.userRating || 0), 0) /
-            comparable.length) *
-            20
-        )
-      : null
-  const criticsAvg =
-    comparable.length > 0
-      ? Math.round(
-          comparable.reduce((sum, movie) => sum + (movie.tomatoMeter || 0), 0) /
-            comparable.length
-        )
-      : null
-  const delta = yourAvg != null && criticsAvg != null ? yourAvg - criticsAvg : null
-
-  // Most-watched director among rated movies
-  const directorCounts = new Map<string, number>()
-  for (const movie of rated) {
-    const director = movie.directedBy?.trim()
-    if (director) {
-      directorCounts.set(director, (directorCounts.get(director) || 0) + 1)
-    }
-  }
-  const topDirector = [...directorCounts.entries()].sort(
-    (a, b) => b[1] - a[1]
-  )[0]
+  const {
+    ratedCount,
+    minutesWatched,
+    topGenres,
+    otherGenreCount: otherCount,
+    maxGenreCount,
+    yourAvg,
+    criticsAvg,
+    delta,
+    comparableCount,
+    topDirector,
+    ratingCounts,
+    maxRatingCount,
+    topDecades,
+    maxDecadeCount,
+  } = computeTasteStats(movies)
 
   const statTiles = [
     minutesWatched > 0 && {
       label: 'Hours watched',
       value: formatHours(minutesWatched),
-      detail: `${rated.length} ${rated.length === 1 ? 'movie' : 'movies'} rated`,
+      detail: `${ratedCount} ${ratedCount === 1 ? 'movie' : 'movies'} rated`,
     },
     delta != null && {
       label: 'You vs critics',
@@ -223,9 +187,87 @@ const ProfileStats: FC<ProfileStatsProps> = ({ movies }) => {
               ))}
             </ul>
             <p className="mt-3 text-xs text-zinc-500">
-              Across {comparable.length} rated{' '}
-              {comparable.length === 1 ? 'movie' : 'movies'} with a TMDB score
+              Across {comparableCount} rated{' '}
+              {comparableCount === 1 ? 'movie' : 'movies'} with a TMDB score
             </p>
+          </div>
+        )}
+
+        {/* Your ratings — distribution of 1–5 star scores */}
+        {ratedCount > 0 && (
+          <div className="surface p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Your ratings
+            </p>
+            <ul className="mt-3 flex flex-col gap-2.5">
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = ratingCounts[star - 1] ?? 0
+                return (
+                  <li
+                    key={star}
+                    className="flex items-center gap-3"
+                    title={`${star} star${star === 1 ? '' : 's'} — ${count} ${count === 1 ? 'movie' : 'movies'}`}
+                  >
+                    <span className="w-10 shrink-0 text-sm tabular-nums text-yellow-400">
+                      {star}★
+                    </span>
+                    <span className="relative h-3 flex-1 overflow-hidden rounded-full bg-zinc-800">
+                      <span
+                        className="absolute inset-y-0 left-0 rounded-full"
+                        style={{
+                          width: `${
+                            maxRatingCount > 0
+                              ? Math.max(
+                                  (count / maxRatingCount) * 100,
+                                  count > 0 ? 6 : 0
+                                )
+                              : 0
+                          }%`,
+                          backgroundColor: YOU_COLOR,
+                        }}
+                      />
+                    </span>
+                    <span className="w-6 shrink-0 text-right text-sm tabular-nums text-zinc-400">
+                      {count}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+
+        {/* Favorite decades — by release year of rated movies */}
+        {topDecades.length > 0 && (
+          <div className="surface p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Favorite decades
+            </p>
+            <ul className="mt-3 flex flex-col gap-2.5">
+              {topDecades.map(([decade, count]) => (
+                <li
+                  key={decade}
+                  className="flex items-center gap-3"
+                  title={`${decade}s — ${count} ${count === 1 ? 'movie' : 'movies'}`}
+                >
+                  <span className="w-16 shrink-0 text-sm tabular-nums text-zinc-300">
+                    {decade}s
+                  </span>
+                  <span className="relative h-3 flex-1 overflow-hidden rounded-full bg-zinc-800">
+                    <span
+                      className="absolute inset-y-0 left-0 rounded-full"
+                      style={{
+                        width: `${Math.max((count / maxDecadeCount) * 100, 6)}%`,
+                        backgroundColor: YOU_COLOR,
+                      }}
+                    />
+                  </span>
+                  <span className="w-6 shrink-0 text-right text-sm tabular-nums text-zinc-400">
+                    {count}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

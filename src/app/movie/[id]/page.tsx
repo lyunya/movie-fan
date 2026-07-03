@@ -32,5 +32,45 @@ export default async function MoviePage({ params }: PageProps) {
   const { id } = await params
   const movie = await fetchMovieDetails(id).catch(() => null)
   if (!movie) notFound()
-  return <MovieDetails id={id} movie={movie} />
+
+  // Schema.org Movie markup so search engines can render a rich result
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Movie',
+    name: movie.name,
+    ...(movie.posterImage?.url ? { image: movie.posterImage.url } : {}),
+    ...(movie.synopsis ? { description: movie.synopsis } : {}),
+    ...(movie.releaseDate ? { datePublished: movie.releaseDate } : {}),
+    ...(movie.genres.length
+      ? { genre: movie.genres.map((genre) => genre.name) }
+      : {}),
+    ...(movie.directedBy
+      ? {
+          director: movie.directedBy
+            .split(',')
+            .map((name) => ({ '@type': 'Person', name: name.trim() })),
+        }
+      : {}),
+    ...(movie.tomatoMeter != null && movie.voteCount
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: (movie.tomatoMeter / 10).toFixed(1),
+            bestRating: 10,
+            worstRating: 0,
+            ratingCount: movie.voteCount,
+          },
+        }
+      : {}),
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <MovieDetails id={id} movie={movie} />
+    </>
+  )
 }
