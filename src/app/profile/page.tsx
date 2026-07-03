@@ -33,7 +33,24 @@ export default function ProfilePage() {
   })
 
   if (status === 'loading') {
-    return <p className="py-20 text-center text-xl text-zinc-400">Loading…</p>
+    return (
+      <div className="mx-auto w-11/12 max-w-screen-xl pb-16">
+        <div className="my-8 h-32 animate-pulse rounded-2xl border border-zinc-800 bg-zinc-900/70" />
+        <div className="mb-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="h-28 animate-pulse rounded-2xl border border-zinc-800 bg-zinc-900/70"
+            />
+          ))}
+        </div>
+        <MovieGrid
+          movieCards={Array.from({ length: 6 }).map((_, idx) => (
+            <MovieCardSkeleton key={idx} />
+          ))}
+        />
+      </div>
+    )
   }
 
   if (!sessionData) {

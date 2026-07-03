@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import parse from 'html-react-parser'
 import Balancer from 'react-wrap-balancer'
 import { keepPreviousData } from '@tanstack/react-query'
@@ -11,43 +12,16 @@ import type { MovieCardProps } from '@/components/MovieCard/types'
 
 import MovieCard from '@/components/MovieCard/MovieCard'
 import MovieCardSkeleton from '@/components/MovieCard/MovieCardSkeleton'
-import Carousel from '@/components/Carousel/Carousel'
+import MovieRow from '@/components/MovieRow/MovieRow'
 import Hero from '@/components/Hero/Hero'
 import Search, { saveRecentSearch } from '@/components/Search/Search'
 import News from '@/components/News/News'
 import SearchResults from '@/components/SearchResults/SearchResults'
 
 import { api } from '@/utils/api'
+import { getPosterSrc } from '@/utils/getPosterSrc'
 import debounce from '@/utils/debounce'
 import { partitionNews, INITIAL_HEADLINES } from '@/utils/news'
-
-const MovieRow = ({
-  title,
-  movies,
-  ranked = false,
-}: {
-  title: string
-  movies: MovieCardProps[]
-  ranked?: boolean
-}) => {
-  if (!movies?.length) return null
-  return (
-    <section className="py-4">
-      <h2 className="section-heading mx-auto max-w-screen-2xl px-4 pb-3 sm:px-8">
-        <span className="gradient-text">{title}</span>
-      </h2>
-      <Carousel
-        movieCards={movies.map((movie, idx) => (
-          <MovieCard
-            key={movie.emsVersionId}
-            {...movie}
-            rank={ranked && idx < 10 ? idx + 1 : undefined}
-          />
-        ))}
-      />
-    </section>
-  )
-}
 
 /**
  * Compact poster strip that fills the space under the hero in the
@@ -70,10 +44,7 @@ const MiniStrip = ({
       </h2>
       <div className="hide-scrollbar flex gap-3 overflow-x-auto">
         {movies.slice(0, 6).map((movie) => {
-          const posterSrc =
-            (typeof movie.posterImage === 'string'
-              ? movie.posterImage
-              : movie.posterImage?.url) || '/placeholderposter.png'
+          const posterSrc = getPosterSrc(movie.posterImage)
           return (
             <Link
               key={movie.emsVersionId}
@@ -167,15 +138,18 @@ export default function HomeClient({ data }: { data: HomeData }) {
     }
   }
 
-  // Deep link: /?q=Tom+Hanks searches immediately (cast cards link here)
+  // Deep link: /?q=Batman searches immediately. Driven by useSearchParams so
+  // it reacts when the Nav search routes here while already on the home page
+  // (and so browser back/forward restore the query).
+  const searchParams = useSearchParams()
+  const urlQuery = searchParams.get('q') ?? ''
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get('q')
-    if (q?.trim()) {
-      setInputValue(q)
-      setQuery(q.trim())
+    const trimmed = urlQuery.trim()
+    if (trimmed) {
+      setInputValue(urlQuery)
+      setQuery(trimmed)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [urlQuery])
 
   const isSearching = query.length > 0
   const results: MovieCardProps[] = searchQuery.data?.movies || []

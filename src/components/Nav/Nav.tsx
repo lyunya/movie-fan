@@ -6,6 +6,7 @@ import { signIn, signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { HiOutlineUser, HiOutlineLogout } from 'react-icons/hi'
+import NavSearch from './NavSearch'
 
 const Nav: FC = () => {
   const { data: sessionData } = useSession()
@@ -36,7 +37,8 @@ const Nav: FC = () => {
           Movie Fan
         </h1>
       </Link>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <NavSearch />
         {sessionData ? (
           <div className="relative" ref={menuRef}>
             <button

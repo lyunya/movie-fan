@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { HomeData } from '@/types/main'
 import { fetchPopular, fetchNowPlaying, fetchUpcoming } from '@/server/tmdb'
 import { fetchNews } from '@/server/news'
@@ -27,5 +28,10 @@ export default async function Page() {
     news: newsRes.status === 'fulfilled' ? newsRes.value : [],
   }
 
-  return <HomeClient data={data} />
+  // useSearchParams in HomeClient requires a Suspense boundary
+  return (
+    <Suspense>
+      <HomeClient data={data} />
+    </Suspense>
+  )
 }
