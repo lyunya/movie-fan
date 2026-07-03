@@ -7,9 +7,6 @@
 
 const imageHosts = [
   'image.tmdb.org',
-  'resizing.flixster.com',
-  'flxt.tmsimg.com',
-  'images.fandango.com',
   'prd-rteditorial.s3.us-west-2.amazonaws.com',
   'lh3.googleusercontent.com',
   'raw.githubusercontent.com',

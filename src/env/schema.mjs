@@ -30,10 +30,10 @@ export const serverSchema = z.object({
   EMAIL_FROM: z.string(),
   FACEBOOK_CLIENT_ID: z.string(),
   FACEBOOK_CLIENT_SECRET: z.string(),
-  RAPID_API_KEY: z.string().min(1),
-  // Optional: powers the in-app people pages (/person/...). Without it,
-  // those pages degrade to an external Rotten Tomatoes search link.
-  TMDB_API_KEY: z.string().optional(),
+  // Powers all movie/person data (search, details, cast, people pages).
+  // A v3 api key or v4 read access token from
+  // https://www.themoviedb.org/settings/api
+  TMDB_API_KEY: z.string().min(1),
 })
 
 /**
