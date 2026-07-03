@@ -19,6 +19,7 @@ const row = (over: Partial<WatchListItem>): WatchListItem => ({
   releaseDate: null,
   motionPictureRating: null,
   userRating: null,
+  hasStreaming: false,
   ...over,
 })
 

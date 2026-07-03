@@ -31,6 +31,7 @@ const optimisticRow = (movieId: string): WatchListItem => ({
   releaseDate: null,
   motionPictureRating: null,
   userRating: null,
+  hasStreaming: false,
 })
 
 export const useWatchlist = () => {

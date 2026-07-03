@@ -10,6 +10,7 @@ import MovieCard from '@/components/MovieCard/MovieCard'
 import MovieCardSkeleton from '@/components/MovieCard/MovieCardSkeleton'
 import ProfileCard from '@/components/ProfileCard/ProfileCard'
 import ProfileStats from '@/components/ProfileStats/ProfileStats'
+import ProfileSettings from '@/components/ProfileSettings/ProfileSettings'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { HiOutlineDownload } from 'react-icons/hi'
 import { toWatchlistCsv } from '@/utils/watchlistCsv'
@@ -110,6 +111,14 @@ export default function ProfilePage() {
       />
 
       <ProfileStats movies={movies} />
+
+      {profileData.data?.user && (
+        <ProfileSettings
+          userId={profileData.data.user.id}
+          isPublic={profileData.data.user.publicWatchlist}
+          alertsEnabled={profileData.data.user.streamAlerts}
+        />
+      )}
 
       <div className="mb-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
         {/* Segmented tabs */}
