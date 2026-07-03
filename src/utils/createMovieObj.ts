@@ -6,7 +6,7 @@ export const createMovieObj = (movie: IMovieDetail, id: string, genres: string[]
       movieId: id,
       name: movie.name,
       synopsis: movie.synopsis ?? null,
-      consensus: movie.tomatoRating?.consensus || null,
+      consensus: movie.consensus ?? null,
       // Defensive fallbacks: quickAdd builds this object server-side from a raw
       // API payload, where any of these fields can be absent
       durationMinutes: movie.durationMinutes ?? 0,
@@ -15,7 +15,7 @@ export const createMovieObj = (movie: IMovieDetail, id: string, genres: string[]
       genres: genres,
       emsVersionId: movie.emsVersionId || id,
       posterImage: movie.posterImage?.url ?? '',
-      tomatoMeter: movie.tomatoRating?.tomatometer || null,
+      tomatoMeter: movie.tomatoMeter ?? null,
       totalGross: movie.totalGross ?? null,
       motionPictureRating: movie.motionPictureRating?.code || 'Not Rated',
       userRating: userRating,

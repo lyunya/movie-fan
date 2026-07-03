@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { MovieSchema } from '@/types/MovieSchema';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from './../trpc';
-import { fetchDetails } from '@/server/flixster';
+import { fetchMovieDetails } from '@/server/tmdb';
 import { createMovieObj } from '@/utils/createMovieObj';
 import type { IMovieDetail } from '@/components/MovieDetails/types';
 
@@ -18,9 +18,9 @@ export const watchListItemRouter = createTRPCRouter({
       const { prisma, session } = ctx;
       const userId = session.user.id;
 
-      const movie = (await fetchDetails(input.movieId).catch(() => null)) as
-        | IMovieDetail
-        | null;
+      const movie = (await fetchMovieDetails(input.movieId).catch(
+        () => null
+      )) as IMovieDetail | null;
       if (!movie) {
         throw new TRPCError({
           code: 'NOT_FOUND',

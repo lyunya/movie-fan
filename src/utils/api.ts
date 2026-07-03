@@ -11,5 +11,5 @@ export const api = createTRPCReact<AppRouter>()
 
 /** Inference helper for inputs: RouterInputs['movie']['create'] */
 export type RouterInputs = inferRouterInputs<AppRouter>
-/** Inference helper for outputs: RouterOutputs['flixster']['details'] */
+/** Inference helper for outputs: RouterOutputs['tmdb']['details'] */
 export type RouterOutputs = inferRouterOutputs<AppRouter>

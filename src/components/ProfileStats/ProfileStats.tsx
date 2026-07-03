@@ -90,10 +90,10 @@ const ProfileStats: FC<ProfileStatsProps> = ({ movies }) => {
       value: delta === 0 ? 'Even' : `${delta > 0 ? '+' : ''}${delta}%`,
       detail:
         delta === 0
-          ? 'You agree with the critics'
+          ? 'You agree with TMDB users'
           : delta > 0
-            ? 'More generous than critics 🍿'
-            : 'Tougher than the critics 🧐',
+            ? 'More generous than TMDB users 🍿'
+            : 'Tougher than TMDB users 🧐',
     },
     topDirector && {
       label: 'Top director',
@@ -191,7 +191,7 @@ const ProfileStats: FC<ProfileStatsProps> = ({ movies }) => {
             <ul className="mt-3 flex flex-col gap-3">
               {[
                 { label: 'You', value: yourAvg, color: YOU_COLOR },
-                { label: 'Critics', value: criticsAvg, color: CRITICS_COLOR },
+                { label: 'TMDB users', value: criticsAvg, color: CRITICS_COLOR },
               ].map((row) => (
                 <li key={row.label}>
                   <div className="mb-1 flex items-center justify-between text-sm">
@@ -224,7 +224,7 @@ const ProfileStats: FC<ProfileStatsProps> = ({ movies }) => {
             </ul>
             <p className="mt-3 text-xs text-zinc-500">
               Across {comparable.length} rated{' '}
-              {comparable.length === 1 ? 'movie' : 'movies'} with a Tomatometer
+              {comparable.length === 1 ? 'movie' : 'movies'} with a TMDB score
             </p>
           </div>
         )}

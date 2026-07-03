@@ -143,7 +143,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
 
   // React Query keys the request on the debounced query, so stale responses
   // can't overwrite newer ones and errors don't escape as unhandled rejections
-  const searchQuery = api.flixster.search.useQuery(
+  const searchQuery = api.tmdb.search.useQuery(
     { query },
     {
       enabled: query.length > 0,
