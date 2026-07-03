@@ -256,7 +256,8 @@ export const fetchMovieDetails = cache(
         `/movie/${encodeURIComponent(id)}`,
         {
           language: 'en-US',
-          append_to_response: 'credits,videos,images,release_dates,watch/providers',
+          append_to_response:
+            'credits,videos,images,release_dates,watch/providers,recommendations',
         },
         REVALIDATE.details
       )
@@ -309,6 +310,11 @@ export const fetchMovieDetails = cache(
       .map((b: { file_path: string }) => ({
         url: `${TMDB_BACKDROP_THUMB_URL}${b.file_path}`,
       }))
+
+    const similar: MovieCardData[] = (data.recommendations?.results ?? [])
+      .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
+      .slice(0, 12)
+      .map(mapSummary)
 
     const usProviders = data['watch/providers']?.results?.US
     const mapProviders = (
@@ -365,6 +371,7 @@ export const fetchMovieDetails = cache(
       cast,
       crew,
       watchProviders,
+      similar,
     }
   }
 )

@@ -11,6 +11,7 @@ import type { IMovieDetail } from './types'
 import StarRating from '@/components/StarRating/StarRating'
 import CastGrid from '../CastGrid/CastGrid'
 import Lightbox from '@/components/Lightbox/Lightbox'
+import MovieRow from '@/components/MovieRow/MovieRow'
 
 const formatRuntime = (minutes?: number | null) => {
   if (!minutes) return null
@@ -403,6 +404,13 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
           </section>
         )}
       </div>
+
+      {/* More like this — full-bleed carousel outside the padded container */}
+      {movie.similar?.length > 0 && (
+        <div className="mt-2">
+          <MovieRow title="More like this" movies={movie.similar} />
+        </div>
+      )}
 
       {/* Sticky mobile action bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-black/90 p-3 backdrop-blur sm:hidden">
