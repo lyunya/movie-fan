@@ -11,6 +11,8 @@ import MovieCardSkeleton from '@/components/MovieCard/MovieCardSkeleton'
 import ProfileCard from '@/components/ProfileCard/ProfileCard'
 import ProfileStats from '@/components/ProfileStats/ProfileStats'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import { HiOutlineDownload } from 'react-icons/hi'
+import { toWatchlistCsv } from '@/utils/watchlistCsv'
 
 type Tab = 'watchlist' | 'seen'
 type SortKey = 'title' | 'rating' | 'tomato'
@@ -83,6 +85,17 @@ export default function ProfilePage() {
   const sorted = [...filtered].sort(sorters[sort])
   const isLoading = profileData.isLoading
 
+  const handleExport = () => {
+    const csv = toWatchlistCsv(movies)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'movie-fan-watchlist.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   const tabs: { key: Tab; label: string; count: number }[] = [
     { key: 'watchlist', label: 'Watchlist', count: watchList.length },
     { key: 'seen', label: 'Seen', count: rated.length },
@@ -123,19 +136,35 @@ export default function ProfilePage() {
           ))}
         </div>
 
-        {/* Sort */}
-        <label className="flex items-center gap-2 text-sm text-zinc-400">
-          Sort by
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-white outline-none focus:border-pink-500"
-          >
-            <option value="title">Title (A–Z)</option>
-            {selected === 'seen' && <option value="rating">Your rating</option>}
-            <option value="tomato">TMDB score</option>
-          </select>
-        </label>
+        <div className="flex items-center gap-3">
+          {/* Sort */}
+          <label className="flex items-center gap-2 text-sm text-zinc-400">
+            Sort by
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-white outline-none focus:border-pink-500"
+            >
+              <option value="title">Title (A–Z)</option>
+              {selected === 'seen' && (
+                <option value="rating">Your rating</option>
+              )}
+              <option value="tomato">TMDB score</option>
+            </select>
+          </label>
+
+          {/* Export the whole collection as a Letterboxd-importable CSV */}
+          {movies.length > 0 && (
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              title="Download your watchlist and ratings as CSV"
+            >
+              <HiOutlineDownload className="h-4 w-4" />
+              Export CSV
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Genre filter chips */}
