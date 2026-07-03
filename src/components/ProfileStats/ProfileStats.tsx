@@ -9,10 +9,10 @@
  */
 import type { FC } from 'react'
 import type { WatchListItem } from '@prisma/client'
+import { computeTasteStats } from '@/utils/profileStats'
 
 const YOU_COLOR = '#ec4899'
 const CRITICS_COLOR = '#0284c7'
-const MAX_GENRE_BARS = 6
 
 interface ProfileStatsProps {
   movies: WatchListItem[]
@@ -26,86 +26,28 @@ const formatHours = (minutes: number) => {
 const ProfileStats: FC<ProfileStatsProps> = ({ movies }) => {
   if (movies.length === 0) return null
 
-  const rated = movies.filter((movie) => movie.userRating)
-
-  // Favorite genres across everything saved
-  const genreCounts = new Map<string, number>()
-  for (const movie of movies) {
-    for (const genre of movie.genres || []) {
-      genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1)
-    }
-  }
-  const rankedGenres = [...genreCounts.entries()].sort((a, b) => b[1] - a[1])
-  const topGenres = rankedGenres.slice(0, MAX_GENRE_BARS)
-  const otherCount = rankedGenres
-    .slice(MAX_GENRE_BARS)
-    .reduce((sum, [, count]) => sum + count, 0)
-  const maxGenreCount = topGenres[0]?.[1] ?? 0
-
-  // Hours watched: runtimes of everything rated as seen
-  const minutesWatched = rated.reduce(
-    (sum, movie) => sum + (movie.durationMinutes || 0),
-    0
-  )
-
-  // You vs the critics — both on a 0–100 scale (stars are 1–5)
-  const comparable = rated.filter((movie) => movie.tomatoMeter != null)
-  const yourAvg =
-    comparable.length > 0
-      ? Math.round(
-          (comparable.reduce((sum, movie) => sum + (movie.userRating || 0), 0) /
-            comparable.length) *
-            20
-        )
-      : null
-  const criticsAvg =
-    comparable.length > 0
-      ? Math.round(
-          comparable.reduce((sum, movie) => sum + (movie.tomatoMeter || 0), 0) /
-            comparable.length
-        )
-      : null
-  const delta = yourAvg != null && criticsAvg != null ? yourAvg - criticsAvg : null
-
-  // Most-watched director among rated movies
-  const directorCounts = new Map<string, number>()
-  for (const movie of rated) {
-    const director = movie.directedBy?.trim()
-    if (director) {
-      directorCounts.set(director, (directorCounts.get(director) || 0) + 1)
-    }
-  }
-  const topDirector = [...directorCounts.entries()].sort(
-    (a, b) => b[1] - a[1]
-  )[0]
-
-  // Star-rating distribution (1–5) across rated movies
-  const ratingCounts = [1, 2, 3, 4, 5].map(
-    (star) => rated.filter((movie) => movie.userRating === star).length
-  )
-  const maxRatingCount = Math.max(...ratingCounts, 0)
-
-  // Which decades the user actually watches, by release year of rated movies
-  const decadeCounts = new Map<number, number>()
-  for (const movie of rated) {
-    const year = movie.releaseDate
-      ? Number(String(movie.releaseDate).slice(0, 4))
-      : NaN
-    if (!Number.isNaN(year) && year > 1900) {
-      const decade = Math.floor(year / 10) * 10
-      decadeCounts.set(decade, (decadeCounts.get(decade) || 0) + 1)
-    }
-  }
-  const topDecades = [...decadeCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-  const maxDecadeCount = topDecades[0]?.[1] ?? 0
+  const {
+    ratedCount,
+    minutesWatched,
+    topGenres,
+    otherGenreCount: otherCount,
+    maxGenreCount,
+    yourAvg,
+    criticsAvg,
+    delta,
+    comparableCount,
+    topDirector,
+    ratingCounts,
+    maxRatingCount,
+    topDecades,
+    maxDecadeCount,
+  } = computeTasteStats(movies)
 
   const statTiles = [
     minutesWatched > 0 && {
       label: 'Hours watched',
       value: formatHours(minutesWatched),
-      detail: `${rated.length} ${rated.length === 1 ? 'movie' : 'movies'} rated`,
+      detail: `${ratedCount} ${ratedCount === 1 ? 'movie' : 'movies'} rated`,
     },
     delta != null && {
       label: 'You vs critics',
@@ -245,14 +187,14 @@ const ProfileStats: FC<ProfileStatsProps> = ({ movies }) => {
               ))}
             </ul>
             <p className="mt-3 text-xs text-zinc-500">
-              Across {comparable.length} rated{' '}
-              {comparable.length === 1 ? 'movie' : 'movies'} with a TMDB score
+              Across {comparableCount} rated{' '}
+              {comparableCount === 1 ? 'movie' : 'movies'} with a TMDB score
             </p>
           </div>
         )}
 
         {/* Your ratings — distribution of 1–5 star scores */}
-        {rated.length > 0 && (
+        {ratedCount > 0 && (
           <div className="surface p-5">
             <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
               Your ratings
