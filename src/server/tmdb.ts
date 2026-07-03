@@ -335,6 +335,32 @@ export interface GenrePage {
   totalPages: number
 }
 
+/**
+ * Popular movies spanning any of the given genres (OR-matched). Powers the
+ * personalized "For you" row. Empty in → empty out.
+ */
+export const fetchDiscoverByGenres = async (
+  genreIds: number[]
+): Promise<MovieCardData[]> => {
+  if (genreIds.length === 0) return []
+  const data = await tmdbFetch(
+    '/discover/movie',
+    {
+      with_genres: genreIds.join('|'),
+      sort_by: 'popularity.desc',
+      include_adult: 'false',
+      language: 'en-US',
+      region: 'US',
+      'vote_count.gte': '200',
+      page: '1',
+    },
+    REVALIDATE.popular
+  )
+  return (data?.results ?? [])
+    .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
+    .map(mapSummary)
+}
+
 /** A page of popular movies in a genre, via TMDB discover. */
 export const fetchGenre = async (
   genreId: number,

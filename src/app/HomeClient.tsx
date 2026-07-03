@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { CgSpinner } from 'react-icons/cg'
 import parse from 'html-react-parser'
 import Balancer from 'react-wrap-balancer'
@@ -112,6 +113,14 @@ export default function HomeClient({ data }: { data: HomeData }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const utils = api.useUtils()
+  const { status: sessionStatus } = useSession()
+
+  // Personalized row for signed-in users with a watchlist. Renders nothing
+  // (MovieRow returns null) for signed-out users or empty watchlists.
+  const forYou = api.tmdb.forYou.useQuery(undefined, {
+    enabled: sessionStatus === 'authenticated',
+    staleTime: 60_000,
+  })
 
   // inputValue is what's in the box; query is the debounced value that
   // actually drives the API request
@@ -353,6 +362,15 @@ export default function HomeClient({ data }: { data: HomeData }) {
         </section>
       ) : (
         <>
+          <MovieRow
+            title="For you"
+            movies={forYou.data?.movies ?? []}
+            subtitle={
+              forYou.data?.topGenre
+                ? `Because you save ${forYou.data.topGenre} movies`
+                : undefined
+            }
+          />
           <MovieRow title="Top 10 today" movies={popular.slice(0, 10)} ranked />
           <MovieRow title="Popular" movies={popular.slice(10)} />
           <MovieRow title="Opening this week" movies={opening} />
