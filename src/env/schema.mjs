@@ -34,6 +34,10 @@ export const serverSchema = z.object({
   // A v3 api key or v4 read access token from
   // https://www.themoviedb.org/settings/api
   TMDB_API_KEY: z.string().min(1),
+  // Canonical public origin for metadata/sitemap/robots. Optional — falls
+  // back to VERCEL_URL, then localhost. Set to a stable custom domain in prod
+  // so OG/canonical URLs don't point at per-deployment *.vercel.app hosts.
+  SITE_URL: z.string().url().optional(),
 })
 
 /**
