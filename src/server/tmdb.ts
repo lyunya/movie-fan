@@ -80,42 +80,39 @@ export interface Person {
   credits: PersonCredit[]
 }
 
-/**
- * Look up a person by name and return their profile with acting credits,
- * most-popular first. Returns null when nobody matches.
- */
-export const fetchPerson = async (name: string): Promise<Person | null> => {
-  const search = await tmdbFetch('/search/person', {
-    query: name,
-    include_adult: 'false',
-    language: 'en-US',
-    page: '1',
-  })
-  const match = search?.results?.[0]
-  if (!match?.id) return null
+interface TmdbPersonCredit {
+  id?: number
+  title?: string
+  character?: string
+  release_date?: string
+  poster_path?: string
+  popularity?: number
+}
 
-  const person = await tmdbFetch(`/person/${match.id}`, {
-    append_to_response: 'movie_credits',
-    language: 'en-US',
-  })
-  if (!person?.id) return null
+interface TmdbPerson {
+  id: number
+  name: string
+  biography?: string
+  birthday?: string
+  deathday?: string
+  place_of_birth?: string
+  known_for_department?: string
+  profile_path?: string
+  movie_credits?: { cast?: TmdbPersonCredit[] }
+}
 
+const buildPerson = (person: TmdbPerson): Person => {
   const seen = new Set<number>()
   const credits: PersonCredit[] = (person.movie_credits?.cast ?? [])
-    .filter((credit: { id?: number; title?: string }) => {
-      if (!credit.id || !credit.title || seen.has(credit.id)) return false
-      seen.add(credit.id)
-      return true
-    })
+    .filter(
+      (credit): credit is TmdbPersonCredit & { id: number; title: string } => {
+        if (!credit.id || !credit.title || seen.has(credit.id)) return false
+        seen.add(credit.id)
+        return true
+      }
+    )
     .map(
-      (credit: {
-        id: number
-        title: string
-        character?: string
-        release_date?: string
-        poster_path?: string
-        popularity?: number
-      }): PersonCredit => ({
+      (credit): PersonCredit => ({
         tmdbId: credit.id,
         title: credit.title,
         year: credit.release_date ? credit.release_date.slice(0, 4) : null,
@@ -126,9 +123,7 @@ export const fetchPerson = async (name: string): Promise<Person | null> => {
         popularity: credit.popularity ?? 0,
       })
     )
-    .sort(
-      (a: PersonCredit, b: PersonCredit) => b.popularity - a.popularity
-    )
+    .sort((a, b) => b.popularity - a.popularity)
 
   return {
     id: person.id,
@@ -143,6 +138,40 @@ export const fetchPerson = async (name: string): Promise<Person | null> => {
       : null,
     credits,
   }
+}
+
+/**
+ * Fetch a person by TMDB id with acting credits, most-popular first.
+ * Returns null when the id doesn't resolve.
+ */
+export const fetchPersonById = cache(
+  async (id: number): Promise<Person | null> => {
+    const person = await tmdbFetch(`/person/${id}`, {
+      append_to_response: 'movie_credits',
+      language: 'en-US',
+    }).catch(() => null)
+    if (!person?.id) return null
+    return buildPerson(person)
+  }
+)
+
+/**
+ * Look up a person by name (legacy path). Resolves the best search hit to an
+ * id and delegates to fetchPersonById. Prefer fetchPersonById when an id is
+ * available — it's one fewer request and never picks the wrong match.
+ */
+export const fetchPersonByName = async (
+  name: string
+): Promise<Person | null> => {
+  const search = await tmdbFetch('/search/person', {
+    query: name,
+    include_adult: 'false',
+    language: 'en-US',
+    page: '1',
+  }).catch(() => null)
+  const match = search?.results?.[0]
+  if (!match?.id) return null
+  return fetchPersonById(match.id)
 }
 
 /* -------------------------------------------------------------------- */
