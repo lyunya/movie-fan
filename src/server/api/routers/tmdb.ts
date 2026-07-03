@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { createTRPCRouter, publicProcedure } from './../trpc'
-import { fetchSearch, fetchDetails } from '../../flixster'
+import { fetchSearch, fetchMovieDetails } from '../../tmdb'
 
-export const flixsterRouter = createTRPCRouter({
+export const tmdbRouter = createTRPCRouter({
   search: publicProcedure
     .input(z.object({ query: z.string().trim().min(1) }))
     .query(async ({ input }) => {
@@ -11,6 +11,6 @@ export const flixsterRouter = createTRPCRouter({
   details: publicProcedure
     .input(z.object({ id: z.string().min(1) }))
     .query(async ({ input }) => {
-      return { movie: await fetchDetails(input.id) }
+      return { movie: await fetchMovieDetails(input.id) }
     }),
 })

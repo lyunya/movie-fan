@@ -1,9 +1,7 @@
 'use client'
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react'
 import Image from 'next/image'
 import Balancer from 'react-wrap-balancer'
-import parse, { domToReact } from 'html-react-parser'
 import { useSession, signIn } from 'next-auth/react'
 import { HiOutlineShare, HiCheck } from 'react-icons/hi'
 
@@ -32,39 +30,11 @@ const formatFullDate = (dateString?: string | null) => {
   })
 }
 
-/** The showtime payload shape varies; pull out anything usable, defensively */
-const theaterName = (theater: any): string | null =>
-  theater?.name || theater?.theaterName || theater?.title || null
-
-const theaterShowtimes = (theater: any): string[] => {
-  const raw = theater?.showtimes || theater?.showTimes || []
-  if (!Array.isArray(raw)) return []
-  return raw
-    .map((showtime: any) => {
-      const value =
-        showtime?.dateTime || showtime?.startTime || showtime?.time || showtime
-      if (typeof value !== 'string') return null
-      const date = new Date(value)
-      if (!Number.isNaN(date.getTime())) {
-        return date.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-        })
-      }
-      // Already a display string like "7:30pm"
-      return /^[\d:apm\s.]+$/i.test(value) ? value : null
-    })
-    .filter((time: string | null): time is string => !!time)
-    .slice(0, 6)
-}
-
 const ScoreBadge = ({
-  iconUrl,
   score,
   count,
   suffix = '%',
 }: {
-  iconUrl?: string
   score?: number | null
   count?: number | null
   suffix?: string
@@ -72,9 +42,9 @@ const ScoreBadge = ({
   if (score == null) return null
   return (
     <div className="flex items-center gap-2">
-      {iconUrl && (
-        <Image src={iconUrl} height={28} width={28} alt="" className="h-7 w-7" />
-      )}
+      <span className="text-2xl" aria-hidden>
+        ⭐
+      </span>
       <div className="leading-tight">
         <p className="text-lg font-bold text-white">
           {score}
@@ -82,7 +52,7 @@ const ScoreBadge = ({
         </p>
         {count ? (
           <p className="text-xs text-zinc-400">
-            {count.toLocaleString()} ratings
+            {count.toLocaleString()} TMDB ratings
           </p>
         ) : null}
       </div>
@@ -90,7 +60,41 @@ const ScoreBadge = ({
   )
 }
 
-const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
+const ProviderRow = ({
+  label,
+  providers,
+}: {
+  label: string
+  providers: { name: string; logoUrl: string }[]
+}) => {
+  if (providers.length === 0) return null
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        {label}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-3">
+        {providers.map((provider) => (
+          <div
+            key={provider.name}
+            title={provider.name}
+            className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-zinc-800"
+          >
+            <Image
+              src={provider.logoUrl}
+              fill
+              sizes="40px"
+              alt={provider.name}
+              className="object-cover"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   const { data: session } = useSession()
   const utils = api.useUtils()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -109,34 +113,26 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
     { enabled: !!session }
   )
 
-  const genres: string[] = (movie.genres || []).map(
-    (genre: { name: string }) => genre.name
-  )
+  const genres: string[] = (movie.genres || []).map((genre) => genre.name)
   const poster = movie.posterImage?.url || '/placeholderposter.png'
   const backdrop = movie.backgroundImage?.url || poster
   const year = movie.releaseDate ? String(movie.releaseDate).slice(0, 4) : null
   const fullReleaseDate = formatFullDate(movie.releaseDate)
   const runtime = formatRuntime(movie.durationMinutes)
-  const gallery = (movie.images || []).filter((img: any) => img?.url)
-  const theaters = movie.showtimeGroupings?.theaters || []
-  const namedTheaters = theaters.filter((theater: any) => theaterName(theater))
-  const ticketsUrl = `https://www.fandango.com/search?q=${encodeURIComponent(
-    movie.name
-  )}`
+  const gallery = (movie.images || []).filter((img) => img?.url)
+  const providers = movie.watchProviders
+  const hasProviders = !!providers && [
+    ...providers.flatrate,
+    ...providers.rent,
+    ...providers.buy,
+  ].length > 0
 
   const facts: { label: string; value: string | null }[] = [
     { label: 'Release date', value: fullReleaseDate },
     { label: 'Runtime', value: runtime },
     { label: 'Director', value: movie.directedBy || null },
     { label: 'Box office', value: movie.totalGross || null },
-    {
-      label: 'Rated',
-      value: movie.motionPictureRating?.code
-        ? [movie.motionPictureRating.code, movie.motionPictureRating.description]
-            .filter(Boolean)
-            .join(' — ')
-        : null,
-    },
+    { label: 'Rated', value: movie.motionPictureRating?.code || null },
   ].filter((fact) => fact.value)
 
   const handleShare = async () => {
@@ -155,14 +151,14 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
   }
 
   const handleAddMovie = () => {
-    addMovie.mutate({ movieData: createMovieObj(movie as IMovieDetail, id, genres) })
+    addMovie.mutate({ movieData: createMovieObj(movie, id, genres) })
   }
   const handleRemoveMovie = () => removeMovie.mutate({ movieId: id })
   // The server upserts on [userId, movieId], so rating a movie is a single
   // mutation whether or not it is already on the watchlist
   const handleSeenMovie = (userRating: number) => {
     addMovie.mutate({
-      movieData: createMovieObj(movie as IMovieDetail, id, genres, userRating),
+      movieData: createMovieObj(movie, id, genres, userRating),
     })
   }
 
@@ -210,17 +206,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
               {year && <span className="chip">{year}</span>}
               {runtime && <span className="chip">{runtime}</span>}
               {movie.motionPictureRating?.code && (
-                <span
-                  className="chip"
-                  title={movie.motionPictureRating.description || undefined}
-                >
-                  {movie.motionPictureRating.code}
-                </span>
-              )}
-              {movie.availabilityWindow && (
-                <span className="chip border-pink-700/60 bg-pink-950/40 text-pink-200">
-                  {movie.availabilityWindow}
-                </span>
+                <span className="chip">{movie.motionPictureRating.code}</span>
               )}
             </div>
 
@@ -238,18 +224,9 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
               </div>
             )}
 
-            {/* Scores */}
+            {/* Score */}
             <div className="mt-5 flex flex-wrap items-center gap-6">
-              <ScoreBadge
-                iconUrl={movie.tomatoRating?.iconImage?.url}
-                score={movie.tomatoRating?.tomatometer}
-                count={movie.tomatoRating?.ratingCount}
-              />
-              <ScoreBadge
-                iconUrl={movie.userRating?.iconImage?.url}
-                score={movie.userRating?.dtlLikedScore}
-                count={movie.userRating?.ratingCount}
-              />
+              <ScoreBadge score={movie.tomatoMeter} count={movie.voteCount} />
             </div>
 
             {movie.directedBy && (
@@ -318,21 +295,10 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
       </div>
 
       <div className="mx-auto max-w-screen-xl px-4 sm:px-8">
-        {/* Critics' consensus */}
-        {movie.tomatoRating?.consensus && (
+        {/* Tagline */}
+        {movie.consensus && (
           <blockquote className="surface my-8 border-l-4 border-pink-500 p-5 text-lg italic text-zinc-200 md:text-xl">
-            <Balancer>
-              {parse(movie.tomatoRating.consensus, {
-                replace(domNode: any) {
-                  if (
-                    domNode.type === 'tag' &&
-                    !['em', 'strong', 'b', 'i'].includes(domNode.name)
-                  ) {
-                    return <>{domToReact(domNode.children || [])}</>
-                  }
-                },
-              })}
-            </Balancer>
+            <Balancer>{movie.consensus}</Balancer>
           </blockquote>
         )}
 
@@ -340,13 +306,13 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
         {movie.trailer?.url && (
           <section className="my-10">
             <h3 className="section-heading mb-4">Trailer</h3>
-            <video
-              controls
-              poster={backdrop}
+            <iframe
+              src={movie.trailer.url}
+              title={`${movie.name} trailer`}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
               className="aspect-video w-full rounded-xl border border-zinc-800 bg-black"
-            >
-              <source src={movie.trailer.url} type="video/mp4" />
-            </video>
+            />
           </section>
         )}
 
@@ -360,7 +326,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
               </span>
             </h3>
             <div className="hide-scrollbar edge-fade-x flex gap-4 overflow-x-auto pb-2">
-              {gallery.map((img: any, idx: number) => (
+              {gallery.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setLightboxIndex(idx)}
@@ -390,8 +356,8 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
         )}
 
         {/* Cast & crew */}
-        {movie.cast && <CastGrid cast={movie.cast} title="Cast" />}
-        {movie.crew && <CastGrid cast={movie.crew} title="Crew" />}
+        {movie.cast?.length > 0 && <CastGrid cast={movie.cast} title="Cast" />}
+        {movie.crew?.length > 0 && <CastGrid cast={movie.crew} title="Crew" />}
 
         {/* Movie facts */}
         {facts.length > 0 && (
@@ -411,60 +377,28 @@ const MovieDetails = ({ id, movie }: { id: string; movie: any }) => {
         )}
 
         {/* Where to watch */}
-        {theaters.length > 0 && (
+        {hasProviders && providers && (
           <section className="my-10">
             <h3 className="section-heading mb-4">Where to watch</h3>
-            <div className="surface flex flex-col gap-4 p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-zinc-300">
-                  Playing in{' '}
-                  <span className="font-semibold text-white">
-                    {theaters.length}
-                  </span>{' '}
-                  {theaters.length === 1 ? 'theater' : 'theaters'} near you
+            <div className="surface flex flex-col gap-5 p-5">
+              <ProviderRow label="Stream" providers={providers.flatrate} />
+              <ProviderRow label="Rent" providers={providers.rent} />
+              <ProviderRow label="Buy" providers={providers.buy} />
+              <div className="flex flex-col gap-2 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-zinc-500">
+                  Streaming data provided by JustWatch
                 </p>
-                <a
-                  href={ticketsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-brand"
-                >
-                  Get tickets on Fandango
-                </a>
+                {providers.link && (
+                  <a
+                    href={providers.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-ghost"
+                  >
+                    More info
+                  </a>
+                )}
               </div>
-
-              {/* Theater list when the payload names them */}
-              {namedTheaters.length > 0 && (
-                <ul className="divide-y divide-zinc-800 border-t border-zinc-800">
-                  {namedTheaters.slice(0, 6).map((theater: any, idx: number) => {
-                    const times = theaterShowtimes(theater)
-                    return (
-                      <li
-                        key={idx}
-                        className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <p className="font-semibold text-white">
-                          {theaterName(theater)}
-                        </p>
-                        {times.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {times.map((time) => (
-                              <span key={time} className="chip text-xs">
-                                {time}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </li>
-                    )
-                  })}
-                  {namedTheaters.length > 6 && (
-                    <li className="py-3 text-sm text-zinc-500">
-                      + {namedTheaters.length - 6} more on Fandango
-                    </li>
-                  )}
-                </ul>
-              )}
             </div>
           </section>
         )}

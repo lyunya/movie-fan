@@ -6,8 +6,7 @@ export interface MovieCardProps extends ComponentPropsWithRef<'div'> {
   posterImage: Image | string | null;
   emsVersionId: string;
   releaseDate?: string | null;
-  // Critic score: an object from the API, a number from the DB watchlist
-  tomatoRating?: { tomatometer?: number | null } | null;
+  // 0-100 TMDB score, from either a live API result or the cached DB watchlist row
   tomatoMeter?: number | null;
   // The signed-in user's own star rating (DB watchlist items only)
   userRating?: number | null;

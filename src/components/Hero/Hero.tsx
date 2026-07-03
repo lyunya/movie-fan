@@ -93,8 +93,7 @@ const Hero: FC<HeroProps> = ({ movies }) => {
           (typeof movie.posterImage === 'string'
             ? movie.posterImage
             : movie.posterImage?.url) || '/placeholderposter.png'
-        const score =
-          movie.tomatoMeter ?? movie.tomatoRating?.tomatometer ?? null
+        const score = movie.tomatoMeter ?? null
         const active = i === index
         const onList = has(movie.emsVersionId)
         const isPending = pendingId === movie.emsVersionId
@@ -142,7 +141,7 @@ const Hero: FC<HeroProps> = ({ movies }) => {
                   {movie.name}
                 </h2>
                 {score != null && (
-                  <p className="chip mt-3 text-sm">🍅 {score}%</p>
+                  <p className="chip mt-3 text-sm">⭐ {score}%</p>
                 )}
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
                   <Link

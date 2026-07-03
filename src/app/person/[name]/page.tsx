@@ -134,14 +134,9 @@ export default async function PersonPage({ params }: PageProps) {
           </h2>
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {credits.map((credit) => (
-              // Plain <a>, not <Link>: the href is a resolver API route that
-              // hits the Flixster search — Link prefetching would burn quota
-              // for every card that scrolls into view
-              <a
+              <Link
                 key={credit.tmdbId}
-                href={`/api/find-movie?title=${encodeURIComponent(credit.title)}${
-                  credit.year ? `&year=${credit.year}` : ''
-                }`}
+                href={`/movie/${credit.tmdbId}`}
                 className="group block"
               >
                 <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-lg transition duration-300 group-hover:border-zinc-600 group-hover:shadow-pink-900/20">
@@ -163,7 +158,7 @@ export default async function PersonPage({ params }: PageProps) {
                       .join(' · ')}
                   </p>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </section>

@@ -116,7 +116,7 @@ export default function ProfilePage() {
           >
             <option value="title">Title (A–Z)</option>
             {selected === 'seen' && <option value="rating">Your rating</option>}
-            <option value="tomato">Tomatometer</option>
+            <option value="tomato">TMDB score</option>
           </select>
         </label>
       </div>
