@@ -234,15 +234,69 @@ export const fetchUpcoming = async (): Promise<MovieCardData[]> => {
   return (data?.results ?? []).map(mapSummary)
 }
 
-export const fetchSearch = async (query: string): Promise<MovieCardData[]> => {
+export interface PersonResult {
+  id: number
+  name: string
+  profileUrl: string | null
+  knownFor: string | null
+}
+
+export interface SearchResult {
+  movies: MovieCardData[]
+  people: PersonResult[]
+  page: number
+  totalPages: number
+  totalResults: number
+}
+
+interface TmdbMultiResult extends TmdbMovieSummary {
+  media_type?: string
+  name?: string
+  profile_path?: string | null
+  known_for?: { title?: string; name?: string }[]
+}
+
+const mapPerson = (p: TmdbMultiResult): PersonResult => ({
+  id: p.id,
+  name: p.name ?? '',
+  profileUrl: p.profile_path ? `${TMDB_PROFILE_URL}${p.profile_path}` : null,
+  knownFor: Array.isArray(p.known_for)
+    ? p.known_for
+        .map((k) => k.title || k.name)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(', ') || null
+    : null,
+})
+
+/**
+ * Multi-search across movies and people. Movies drive the paginated grid;
+ * people (mostly on page 1) surface as a strip linking to their filmography.
+ */
+export const fetchSearch = async (
+  query: string,
+  page = 1
+): Promise<SearchResult> => {
   const data = await tmdbFetch(
-    '/search/movie',
-    { query, language: 'en-US', page: '1', include_adult: 'false' },
+    '/search/multi',
+    { query, language: 'en-US', page: String(page), include_adult: 'false' },
     REVALIDATE.search
   )
-  return (data?.results ?? [])
-    .filter((m: TmdbMovieSummary) => m?.id && m?.title)
+  const results: TmdbMultiResult[] = data?.results ?? []
+  const movies = results
+    .filter((r) => r.media_type === 'movie' && r.id && r.title && r.poster_path)
     .map(mapSummary)
+  const people = results
+    .filter((r) => r.media_type === 'person' && r.id && r.name)
+    .slice(0, 12)
+    .map(mapPerson)
+  return {
+    movies,
+    people,
+    page: data?.page ?? page,
+    totalPages: Math.min(data?.total_pages ?? 1, 500),
+    totalResults: data?.total_results ?? movies.length,
+  }
 }
 
 /* -------------------------------------------------------------------- */

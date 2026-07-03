@@ -5,7 +5,6 @@ import type { FC, TouchEvent } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { HiChevronLeft, HiChevronRight, HiHeart, HiOutlineHeart } from 'react-icons/hi'
-import { CgSpinner } from 'react-icons/cg'
 import type { MovieCardProps } from '@/components/MovieCard/types'
 import { useWatchlist } from '@/hooks/useWatchlist'
 
@@ -151,13 +150,10 @@ const Hero: FC<HeroProps> = ({ movies }) => {
                     View details
                   </Link>
                   <button
-                    className="btn-ghost"
+                    className={`btn-ghost ${isPending ? 'animate-pulse' : ''}`}
                     onClick={() => toggle(movie.emsVersionId)}
-                    disabled={isPending}
                   >
-                    {isPending ? (
-                      <CgSpinner className="h-5 w-5 animate-spin" />
-                    ) : onList ? (
+                    {onList ? (
                       <HiHeart className="h-5 w-5 text-pink-500" />
                     ) : (
                       <HiOutlineHeart className="h-5 w-5" />

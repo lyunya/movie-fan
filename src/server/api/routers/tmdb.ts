@@ -4,9 +4,14 @@ import { fetchSearch, fetchMovieDetails, fetchGenre } from '../../tmdb'
 
 export const tmdbRouter = createTRPCRouter({
   search: publicProcedure
-    .input(z.object({ query: z.string().trim().min(1) }))
+    .input(
+      z.object({
+        query: z.string().trim().min(1),
+        page: z.number().int().min(1).max(500).default(1),
+      })
+    )
     .query(async ({ input }) => {
-      return { movies: await fetchSearch(input.query) }
+      return fetchSearch(input.query, input.page)
     }),
   details: publicProcedure
     .input(z.object({ id: z.string().min(1) }))

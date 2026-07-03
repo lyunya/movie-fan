@@ -5,7 +5,6 @@ import type { MovieCardProps } from './types'
 import Image from 'next/image'
 import Link from 'next/link'
 import { HiHeart, HiOutlineHeart } from 'react-icons/hi'
-import { CgSpinner } from 'react-icons/cg'
 import { useWatchlist } from '@/hooks/useWatchlist'
 
 const MovieCard: FC<MovieCardProps> = ({
@@ -93,11 +92,9 @@ const MovieCard: FC<MovieCardProps> = ({
               onList
                 ? 'text-pink-500'
                 : 'text-white sm:opacity-0 sm:group-hover:opacity-100'
-            }`}
+            } ${isPending ? 'animate-pulse' : ''}`}
           >
-            {isPending ? (
-              <CgSpinner className="h-5 w-5 animate-spin" />
-            ) : onList ? (
+            {onList ? (
               <HiHeart className="h-5 w-5" />
             ) : (
               <HiOutlineHeart className="h-5 w-5" />
