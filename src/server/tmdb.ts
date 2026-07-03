@@ -234,6 +234,32 @@ export const fetchUpcoming = async (): Promise<MovieCardData[]> => {
   return (data?.results ?? []).map(mapSummary)
 }
 
+export type TrendingWindow = 'day' | 'week'
+
+export const fetchTrending = async (
+  window: TrendingWindow = 'week'
+): Promise<MovieCardData[]> => {
+  const data = await tmdbFetch(
+    `/trending/movie/${window}`,
+    { language: 'en-US' },
+    REVALIDATE.nowPlaying
+  )
+  return (data?.results ?? [])
+    .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
+    .map(mapSummary)
+}
+
+export const fetchTopRated = async (): Promise<MovieCardData[]> => {
+  const data = await tmdbFetch(
+    '/movie/top_rated',
+    { language: 'en-US', page: '1', region: 'US' },
+    REVALIDATE.upcoming
+  )
+  return (data?.results ?? [])
+    .filter((m: TmdbMovieSummary) => m?.id && m?.title && m?.poster_path)
+    .map(mapSummary)
+}
+
 export interface PersonResult {
   id: number
   name: string

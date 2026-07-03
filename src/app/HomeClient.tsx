@@ -16,6 +16,7 @@ import type { Credit } from '@/components/CastGrid/types'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import MovieCardSkeleton from '@/components/MovieCard/MovieCardSkeleton'
 import MovieRow from '@/components/MovieRow/MovieRow'
+import TrendingRow from '@/components/TrendingRow/TrendingRow'
 import Hero from '@/components/Hero/Hero'
 import Search, { saveRecentSearch } from '@/components/Search/Search'
 import News from '@/components/News/News'
@@ -131,7 +132,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
   const [extraMovies, setExtraMovies] = useState<MovieCardProps[]>([])
   const [page, setPage] = useState(1)
   const [loadingMore, setLoadingMore] = useState(false)
-  const { popular, opening, upcoming, news } = data
+  const { popular, opening, upcoming, trending, topRated, news } = data
 
   // React Query keys the request on the debounced query, so stale responses
   // can't overwrite newer ones and errors don't escape as unhandled rejections
@@ -371,9 +372,10 @@ export default function HomeClient({ data }: { data: HomeData }) {
                 : undefined
             }
           />
+          <TrendingRow initialWeek={trending} />
           <MovieRow title="Top 10 today" movies={popular.slice(0, 10)} ranked />
-          <MovieRow title="Popular" movies={popular.slice(10)} />
           <MovieRow title="Opening this week" movies={opening} />
+          <MovieRow title="Top rated" movies={topRated} />
           <MovieRow title="Upcoming" movies={upcoming} />
         </>
       )}

@@ -6,6 +6,7 @@ import {
   fetchGenre,
   fetchGenreList,
   fetchDiscoverByGenres,
+  fetchTrending,
 } from '../../tmdb'
 
 const FOR_YOU_LIMIT = 20
@@ -35,6 +36,11 @@ export const tmdbRouter = createTRPCRouter({
     )
     .query(async ({ input }) => {
       return fetchGenre(input.genreId, input.page)
+    }),
+  trending: publicProcedure
+    .input(z.object({ window: z.enum(['day', 'week']) }))
+    .query(async ({ input }) => {
+      return { movies: await fetchTrending(input.window) }
     }),
   /**
    * Personalized row: pick the user's two most-saved genres and return
