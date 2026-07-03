@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Balancer from 'react-wrap-balancer'
@@ -103,6 +103,13 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
   const [showTrailer, setShowTrailer] = useState(false)
+
+  // Navigating movie→movie (e.g. via "More like this") stays on the same
+  // /movie/[id] route segment, which the App Router reuses without resetting
+  // scroll — so jump to the top whenever the movie changes.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [id])
 
   const invalidateWatchlist = () => {
     utils.movie.query.invalidate({ movieId: id })
