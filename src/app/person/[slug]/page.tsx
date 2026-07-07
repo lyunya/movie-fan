@@ -43,6 +43,9 @@ export async function generateMetadata({
   return {
     title: label,
     description: `Movies featuring ${label}`,
+    // Person pages are also disallowed in robots.txt (see src/app/robots.ts) —
+    // the unbounded movie↔person link graph made crawlers a quota problem
+    robots: { index: false },
   }
 }
 
