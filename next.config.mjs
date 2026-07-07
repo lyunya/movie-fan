@@ -23,6 +23,13 @@ const config = {
   // Pin the workspace root so a stray lockfile elsewhere doesn't confuse tracing
   outputFileTracingRoot: process.cwd(),
   images: {
+    // Serve remote images directly instead of through /_next/image. Every
+    // optimized image is a metered Vercel edge request + transformation, and
+    // with ~20 posters per page that multiplier was the main driver of blowing
+    // the free tier's edge-request quota. TMDB already serves size-appropriate
+    // renditions (w342/w500/w780), so on-the-fly optimization buys little here.
+    // Trade-off: no AVIF/WebP re-encoding and no responsive srcset.
+    unoptimized: true,
     remotePatterns: imageHosts.map((hostname) => ({
       protocol: 'https',
       hostname,

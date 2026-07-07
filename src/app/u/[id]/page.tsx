@@ -22,6 +22,9 @@ export async function generateMetadata({
   return {
     title: `${owner}'s watchlist`,
     description: `${owner}'s movie watchlist on Movie Fan`,
+    // Shared-by-link user content; also disallowed in robots.txt. force-dynamic
+    // means every crawler hit is an uncached function + DB query.
+    robots: { index: false },
   }
 }
 
