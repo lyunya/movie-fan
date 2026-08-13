@@ -9,13 +9,6 @@ import superjson from 'superjson'
 
 import { api } from '@/utils/api'
 
-function getBaseUrl() {
-  if (typeof window !== 'undefined') return ''
-  if (process.env.NEXT_PUBLIC_VERCEL_URL)
-    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-  return `http://localhost:${process.env.PORT ?? 3000}`
-}
-
 export default function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
   const [trpcClient] = useState(() =>
@@ -27,7 +20,7 @@ export default function Providers({ children }: { children: ReactNode }) {
             (op.direction === 'down' && op.result instanceof Error),
         }),
         httpBatchLink({
-          url: `${getBaseUrl()}/api/trpc`,
+          url: '/api/trpc',
           transformer: superjson,
         }),
       ],

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Krona_One, Overpass } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/react'
 
 import '@/styles/globals.css'
 import Providers from '@/trpc/Providers'
@@ -57,7 +56,6 @@ export default function RootLayout({
           <div className="flex min-h-screen min-w-full flex-col bg-gradient-to-b from-[#000000] to-[#1e1e1e]">
             <Nav />
             {children}
-            <Analytics />
             <Footer />
           </div>
         </Providers>

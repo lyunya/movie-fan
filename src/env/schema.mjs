@@ -13,11 +13,8 @@ export const serverSchema = z.object({
       ? z.string().min(1)
       : z.string().min(1).optional(),
   NEXTAUTH_URL: z.preprocess(
-    // This makes Vercel deployments not fail if you don't set NEXTAUTH_URL
-    // Since NextAuth.js automatically uses the VERCEL_URL if present.
-    (str) => process.env.VERCEL_URL ?? str,
-    // VERCEL_URL doesn't include `https` so it cant be validated as a URL
-    process.env.VERCEL ? z.string() : z.string().url()
+    (str) => str,
+    z.string().url()
   ),
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_CLIENT_SECRET: z.string(),
@@ -35,8 +32,8 @@ export const serverSchema = z.object({
   // https://www.themoviedb.org/settings/api
   TMDB_API_KEY: z.string().min(1),
   // Canonical public origin for metadata/sitemap/robots. Optional — falls
-  // back to VERCEL_URL, then localhost. Set to a stable custom domain in prod
-  // so OG/canonical URLs don't point at per-deployment *.vercel.app hosts.
+  // back to NEXTAUTH_URL, then localhost. Set to a stable custom domain in prod
+  // so OG/canonical URLs don't point at a provider subdomain.
   SITE_URL: z.string().url().optional(),
   // Shared secret guarding the streaming-alerts cron route. Vercel Cron sends
   // it as `Authorization: Bearer <CRON_SECRET>`. Unset ⇒ the route always 401s.
