@@ -18,11 +18,12 @@ import { toWatchlistCsv } from '@/utils/watchlistCsv'
 type Tab = 'watchlist' | 'seen'
 type SortKey = 'title' | 'rating' | 'tomato'
 
-const sorters: Record<SortKey, (a: WatchListItem, b: WatchListItem) => number> = {
-  title: (a, b) => a.name.localeCompare(b.name),
-  rating: (a, b) => (b.userRating ?? 0) - (a.userRating ?? 0),
-  tomato: (a, b) => (b.tomatoMeter ?? 0) - (a.tomatoMeter ?? 0),
-}
+const sorters: Record<SortKey, (a: WatchListItem, b: WatchListItem) => number> =
+  {
+    title: (a, b) => a.name.localeCompare(b.name),
+    rating: (a, b) => (b.userRating ?? 0) - (a.userRating ?? 0),
+    tomato: (a, b) => (b.tomatoMeter ?? 0) - (a.tomatoMeter ?? 0),
+  }
 
 export default function ProfilePage() {
   const [animationParent] = useAutoAnimate<HTMLDivElement>()
@@ -117,6 +118,8 @@ export default function ProfilePage() {
           userId={profileData.data.user.id}
           isPublic={profileData.data.user.publicWatchlist}
           alertsEnabled={profileData.data.user.streamAlerts}
+          watchRegion={profileData.data.user.watchRegion}
+          preferredProviders={profileData.data.user.preferredProviders}
         />
       )}
 

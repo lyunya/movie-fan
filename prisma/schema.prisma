@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Account {
@@ -35,18 +35,24 @@ model Session {
 }
 
 model User {
-  id            String          @id @default(cuid())
-  name          String?
-  email         String?         @unique
-  emailVerified DateTime?
-  image         String?
+  id                 String           @id @default(cuid())
+  name               String?
+  email              String?          @unique
+  emailVerified      DateTime?
+  image              String?
   // Opt-in: expose a read-only watchlist at /u/<id>
-  publicWatchlist Boolean       @default(false)
+  publicWatchlist    Boolean          @default(false)
   // Opt-in: email when a saved title newly hits a streaming service
-  streamAlerts    Boolean       @default(false)
-  accounts      Account[]
-  sessions      Session[]
-  watchList     WatchListItem[]
+  streamAlerts       Boolean          @default(false)
+  // Region and provider ids from TMDB/JustWatch power "available for me".
+  watchRegion        String           @default("US")
+  preferredProviders Int[]            @default([])
+  accounts           Account[]
+  sessions           Session[]
+  watchList          WatchListItem[]
+  watchEvents        WatchEvent[]
+  movieLists         MovieList[]
+  votingRooms        MovieNightRoom[]
 }
 
 model VerificationToken {
@@ -64,7 +70,7 @@ model WatchListItem {
   directedBy          String
   durationMinutes     Int
   name                String
-  emsVersionId               String
+  emsVersionId        String
   posterImage         String?
   genres              String[]
   synopsis            String?
@@ -80,4 +86,101 @@ model WatchListItem {
   user                User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, movieId])
+}
+
+/// One row per viewing, so rewatches can keep their own date, rating, review,
+/// and context tags instead of overwriting a single movie-level value.
+model WatchEvent {
+  id              String   @id @default(cuid())
+  userId          String
+  movieId         String
+  name            String
+  posterImage     String?
+  releaseDate     String?
+  durationMinutes Int      @default(0)
+  genres          String[] @default([])
+  rating          Int?
+  review          String?
+  tags            String[] @default([])
+  watchedAt       DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, watchedAt])
+  @@index([userId, movieId])
+}
+
+model MovieList {
+  id          String          @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  isPublic    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       MovieListItem[]
+
+  @@unique([userId, name])
+  @@index([userId, updatedAt])
+}
+
+model MovieListItem {
+  id          String    @id @default(cuid())
+  listId      String
+  movieId     String
+  name        String
+  posterImage String?
+  releaseDate String?
+  tomatoMeter Int?
+  position    Int       @default(0)
+  addedAt     DateTime  @default(now())
+  list        MovieList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, movieId])
+  @@index([listId, position])
+}
+
+model MovieNightRoom {
+  id         String                @id @default(cuid())
+  hostId     String
+  shareCode  String                @unique
+  name       String
+  filters    Json
+  createdAt  DateTime              @default(now())
+  expiresAt  DateTime
+  host       User                  @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  candidates MovieNightCandidate[]
+
+  @@index([hostId, createdAt])
+}
+
+model MovieNightCandidate {
+  id          String           @id @default(cuid())
+  roomId      String
+  movieId     String
+  name        String
+  posterImage String?
+  releaseDate String?
+  tomatoMeter Int?
+  position    Int              @default(0)
+  room        MovieNightRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  votes       MovieNightVote[]
+
+  @@unique([roomId, movieId])
+  @@index([roomId, position])
+}
+
+model MovieNightVote {
+  id          String              @id @default(cuid())
+  candidateId String
+  voterToken  String
+  voterName   String
+  liked       Boolean
+  createdAt   DateTime            @default(now())
+  candidate   MovieNightCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, voterToken])
+  @@index([candidateId, liked])
 }

@@ -1,7 +1,10 @@
-import { UserRouter } from './routers/user';
-import { watchListItemRouter } from './routers/watchListItem';
-import { tmdbRouter } from './routers/tmdb';
-import { createTRPCRouter } from "./trpc";
+import { UserRouter } from './routers/user'
+import { watchListItemRouter } from './routers/watchListItem'
+import { tmdbRouter } from './routers/tmdb'
+import { diaryRouter } from './routers/diary'
+import { listsRouter } from './routers/lists'
+import { roomsRouter } from './routers/rooms'
+import { createTRPCRouter } from './trpc'
 /**
  * This is the primary router for your server.
  *
@@ -10,8 +13,11 @@ import { createTRPCRouter } from "./trpc";
 export const appRouter = createTRPCRouter({
   movie: watchListItemRouter,
   user: UserRouter,
-  tmdb: tmdbRouter
-});
+  tmdb: tmdbRouter,
+  diary: diaryRouter,
+  lists: listsRouter,
+  rooms: roomsRouter,
+})
 
 // export type definition of API
-export type AppRouter = typeof appRouter;
+export type AppRouter = typeof appRouter

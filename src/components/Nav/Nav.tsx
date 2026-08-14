@@ -5,7 +5,14 @@ import { useEffect, useRef, useState } from 'react'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { HiOutlineUser, HiOutlineLogout } from 'react-icons/hi'
+import {
+  HiOutlineBookOpen,
+  HiOutlineCollection,
+  HiOutlineLogout,
+  HiOutlineSparkles,
+  HiOutlineUser,
+  HiOutlineUserGroup,
+} from 'react-icons/hi'
 import NavSearch from './NavSearch'
 
 const Nav: FC = () => {
@@ -38,6 +45,36 @@ const Nav: FC = () => {
         </h1>
       </Link>
       <div className="flex items-center gap-2 sm:gap-4">
+        <div className="hidden items-center gap-4 xl:flex">
+          <Link
+            href="/tonight"
+            className="text-sm font-semibold text-zinc-300 transition hover:text-pink-400"
+          >
+            Tonight
+          </Link>
+          {sessionData && (
+            <>
+              <Link
+                href="/diary"
+                className="text-sm font-semibold text-zinc-300 transition hover:text-pink-400"
+              >
+                Diary
+              </Link>
+              <Link
+                href="/lists"
+                className="text-sm font-semibold text-zinc-300 transition hover:text-pink-400"
+              >
+                Lists
+              </Link>
+              <Link
+                href="/rooms"
+                className="text-sm font-semibold text-zinc-300 transition hover:text-pink-400"
+              >
+                Rooms
+              </Link>
+            </>
+          )}
+        </div>
         <NavSearch />
         {sessionData ? (
           <div className="relative" ref={menuRef}>
@@ -81,6 +118,39 @@ const Nav: FC = () => {
                   <HiOutlineUser className="h-5 w-5" />
                   Profile &amp; watchlist
                 </Link>
+                {[
+                  {
+                    href: '/tonight',
+                    label: 'Tonight picker',
+                    icon: HiOutlineSparkles,
+                  },
+                  {
+                    href: '/diary',
+                    label: 'Movie diary',
+                    icon: HiOutlineBookOpen,
+                  },
+                  {
+                    href: '/lists',
+                    label: 'Custom lists',
+                    icon: HiOutlineCollection,
+                  },
+                  {
+                    href: '/rooms',
+                    label: 'Movie night rooms',
+                    icon: HiOutlineUserGroup,
+                  },
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-zinc-200 transition hover:bg-zinc-800/80 hover:text-pink-400"
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </Link>
+                ))}
                 <button
                   role="menuitem"
                   onClick={() => signOut({ callbackUrl: '/' })}
@@ -93,9 +163,17 @@ const Nav: FC = () => {
             )}
           </div>
         ) : (
-          <button className="btn-brand" onClick={() => signIn()}>
-            Sign in
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/tonight"
+              className="hidden text-sm font-semibold text-pink-400 transition hover:text-pink-300 sm:block xl:hidden"
+            >
+              Tonight
+            </Link>
+            <button className="btn-brand" onClick={() => signIn()}>
+              Sign in
+            </button>
+          </div>
         )}
       </div>
     </nav>

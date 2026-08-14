@@ -27,6 +27,7 @@ import { api } from '@/utils/api'
 import { getPosterSrc } from '@/utils/getPosterSrc'
 import debounce from '@/utils/debounce'
 import { partitionNews, INITIAL_HEADLINES } from '@/utils/news'
+import { HiOutlineSparkles } from 'react-icons/hi'
 
 /**
  * Compact poster strip that fills the space under the hero in the
@@ -277,6 +278,25 @@ export default function HomeClient({ data }: { data: HomeData }) {
       )}
 
       <div className="px-4 py-6 sm:px-8">
+        {!isSearching && (
+          <div className="mx-auto mb-6 flex max-w-screen-xl flex-col items-center justify-between gap-4 rounded-2xl border border-pink-500/25 bg-gradient-to-r from-pink-950/40 to-zinc-900/70 p-5 text-center sm:flex-row sm:text-left">
+            <div>
+              <p className="font-heading text-lg font-bold text-white">
+                Too many choices?
+              </p>
+              <p className="text-sm text-zinc-400">
+                Get three picks for your mood, time, and streaming services.
+              </p>
+            </div>
+            <Link
+              href="/tonight"
+              className="btn-brand shrink-0 !px-5 !py-2.5 !text-sm"
+            >
+              <HiOutlineSparkles className="h-5 w-5" /> Pick tonight&apos;s
+              movie
+            </Link>
+          </div>
+        )}
         <Search
           value={inputValue}
           loading={searchQuery.isFetching}

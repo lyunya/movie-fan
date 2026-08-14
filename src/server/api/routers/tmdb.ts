@@ -1,5 +1,9 @@
 import { z } from 'zod'
-import { createTRPCRouter, publicProcedure, protectedProcedure } from './../trpc'
+import {
+  createTRPCRouter,
+  publicProcedure,
+  protectedProcedure,
+} from './../trpc'
 import {
   fetchSearch,
   fetchMovieDetails,
@@ -7,11 +11,55 @@ import {
   fetchGenreList,
   fetchDiscoverByGenres,
   fetchTrending,
+  fetchTonightChoices,
+  fetchWatchProviders,
 } from '../../tmdb'
 
 const FOR_YOU_LIMIT = 20
 
 export const tmdbRouter = createTRPCRouter({
+  providers: publicProcedure
+    .input(z.object({ region: z.string().trim().length(2).default('US') }))
+    .query(({ input }) => fetchWatchProviders(input.region.toUpperCase())),
+
+  tonight: protectedProcedure
+    .input(
+      z.object({
+        genreIds: z.array(z.number().int().positive()).max(8).default([]),
+        maxRuntime: z.number().int().min(60).max(300).optional(),
+        minScore: z.number().int().min(0).max(100).default(60),
+        surprise: z.number().int().min(0).max(4).default(0),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const [user, watched] = await Promise.all([
+        ctx.prisma.user.findUnique({
+          where: { id: ctx.session.user.id },
+          select: { watchRegion: true, preferredProviders: true },
+        }),
+        ctx.prisma.watchListItem.findMany({
+          where: { userId: ctx.session.user.id, userRating: { not: null } },
+          select: { movieId: true },
+        }),
+      ])
+      const page = 1 + input.surprise
+      const movies = await fetchTonightChoices({
+        region: user?.watchRegion ?? 'US',
+        providerIds: user?.preferredProviders ?? [],
+        genreIds: input.genreIds,
+        maxRuntime: input.maxRuntime,
+        minScore: input.minScore,
+        page,
+      })
+      const seen = new Set(watched.map((movie) => movie.movieId))
+      return {
+        movies: movies
+          .filter((movie) => !seen.has(movie.emsVersionId))
+          .slice(0, 3),
+        usingProviders: (user?.preferredProviders.length ?? 0) > 0,
+      }
+    }),
+
   search: publicProcedure
     .input(
       z.object({

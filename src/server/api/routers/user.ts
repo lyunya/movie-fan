@@ -39,4 +39,22 @@ export const UserRouter = createTRPCRouter({
         data: { streamAlerts: input.enabled },
       })
     }),
+
+  setStreamingPreferences: protectedProcedure
+    .input(
+      z.object({
+        watchRegion: z
+          .string()
+          .trim()
+          .length(2)
+          .transform((value) => value.toUpperCase()),
+        preferredProviders: z.array(z.number().int().positive()).max(20),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.user.update({
+        where: { id: ctx.session.user.id },
+        data: input,
+      })
+    }),
 })

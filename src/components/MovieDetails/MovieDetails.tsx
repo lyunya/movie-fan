@@ -14,6 +14,8 @@ import CastGrid from '../CastGrid/CastGrid'
 import Lightbox from '@/components/Lightbox/Lightbox'
 import MovieRow from '@/components/MovieRow/MovieRow'
 import { toSlug } from '@/utils/slug'
+import DiaryLogButton from '@/components/DiaryLog/DiaryLogButton'
+import ListPicker from '@/components/ListPicker/ListPicker'
 
 const formatRuntime = (minutes?: number | null) => {
   if (!minutes) return null
@@ -116,8 +118,12 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
     utils.user.query.invalidate()
   }
 
-  const addMovie = api.movie.create.useMutation({ onSuccess: invalidateWatchlist })
-  const removeMovie = api.movie.delete.useMutation({ onSuccess: invalidateWatchlist })
+  const addMovie = api.movie.create.useMutation({
+    onSuccess: invalidateWatchlist,
+  })
+  const removeMovie = api.movie.delete.useMutation({
+    onSuccess: invalidateWatchlist,
+  })
   // The query is a protected procedure, so only run it when signed in
   const watchlistItem = api.movie.query.useQuery(
     { movieId: id },
@@ -132,11 +138,9 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   const runtime = formatRuntime(movie.durationMinutes)
   const gallery = (movie.images || []).filter((img) => img?.url)
   const providers = movie.watchProviders
-  const hasProviders = !!providers && [
-    ...providers.flatrate,
-    ...providers.rent,
-    ...providers.buy,
-  ].length > 0
+  const hasProviders =
+    !!providers &&
+    [...providers.flatrate, ...providers.rent, ...providers.buy].length > 0
 
   const facts: { label: string; value: string | null }[] = [
     { label: 'Release date', value: fullReleaseDate },
@@ -290,6 +294,12 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
                         + Add to watchlist
                       </button>
                     )}
+                    <DiaryLogButton
+                      id={id}
+                      movie={movie}
+                      initialRating={currentUserRating}
+                    />
+                    <ListPicker id={id} movie={movie} />
                   </>
                 )}
                 <button

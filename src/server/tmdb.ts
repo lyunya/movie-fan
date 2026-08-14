@@ -111,18 +111,16 @@ const buildPerson = (person: TmdbPerson): Person => {
         return true
       }
     )
-    .map(
-      (credit): PersonCredit => ({
-        tmdbId: credit.id,
-        title: credit.title,
-        year: credit.release_date ? credit.release_date.slice(0, 4) : null,
-        character: credit.character || null,
-        posterUrl: credit.poster_path
-          ? `${POSTER_BASE}${credit.poster_path}`
-          : null,
-        popularity: credit.popularity ?? 0,
-      })
-    )
+    .map((credit): PersonCredit => ({
+      tmdbId: credit.id,
+      title: credit.title,
+      year: credit.release_date ? credit.release_date.slice(0, 4) : null,
+      character: credit.character || null,
+      posterUrl: credit.poster_path
+        ? `${POSTER_BASE}${credit.poster_path}`
+        : null,
+      popularity: credit.popularity ?? 0,
+    }))
     .sort((a, b) => b.popularity - a.popularity)
 
   return {
@@ -361,6 +359,118 @@ export interface GenrePage {
   totalPages: number
 }
 
+export interface WatchProviderOption {
+  id: number
+  name: string
+  logoUrl: string | null
+  priority: number
+}
+
+interface TmdbWatchProvider {
+  provider_id: number
+  provider_name: string
+  logo_path?: string | null
+  display_priority?: number
+}
+
+const FEATURED_PROVIDER_NAMES = [
+  'Netflix',
+  'Amazon Prime Video',
+  'Disney Plus',
+  'Hulu',
+  'HBO Max',
+  'Apple TV',
+  'Paramount Plus Premium',
+  'Peacock Premium',
+  'Crunchyroll',
+  'MUBI',
+  'The Roku Channel',
+  'Tubi TV',
+  'Criterion Channel',
+  'Shudder',
+  'Starz',
+  'BritBox',
+  'Kanopy',
+  'Hoopla',
+]
+
+/** Streaming providers available in a region, in TMDB/JustWatch display order. */
+export const fetchWatchProviders = async (
+  region = 'US'
+): Promise<WatchProviderOption[]> => {
+  const data = await tmdbFetch(
+    '/watch/providers/movie',
+    { language: 'en-US', watch_region: region },
+    REVALIDATE.details
+  )
+  return ((data?.results ?? []) as TmdbWatchProvider[])
+    .filter((provider) => provider.provider_id && provider.provider_name)
+    .map((provider) => ({
+      id: provider.provider_id,
+      name: provider.provider_name,
+      logoUrl: provider.logo_path
+        ? `${TMDB_PROFILE_URL}${provider.logo_path}`
+        : null,
+      priority: provider.display_priority ?? 999,
+    }))
+    .sort((a, b) => {
+      const featuredA = FEATURED_PROVIDER_NAMES.indexOf(a.name)
+      const featuredB = FEATURED_PROVIDER_NAMES.indexOf(b.name)
+      if (featuredA !== -1 || featuredB !== -1) {
+        if (featuredA === -1) return 1
+        if (featuredB === -1) return -1
+        return featuredA - featuredB
+      }
+      return a.priority - b.priority || a.name.localeCompare(b.name)
+    })
+}
+
+export interface TonightFilters {
+  region?: string
+  providerIds?: number[]
+  genreIds?: number[]
+  maxRuntime?: number
+  minScore?: number
+  page?: number
+}
+
+/**
+ * A compact, filterable pool for the Tonight picker and shared voting rooms.
+ * The user-facing routers apply watch-history exclusions and choose how many
+ * results to expose.
+ */
+export const fetchTonightChoices = async ({
+  region = 'US',
+  providerIds = [],
+  genreIds = [],
+  maxRuntime,
+  minScore = 60,
+  page = 1,
+}: TonightFilters): Promise<MovieCardData[]> => {
+  const params: Record<string, string> = {
+    include_adult: 'false',
+    include_video: 'false',
+    language: 'en-US',
+    page: String(page),
+    region,
+    sort_by: 'popularity.desc',
+    'vote_average.gte': String(minScore / 10),
+    'vote_count.gte': '100',
+  }
+  if (providerIds.length > 0) {
+    params.watch_region = region
+    params.with_watch_providers = providerIds.join('|')
+    params.with_watch_monetization_types = 'flatrate|free|ads'
+  }
+  if (genreIds.length > 0) params.with_genres = genreIds.join('|')
+  if (maxRuntime) params['with_runtime.lte'] = String(maxRuntime)
+
+  const data = await tmdbFetch('/discover/movie', params, REVALIDATE.search)
+  return ((data?.results ?? []) as TmdbMovieSummary[])
+    .filter((movie) => movie?.id && movie?.title && movie?.poster_path)
+    .map(mapSummary)
+}
+
 /**
  * Popular movies spanning any of the given genres (OR-matched). Powers the
  * personalized "For you" row. Empty in → empty out.
@@ -433,7 +543,12 @@ interface TmdbCrewMember {
 // TMDB crew lists can run into the hundreds; Flixster's were short and
 // curated, so an uncapped render here would be a real regression
 const MAX_CREW = 12
-const CREW_DEPARTMENT_PRIORITY = ['Directing', 'Writing', 'Production', 'Camera']
+const CREW_DEPARTMENT_PRIORITY = [
+  'Directing',
+  'Writing',
+  'Production',
+  'Camera',
+]
 
 const mapCredit = (
   person: TmdbCastMember | TmdbCrewMember,
@@ -465,8 +580,8 @@ export const fetchMovieDetails = cache(
     }
     if (!data?.id) return null
 
-    const cast: Credit[] = (data.credits?.cast ?? []).map(
-      (c: TmdbCastMember) => mapCredit(c, { characterName: c.character || undefined })
+    const cast: Credit[] = (data.credits?.cast ?? []).map((c: TmdbCastMember) =>
+      mapCredit(c, { characterName: c.character || undefined })
     )
 
     const crew: Credit[] = (data.credits?.crew ?? [])

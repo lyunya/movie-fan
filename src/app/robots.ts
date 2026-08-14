@@ -13,7 +13,18 @@ export default function robots(): MetadataRoute.Robots {
       // walking that graph burns tens of thousands of function invocations a
       // day for thin, TMDB-sourced content. Movie and genre pages remain
       // indexable — they're the content that matters.
-      disallow: ['/api/', '/profile', '/signin', '/person/', '/u/'],
+      disallow: [
+        '/api/',
+        '/profile',
+        '/signin',
+        '/person/',
+        '/u/',
+        '/lists/',
+        '/room/',
+        '/rooms',
+        '/diary',
+        '/year',
+      ],
     },
     sitemap: `${base}/sitemap.xml`,
   }
