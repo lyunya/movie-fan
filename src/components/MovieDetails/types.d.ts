@@ -38,6 +38,8 @@ export interface IMovieDetail {
   motionPictureRating: { code: string | null }
   tomatoMeter: number | null
   voteCount: number | null
+  imdbRating: number | null
+  imdbVoteCount: number | null
   consensus: string | null
   trailer: { url: string | null }
   images: { url: string }[]

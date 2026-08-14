@@ -17,6 +17,8 @@ const movie = (over: Partial<IMovieDetail> = {}): IMovieDetail => ({
   motionPictureRating: { code: 'PG-13' },
   tomatoMeter: 75,
   voteCount: 10,
+  imdbRating: null,
+  imdbVoteCount: null,
   consensus: null,
   trailer: { url: null },
   images: [],
@@ -48,11 +50,9 @@ describe('createMovieObj', () => {
   })
 
   it('falls back to empty poster when missing', () => {
-    const obj = createMovieObj(
-      movie({ posterImage: { url: null } }),
-      '10',
-      ['Action']
-    )
+    const obj = createMovieObj(movie({ posterImage: { url: null } }), '10', [
+      'Action',
+    ])
     expect(obj.posterImage).toBe('')
   })
 })

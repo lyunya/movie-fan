@@ -13,6 +13,7 @@ const MovieCard: FC<MovieCardProps> = ({
   emsVersionId,
   releaseDate,
   tomatoMeter,
+  imdbRating,
   userRating,
   rank,
 }) => {
@@ -25,7 +26,9 @@ const MovieCard: FC<MovieCardProps> = ({
     '/placeholderposter.png'
 
   const year = releaseDate ? String(releaseDate).slice(0, 4) : null
-  const score = tomatoMeter ?? null
+  const score = imdbRating ?? tomatoMeter ?? null
+  const scoreLabel =
+    imdbRating != null ? `IMDb ${imdbRating.toFixed(1)}` : `TMDB ${score}%`
   const stars = typeof userRating === 'number' ? userRating : null
 
   const onList = has(emsVersionId)
@@ -67,8 +70,13 @@ const MovieCard: FC<MovieCardProps> = ({
             alt={`${name} poster`}
           />
           {score != null && (
-            <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-xs font-semibold text-white backdrop-blur">
-              ⭐ {score}%
+            <span
+              title={
+                imdbRating != null ? 'IMDb rating out of 10' : 'TMDB score'
+              }
+              className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-xs font-semibold text-white backdrop-blur"
+            >
+              {scoreLabel}
             </span>
           )}
           {stars != null && (

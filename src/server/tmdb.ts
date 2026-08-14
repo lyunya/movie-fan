@@ -17,6 +17,7 @@ import {
 } from '@/data/Constants'
 import type { Credit } from '@/components/CastGrid/types'
 import type { IMovieDetail } from '@/components/MovieDetails/types'
+import { fetchImdbRating } from './omdb'
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342'
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w500'
@@ -182,6 +183,8 @@ export interface MovieCardData {
   posterImage: { url: string }
   releaseDate: string | null
   tomatoMeter: number | null
+  imdbRating?: number | null
+  imdbVoteCount?: number | null
 }
 
 interface TmdbMovieSummary {
@@ -204,6 +207,29 @@ const mapSummary = (m: TmdbMovieSummary): MovieCardData => ({
   releaseDate: m.release_date || null,
   tomatoMeter: scoreFromVoteAverage(m.vote_average),
 })
+
+/** Enriches a TMDB card with IMDb data without changing its TMDB score. */
+export const enrichMovieCardWithImdb = async (
+  movie: MovieCardData
+): Promise<MovieCardData> => {
+  try {
+    const externalIds = await tmdbFetch(
+      `/movie/${encodeURIComponent(movie.emsVersionId)}/external_ids`,
+      {},
+      REVALIDATE.details * 7
+    )
+    const imdb = await fetchImdbRating(externalIds?.imdb_id)
+    return imdb
+      ? {
+          ...movie,
+          imdbRating: imdb.rating,
+          imdbVoteCount: imdb.voteCount,
+        }
+      : movie
+  } catch {
+    return movie
+  }
+}
 
 export const fetchPopular = async (): Promise<MovieCardData[]> => {
   const data = await tmdbFetch(
@@ -580,6 +606,8 @@ export const fetchMovieDetails = cache(
     }
     if (!data?.id) return null
 
+    const imdb = await fetchImdbRating(data.imdb_id)
+
     const cast: Credit[] = (data.credits?.cast ?? []).map((c: TmdbCastMember) =>
       mapCredit(c, { characterName: c.character || undefined })
     )
@@ -678,6 +706,8 @@ export const fetchMovieDetails = cache(
       motionPictureRating: { code: certification },
       tomatoMeter: scoreFromVoteAverage(data.vote_average),
       voteCount: data.vote_count ?? null,
+      imdbRating: imdb?.rating ?? null,
+      imdbVoteCount: imdb?.voteCount ?? null,
       consensus: data.tagline || null,
       trailer: {
         url: trailerVideo?.key

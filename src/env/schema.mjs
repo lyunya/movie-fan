@@ -1,5 +1,5 @@
 // @ts-check
-import { z } from "zod";
+import { z } from 'zod'
 
 /**
  * Specify your server-side environment variables schema here.
@@ -12,10 +12,7 @@ export const serverSchema = z.object({
     process.env.NODE_ENV === 'production'
       ? z.string().min(1)
       : z.string().min(1).optional(),
-  NEXTAUTH_URL: z.preprocess(
-    (str) => str,
-    z.string().url()
-  ),
+  NEXTAUTH_URL: z.preprocess((str) => str, z.string().url()),
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_CLIENT_SECRET: z.string(),
   GITHUB_ID: z.string(),
@@ -31,6 +28,9 @@ export const serverSchema = z.object({
   // A v3 api key or v4 read access token from
   // https://www.themoviedb.org/settings/api
   TMDB_API_KEY: z.string().min(1),
+  // Optional IMDb ratings enrichment through OMDb. Server-only: never expose
+  // this key through NEXT_PUBLIC_* or serialize it to a client component.
+  OMDB_API_KEY: z.string().min(1).optional(),
   // Canonical public origin for metadata/sitemap/robots. Optional — falls
   // back to NEXTAUTH_URL, then localhost. Set to a stable custom domain in prod
   // so OG/canonical URLs don't point at a provider subdomain.
@@ -47,7 +47,7 @@ export const serverSchema = z.object({
  */
 export const clientSchema = z.object({
   // NEXT_PUBLIC_CLIENTVAR: z.string(),
-});
+})
 
 /**
  * You can't destruct `process.env` as a regular object, so you have to do
@@ -57,4 +57,4 @@ export const clientSchema = z.object({
  */
 export const clientEnv = {
   // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
-};
+}

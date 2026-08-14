@@ -36,14 +36,19 @@ const formatFullDate = (dateString?: string | null) => {
 }
 
 const ScoreBadge = ({
-  score,
-  count,
-  suffix = '%',
+  tmdbScore,
+  tmdbCount,
+  imdbRating,
+  imdbCount,
 }: {
-  score?: number | null
-  count?: number | null
-  suffix?: string
+  tmdbScore?: number | null
+  tmdbCount?: number | null
+  imdbRating?: number | null
+  imdbCount?: number | null
 }) => {
+  const usingImdb = imdbRating != null
+  const score = usingImdb ? imdbRating : tmdbScore
+  const count = usingImdb ? imdbCount : tmdbCount
   if (score == null) return null
   return (
     <div className="flex items-center gap-2">
@@ -52,14 +57,17 @@ const ScoreBadge = ({
       </span>
       <div className="leading-tight">
         <p className="text-lg font-bold text-white">
-          {score}
-          {suffix}
+          {usingImdb ? `${score.toFixed(1)}/10` : `${score}%`}
         </p>
         {count ? (
           <p className="text-xs text-zinc-400">
-            {count.toLocaleString()} TMDB ratings
+            {count.toLocaleString()} {usingImdb ? 'IMDb' : 'TMDB'} ratings
           </p>
-        ) : null}
+        ) : (
+          <p className="text-xs text-zinc-400">
+            {usingImdb ? 'IMDb' : 'TMDB'} score
+          </p>
+        )}
       </div>
     </div>
   )
@@ -251,7 +259,12 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
 
             {/* Score */}
             <div className="mt-5 flex flex-wrap items-center gap-6">
-              <ScoreBadge score={movie.tomatoMeter} count={movie.voteCount} />
+              <ScoreBadge
+                tmdbScore={movie.tomatoMeter}
+                tmdbCount={movie.voteCount}
+                imdbRating={movie.imdbRating}
+                imdbCount={movie.imdbVoteCount}
+              />
             </div>
 
             {movie.directedBy && (

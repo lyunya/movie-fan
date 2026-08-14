@@ -150,7 +150,8 @@ export default function TonightClient() {
 
         <div className="mt-7 flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-sm text-zinc-500">
-            Picks exclude movies you have already rated.
+            Picks exclude movies you have already rated. Final picks use IMDb
+            scores when available.
           </p>
           <button
             className="btn-brand"

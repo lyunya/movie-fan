@@ -4,7 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FC, TouchEvent } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { HiChevronLeft, HiChevronRight, HiHeart, HiOutlineHeart } from 'react-icons/hi'
+import {
+  HiChevronLeft,
+  HiChevronRight,
+  HiHeart,
+  HiOutlineHeart,
+} from 'react-icons/hi'
 import type { MovieCardProps } from '@/components/MovieCard/types'
 import { useWatchlist } from '@/hooks/useWatchlist'
 
@@ -71,7 +76,10 @@ const Hero: FC<HeroProps> = ({ movies }) => {
     if (!start || !touch) return
     const deltaX = touch.clientX - start.x
     const deltaY = touch.clientY - start.y
-    if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaX) < Math.abs(deltaY)) {
+    if (
+      Math.abs(deltaX) < SWIPE_THRESHOLD ||
+      Math.abs(deltaX) < Math.abs(deltaY)
+    ) {
       return
     }
     goTo(deltaX < 0 ? index + 1 : index - 1)
@@ -140,7 +148,7 @@ const Hero: FC<HeroProps> = ({ movies }) => {
                   {movie.name}
                 </h2>
                 {score != null && (
-                  <p className="chip mt-3 text-sm">⭐ {score}%</p>
+                  <p className="chip mt-3 text-sm">TMDB {score}%</p>
                 )}
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
                   <Link

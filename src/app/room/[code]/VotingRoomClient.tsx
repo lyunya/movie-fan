@@ -164,7 +164,7 @@ export default function VotingRoomClient({ code }: { code: string }) {
                 {nextCandidate.releaseDate?.slice(0, 4) ||
                   'Release date unknown'}
                 {nextCandidate.tomatoMeter != null
-                  ? ` · ⭐ ${nextCandidate.tomatoMeter}%`
+                  ? ` · TMDB ${nextCandidate.tomatoMeter}%`
                   : ''}
               </p>
               <div className="mt-5 grid grid-cols-2 gap-3">

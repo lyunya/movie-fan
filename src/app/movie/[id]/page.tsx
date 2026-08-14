@@ -51,14 +51,16 @@ export default async function MoviePage({ params }: PageProps) {
             .map((name) => ({ '@type': 'Person', name: name.trim() })),
         }
       : {}),
-    ...(movie.tomatoMeter != null && movie.voteCount
+    ...((movie.imdbRating != null && movie.imdbVoteCount) ||
+    (movie.tomatoMeter != null && movie.voteCount)
       ? {
           aggregateRating: {
             '@type': 'AggregateRating',
-            ratingValue: (movie.tomatoMeter / 10).toFixed(1),
+            ratingValue:
+              movie.imdbRating ?? (movie.tomatoMeter! / 10).toFixed(1),
             bestRating: 10,
             worstRating: 0,
-            ratingCount: movie.voteCount,
+            ratingCount: movie.imdbVoteCount ?? movie.voteCount,
           },
         }
       : {}),

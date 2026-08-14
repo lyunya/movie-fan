@@ -13,6 +13,7 @@ import {
   fetchTrending,
   fetchTonightChoices,
   fetchWatchProviders,
+  enrichMovieCardWithImdb,
 } from '../../tmdb'
 
 const FOR_YOU_LIMIT = 20
@@ -52,10 +53,15 @@ export const tmdbRouter = createTRPCRouter({
         page,
       })
       const seen = new Set(watched.map((movie) => movie.movieId))
+      const shortlist = movies
+        .filter((movie) => !seen.has(movie.emsVersionId))
+        .slice(0, 6)
+      const enriched = await Promise.all(shortlist.map(enrichMovieCardWithImdb))
+      const score = (movie: (typeof enriched)[number]) =>
+        movie.imdbRating ?? (movie.tomatoMeter ?? 0) / 10
+
       return {
-        movies: movies
-          .filter((movie) => !seen.has(movie.emsVersionId))
-          .slice(0, 3),
+        movies: enriched.sort((a, b) => score(b) - score(a)).slice(0, 3),
         usingProviders: (user?.preferredProviders.length ?? 0) > 0,
       }
     }),
