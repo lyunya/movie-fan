@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
 import SigninClient from './SigninClient'
+import { auth } from '@/server/auth'
 import { getSiteUrl } from '@/server/siteUrl'
 
 export const metadata: Metadata = {
@@ -31,5 +33,10 @@ const safeCallbackUrl = (value?: string | string[]) => {
 
 export default async function SigninPage({ searchParams }: SigninPageProps) {
   const params = await searchParams
-  return <SigninClient callbackUrl={safeCallbackUrl(params.callbackUrl)} />
+  const callbackUrl = safeCallbackUrl(params.callbackUrl)
+  const session = await auth()
+
+  if (session) redirect(callbackUrl === '/signin' ? '/' : callbackUrl)
+
+  return <SigninClient callbackUrl={callbackUrl} />
 }

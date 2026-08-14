@@ -86,7 +86,7 @@ export default function YearRecapClient() {
         </p>
         <div className="mt-3 flex items-center justify-center gap-3">
           <button
-            className="text-3xl text-zinc-500 hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-3xl text-zinc-500 hover:bg-zinc-900 hover:text-white"
             onClick={() => setYear((value) => value - 1)}
             aria-label="Previous year"
           >
@@ -96,7 +96,7 @@ export default function YearRecapClient() {
             {year}
           </h1>
           <button
-            className="text-3xl text-zinc-500 hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-3xl text-zinc-500 hover:bg-zinc-900 hover:text-white"
             onClick={() => setYear((value) => Math.min(currentYear, value + 1))}
             aria-label="Next year"
           >

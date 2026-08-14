@@ -45,7 +45,9 @@ const MovieCard: FC<MovieCardProps> = ({
     <Link
       href={`/movie/${emsVersionId}`}
       className={`group relative block shrink-0 snap-start ${
-        rank ? 'w-44 sm:w-52' : 'w-36 sm:w-44'
+        rank
+          ? 'w-40 min-[360px]:w-44 sm:w-52'
+          : 'w-[8.25rem] min-[360px]:w-36 sm:w-44'
       }`}
     >
       {/* Netflix-style giant rank numeral peeking out from behind the poster.
@@ -96,7 +98,7 @@ const MovieCard: FC<MovieCardProps> = ({
             onClick={handleHeart}
             aria-label={onList ? 'Remove from watchlist' : 'Add to watchlist'}
             title={onList ? 'Remove from watchlist' : 'Add to watchlist'}
-            className={`absolute bottom-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/75 backdrop-blur transition duration-300 hover:scale-110 hover:bg-black/90 focus-visible:opacity-100 ${
+            className={`absolute bottom-2 right-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/75 backdrop-blur transition duration-300 hover:scale-105 hover:bg-black/90 focus-visible:opacity-100 ${
               onList
                 ? 'text-pink-500'
                 : 'text-white sm:opacity-0 sm:group-hover:opacity-100'

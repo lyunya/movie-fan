@@ -26,7 +26,9 @@ const Lightbox: FC<LightboxProps> = ({
 
   const step = useCallback(
     (direction: number) =>
-      setIndex((current) => (current + direction + images.length) % images.length),
+      setIndex(
+        (current) => (current + direction + images.length) % images.length
+      ),
     [images.length]
   )
 
@@ -60,7 +62,7 @@ const Lightbox: FC<LightboxProps> = ({
       <button
         onClick={onClose}
         aria-label="Close photo viewer"
-        className="absolute right-4 top-4 z-10 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/90"
+        className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/90"
       >
         <HiX className="h-6 w-6" />
       </button>
@@ -73,7 +75,7 @@ const Lightbox: FC<LightboxProps> = ({
               step(-1)
             }}
             aria-label="Previous photo"
-            className="absolute left-3 z-10 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/90 sm:left-6"
+            className="absolute left-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/90 sm:left-6"
           >
             <HiChevronLeft className="h-7 w-7" />
           </button>
@@ -83,7 +85,7 @@ const Lightbox: FC<LightboxProps> = ({
               step(1)
             }}
             aria-label="Next photo"
-            className="absolute right-3 z-10 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/90 sm:right-6"
+            className="absolute right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/90 sm:right-6"
           >
             <HiChevronRight className="h-7 w-7" />
           </button>

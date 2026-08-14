@@ -85,7 +85,7 @@ export default function TonightClient() {
         </p>
       </header>
 
-      <section className="surface mx-auto mt-8 max-w-4xl p-5 sm:p-7">
+      <section className="surface mx-auto mt-8 max-w-4xl p-4 min-[360px]:p-5 sm:p-7">
         <fieldset>
           <legend className="font-heading text-lg font-semibold">Mood</legend>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -98,7 +98,7 @@ export default function TonightClient() {
                   setMood(index)
                   setStarted(false)
                 }}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                className={`min-h-11 rounded-full px-4 py-2 text-sm font-semibold transition ${
                   mood === index
                     ? 'bg-gradient-to-br from-pink-500 to-red-600 text-white'
                     : 'border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white'
@@ -154,7 +154,7 @@ export default function TonightClient() {
             scores when available.
           </p>
           <button
-            className="btn-brand"
+            className="btn-brand w-full sm:w-auto"
             onClick={choose}
             disabled={picks.isFetching}
           >
@@ -187,7 +187,7 @@ export default function TonightClient() {
                   .
                 </p>
               )}
-              <div className="grid grid-cols-2 justify-items-center gap-8 sm:grid-cols-3">
+              <div className="grid grid-cols-2 justify-items-center gap-x-4 gap-y-8 sm:grid-cols-3 sm:gap-8">
                 {picks.data.movies.map((movie, index) => (
                   <div key={movie.emsVersionId} className="w-full max-w-52">
                     <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">

@@ -194,19 +194,24 @@ const Hero: FC<HeroProps> = ({ movies }) => {
           </button>
 
           {/* Dots */}
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+          <div className="absolute bottom-0 left-1/2 z-20 flex -translate-x-1/2">
             {slides.map((movie, i) => (
               <button
                 key={movie.emsVersionId}
                 onClick={() => goTo(i)}
                 aria-label={`Go to slide ${i + 1}: ${movie.name}`}
                 aria-current={i === index}
-                className={`h-2.5 rounded-full transition-all ${
-                  i === index
-                    ? 'w-6 bg-pink-500'
-                    : 'w-2.5 bg-zinc-600 hover:bg-zinc-400'
-                }`}
-              />
+                className="flex h-11 w-11 items-center justify-center rounded-full"
+              >
+                <span
+                  aria-hidden
+                  className={`h-2.5 rounded-full transition-all ${
+                    i === index
+                      ? 'w-6 bg-pink-500'
+                      : 'w-2.5 bg-zinc-600 group-hover/hero:bg-zinc-500'
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </>

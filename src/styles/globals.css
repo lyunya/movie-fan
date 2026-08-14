@@ -4,13 +4,13 @@
 
 @layer base {
   body {
-    @apply bg-black text-white;
+    @apply overflow-x-clip bg-black text-white;
   }
 }
 
 @layer components {
   .login-btn {
-    @apply flex items-center justify-center gap-2 rounded-lg border-2 border-pink-600 bg-slate-800 py-3 px-5 transition-all hover:bg-slate-700;
+    @apply flex items-center justify-center gap-2 rounded-lg border-2 border-pink-600 bg-slate-800 px-5 py-3 transition-all hover:bg-slate-700;
   }
 
   /* Primary call to action — the brand gradient in pill form */
@@ -64,6 +64,10 @@
       black 97.5%,
       transparent
     );
+  }
+
+  .safe-area-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
 }
 

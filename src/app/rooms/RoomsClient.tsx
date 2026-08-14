@@ -67,7 +67,7 @@ export default function RoomsClient() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,680px)_1fr]">
         <form
-          className="surface p-6"
+          className="surface p-5 sm:p-6"
           onSubmit={(event) => {
             event.preventDefault()
             create.mutate({
@@ -102,7 +102,7 @@ export default function RoomsClient() {
                   key={option.label}
                   type="button"
                   onClick={() => setMood(index)}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                  className={`min-h-11 rounded-full px-4 py-2 text-sm font-semibold ${
                     mood === index
                       ? 'bg-gradient-to-br from-pink-500 to-red-600'
                       : 'border border-zinc-700 bg-zinc-900 text-zinc-400'
@@ -149,7 +149,10 @@ export default function RoomsClient() {
           {create.error && (
             <p className="mt-4 text-sm text-red-400">{create.error.message}</p>
           )}
-          <button className="btn-brand mt-6" disabled={create.isPending}>
+          <button
+            className="btn-brand mt-6 w-full sm:w-auto"
+            disabled={create.isPending}
+          >
             {create.isPending ? 'Building the ballot…' : 'Create voting room'}
           </button>
         </form>

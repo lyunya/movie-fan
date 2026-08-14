@@ -62,7 +62,7 @@ const NavSearch: FC = () => {
       <button
         onClick={() => setOpen(true)}
         aria-label="Search movies"
-        className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
       >
         <HiOutlineSearch className="h-5 w-5" />
       </button>
@@ -107,7 +107,7 @@ const NavSearch: FC = () => {
       <button
         onClick={() => setOpen(false)}
         aria-label="Close search"
-        className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-300 transition hover:bg-zinc-800 hover:text-white sm:hidden"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-300 transition hover:bg-zinc-800 hover:text-white sm:hidden"
       >
         <HiX className="h-5 w-5" />
       </button>

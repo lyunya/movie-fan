@@ -189,7 +189,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   const currentUserRating = watchlistItem.data?.movie[0]?.userRating || 0
 
   return (
-    <article className="pb-24 text-white">
+    <article className="pb-32 text-white sm:pb-24">
       {/* Backdrop hero */}
       <div className="relative">
         <div className="absolute inset-0 overflow-hidden">
@@ -241,7 +241,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
                     <Link
                       key={genre.name}
                       href={`/genre/${toSlug(genre.id, genre.name)}`}
-                      className="rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300 transition hover:bg-zinc-700 hover:text-white"
+                      className="inline-flex min-h-11 items-center rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300 transition hover:bg-zinc-700 hover:text-white sm:min-h-0"
                     >
                       {genre.name}
                     </Link>
@@ -476,7 +476,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
       )}
 
       {/* Sticky mobile action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-black/90 p-3 backdrop-blur sm:hidden">
+      <div className="safe-area-bottom fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-black/90 px-3 pt-3 backdrop-blur sm:hidden">
         {!session ? (
           <button className="btn-brand w-full" onClick={() => signIn()}>
             Sign in to add &amp; rate

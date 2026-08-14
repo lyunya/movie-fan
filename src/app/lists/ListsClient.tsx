@@ -202,7 +202,7 @@ export default function ListsClient() {
               </div>
 
               {selected.items.length ? (
-                <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+                <div className="mt-8 grid grid-cols-2 gap-x-2 gap-y-8 min-[360px]:gap-x-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
                   {selected.items.map((item) => (
                     <div key={item.id} className="relative">
                       <MovieCard
@@ -220,7 +220,7 @@ export default function ListsClient() {
                             movieId: item.movieId,
                           })
                         }
-                        className="absolute -right-1 -top-2 z-20 rounded-full bg-zinc-950 p-1.5 text-zinc-400 shadow hover:text-red-300"
+                        className="absolute -right-1 -top-2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-zinc-950 text-zinc-400 shadow hover:text-red-300"
                       >
                         <HiOutlineTrash className="h-4 w-4" />
                       </button>

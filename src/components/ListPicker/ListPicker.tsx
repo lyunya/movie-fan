@@ -39,12 +39,12 @@ export default function ListPicker({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="list-picker-title"
-            className="surface w-full max-w-md bg-zinc-950 p-6 shadow-2xl"
+            className="surface max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto rounded-b-none bg-zinc-950 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-6"
           >
             <div className="flex items-center justify-between gap-3">
               <h2
@@ -56,7 +56,7 @@ export default function ListPicker({
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close list picker"
-                className="rounded-full p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-800 hover:text-white"
               >
                 <HiX className="h-5 w-5" />
               </button>

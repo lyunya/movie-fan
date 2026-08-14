@@ -39,7 +39,7 @@ const Nav: FC = () => {
 
   return (
     <nav className="sticky top-0 z-50 flex w-full items-center justify-between border-b border-zinc-800/80 bg-black/70 px-4 py-4 backdrop-blur-md sm:px-8">
-      <Link href="/">
+      <Link href="/" className="flex min-h-11 items-center">
         <h1 className="gradient-text font-heading text-3xl font-extrabold sm:text-4xl lg:text-5xl">
           Movie Fan
         </h1>
@@ -80,7 +80,7 @@ const Nav: FC = () => {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setOpen((current) => !current)}
-              className="block rounded-full ring-2 ring-transparent transition hover:ring-pink-500"
+              className="block min-h-12 min-w-12 rounded-full ring-2 ring-transparent transition hover:ring-pink-500"
               aria-label="Open account menu"
               aria-expanded={open}
               aria-haspopup="menu"

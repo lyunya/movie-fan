@@ -82,7 +82,7 @@ export default function DiaryLogButton({
 
       {open && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-4"
           role="presentation"
           onMouseDown={(event) => {
             if (event.currentTarget === event.target) setOpen(false)
@@ -92,7 +92,7 @@ export default function DiaryLogButton({
             role="dialog"
             aria-modal="true"
             aria-labelledby="diary-title"
-            className="surface max-h-[90vh] w-full max-w-xl overflow-y-auto bg-zinc-950 p-6 shadow-2xl"
+            className="surface max-h-[calc(100dvh-1rem)] w-full max-w-xl overflow-y-auto rounded-b-none bg-zinc-950 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-[90vh] sm:rounded-2xl sm:p-6"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -109,7 +109,7 @@ export default function DiaryLogButton({
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close diary form"
-                className="rounded-full p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-800 hover:text-white"
               >
                 <HiX className="h-6 w-6" />
               </button>
@@ -165,7 +165,7 @@ export default function DiaryLogButton({
               <p className="mt-4 text-sm text-red-400">{log.error.message}</p>
             )}
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
               <button className="btn-ghost" onClick={() => setOpen(false)}>
                 Cancel
               </button>
