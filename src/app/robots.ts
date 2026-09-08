@@ -20,8 +20,6 @@ export default function robots(): MetadataRoute.Robots {
         '/person/',
         '/u/',
         '/lists/',
-        '/room/',
-        '/rooms',
         '/diary',
         '/year',
       ],

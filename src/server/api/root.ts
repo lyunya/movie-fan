@@ -3,7 +3,6 @@ import { watchListItemRouter } from './routers/watchListItem'
 import { tmdbRouter } from './routers/tmdb'
 import { diaryRouter } from './routers/diary'
 import { listsRouter } from './routers/lists'
-import { roomsRouter } from './routers/rooms'
 import { createTRPCRouter } from './trpc'
 /**
  * This is the primary router for your server.
@@ -16,7 +15,6 @@ export const appRouter = createTRPCRouter({
   tmdb: tmdbRouter,
   diary: diaryRouter,
   lists: listsRouter,
-  rooms: roomsRouter,
 })
 
 // export type definition of API

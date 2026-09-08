@@ -11,7 +11,6 @@ import {
   HiOutlineLogout,
   HiOutlineSparkles,
   HiOutlineUser,
-  HiOutlineUserGroup,
 } from 'react-icons/hi'
 import NavSearch from './NavSearch'
 
@@ -65,12 +64,6 @@ const Nav: FC = () => {
                 className="text-sm font-semibold text-zinc-300 transition hover:text-pink-400"
               >
                 Lists
-              </Link>
-              <Link
-                href="/rooms"
-                className="text-sm font-semibold text-zinc-300 transition hover:text-pink-400"
-              >
-                Rooms
               </Link>
             </>
           )}
@@ -133,11 +126,6 @@ const Nav: FC = () => {
                     href: '/lists',
                     label: 'Custom lists',
                     icon: HiOutlineCollection,
-                  },
-                  {
-                    href: '/rooms',
-                    label: 'Movie night rooms',
-                    icon: HiOutlineUserGroup,
                   },
                 ].map((item) => (
                   <Link

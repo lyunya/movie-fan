@@ -461,7 +461,7 @@ export interface TonightFilters {
 }
 
 /**
- * A compact, filterable pool for the Tonight picker and shared voting rooms.
+ * A compact, filterable pool for the Tonight picker.
  * The user-facing routers apply watch-history exclusions and choose how many
  * results to expose.
  */

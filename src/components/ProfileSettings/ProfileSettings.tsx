@@ -142,7 +142,7 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
                 Your streaming services
               </p>
               <p className="text-sm text-zinc-400">
-                Used by Tonight picks, group rooms, and availability alerts.
+                Used by Tonight picks and availability alerts.
               </p>
             </div>
             <label className="flex items-center gap-2 text-sm text-zinc-400">
