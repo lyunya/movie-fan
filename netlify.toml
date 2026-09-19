@@ -4,3 +4,42 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# These pages are rendered by the Next.js server function. Limit rapid
+# crawling per client before it reaches the function invocation quota.
+[[redirects]]
+  from = "/movie/*"
+  to = "/movie/:splat"
+
+  [redirects.rate_limit]
+    window_limit = 6
+    window_size = 60
+    aggregate_by = ["ip", "domain"]
+
+[[redirects]]
+  from = "/person/*"
+  to = "/person/:splat"
+
+  [redirects.rate_limit]
+    window_limit = 6
+    window_size = 60
+    aggregate_by = ["ip", "domain"]
+
+# Cover repeated API calls and probes of other dynamic routes as well.
+[[redirects]]
+  from = "/api/*"
+  to = "/api/:splat"
+
+  [redirects.rate_limit]
+    window_limit = 30
+    window_size = 60
+    aggregate_by = ["ip", "domain"]
+
+[[redirects]]
+  from = "/*"
+  to = "/:splat"
+
+  [redirects.rate_limit]
+    window_limit = 100
+    window_size = 60
+    aggregate_by = ["ip", "domain"]
