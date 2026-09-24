@@ -9,6 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:integration": "RUN_INTEGRATION=1 vitest run src/server/filmClub.integration.test.ts",
     "test:watch": "vitest",
     "start": "next start"
   },

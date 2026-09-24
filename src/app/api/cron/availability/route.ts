@@ -1,88 +1,138 @@
 import { NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
-
+import { createHash } from 'node:crypto'
 import { env } from '@/env/server.mjs'
 import { prisma } from '@/server/db'
-import { fetchMovieDetails } from '@/server/tmdb'
+import { fetchMovieAvailability } from '@/server/tmdb'
 import { getSiteUrl } from '@/server/siteUrl'
-
-// A daily job, invoked by Vercel Cron (see vercel.json). Never cache it.
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
-
-/**
- * For every user opted into streaming alerts, check their un-rated watchlist
- * items' streaming availability, email them about titles that newly appeared
- * on a flatrate service, and persist the new availability so each title is
- * only announced once.
- */
+const escape = (text: string) =>
+  text.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
+        c
+      ]!
+  )
 export async function GET(req: Request) {
-  const secret = env.CRON_SECRET
-  const authHeader = req.headers.get('authorization')
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  if (
+    !env.CRON_SECRET ||
+    req.headers.get('authorization') !== `Bearer ${env.CRON_SECRET}`
+  )
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   const users = await prisma.user.findMany({
     where: { streamAlerts: true, email: { not: null } },
-    select: { id: true, email: true, name: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      watchRegion: true,
+      preferredProviders: true,
+    },
   })
-
   const transporter = nodemailer.createTransport({
     host: env.EMAIL_SERVER_HOST,
     port: Number(env.EMAIL_SERVER_PORT),
-    auth: {
-      user: env.EMAIL_SERVER_USER,
-      pass: env.EMAIL_SERVER_PASSWORD,
-    },
+    auth: { user: env.EMAIL_SERVER_USER, pass: env.EMAIL_SERVER_PASSWORD },
   })
-
-  const base = getSiteUrl()
-  let notified = 0
-
+  let notified = 0,
+    failed = 0
   for (const user of users) {
     const items = await prisma.watchListItem.findMany({
-      where: { userId: user.id, userRating: null },
+      where: { userId: user.id, inWatchlist: true },
     })
-
-    const newlyAvailable: { name: string; movieId: string }[] = []
-
-    for (const item of items) {
-      const details = await fetchMovieDetails(item.movieId).catch(() => null)
-      const streaming = !!details?.watchProviders?.flatrate?.length
-      if (streaming && !item.hasStreaming) {
-        newlyAvailable.push({ name: item.name, movieId: item.movieId })
-      }
-      // Persist any transition so a title is announced exactly once
-      if (streaming !== item.hasStreaming) {
-        await prisma.watchListItem.update({
-          where: { id: item.id },
-          data: { hasStreaming: streaming },
+    const available: typeof items = []
+    for (let offset = 0; offset < items.length; offset += 5) {
+      const batch = await Promise.all(
+        items.slice(offset, offset + 5).map(async (item) => {
+          let providers
+          try {
+            providers = await fetchMovieAvailability(
+              item.movieId,
+              user.watchRegion
+            )
+          } catch {
+            return null
+          } // A failed lookup must never erase known availability.
+          const streaming = (providers?.flatrate || []).some(
+            (p) =>
+              !user.preferredProviders.length ||
+              user.preferredProviders.includes(p.id)
+          )
+          if (!streaming && item.hasStreaming)
+            await prisma.watchListItem.update({
+              where: { id: item.id },
+              data: { hasStreaming: false },
+            })
+          return streaming && !item.hasStreaming ? item : null
         })
-      }
-    }
-
-    if (newlyAvailable.length > 0 && user.email) {
-      const list = newlyAvailable
-        .map(
-          (movie) =>
-            `<li><a href="${base}/movie/${movie.movieId}">${movie.name}</a></li>`
+      )
+      available.push(
+        ...batch.filter(
+          (item): item is NonNullable<typeof item> => item != null
         )
-        .join('')
+      )
+    }
+    if (!available.length || !user.email) continue
+    const digest = createHash('sha256')
+      .update(
+        `${user.id}:${available
+          .map((m) => m.movieId)
+          .sort()
+          .join(',')}:${new Date().toISOString().slice(0, 10)}`
+      )
+      .digest('hex')
+    await prisma.streamingDelivery.createMany({
+      data: [{ id: digest, userId: user.id }],
+      skipDuplicates: true,
+    })
+    const claim = await prisma.streamingDelivery.updateMany({
+      where: {
+        id: digest,
+        OR: [
+          { status: { in: ['NEW', 'FAILED'] } },
+          { status: 'PROCESSING', lockedUntil: { lt: new Date() } },
+        ],
+      },
+      data: {
+        status: 'PROCESSING',
+        lockedUntil: new Date(Date.now() + 300000),
+      },
+    })
+    if (!claim.count) continue
+    try {
       await transporter.sendMail({
         from: env.EMAIL_FROM,
         to: user.email,
-        subject:
-          newlyAvailable.length > 1
-            ? `${newlyAvailable.length} watchlist movies are now streaming`
-            : `A watchlist movie is now streaming`,
-        html: `<p>Good news${
-          user.name ? `, ${user.name}` : ''
-        }! These are now available to stream:</p><ul>${list}</ul><p><a href="${base}/profile">Manage your watchlist</a></p>`,
+        messageId: `<${digest}@movie-fan>`,
+        subject: `${available.length} watchlist ${available.length === 1 ? 'film is' : 'films are'} available to stream`,
+        html: `<p>Something for your next movie night (${escape(user.watchRegion)}):</p><ul>${available.map((m) => `<li><a href="${getSiteUrl()}/movie/${encodeURIComponent(m.movieId)}">${escape(m.name)}</a></li>`).join('')}</ul><p><a href="${getSiteUrl()}/profile">Manage services or turn off alerts</a></p>`,
       })
+      // Commit notification state only after successful delivery. A failed send retries next run.
+      await prisma.$transaction([
+        prisma.watchListItem.updateMany({
+          where: { id: { in: available.map((m) => m.id) } },
+          data: { hasStreaming: true },
+        }),
+        prisma.streamingDelivery.update({
+          where: { id: digest },
+          data: { status: 'SENT', sentAt: new Date(), lockedUntil: null },
+        }),
+      ])
       notified++
+    } catch {
+      await prisma.streamingDelivery.update({
+        where: { id: digest },
+        data: { status: 'FAILED', lockedUntil: null },
+      })
+      failed++
     }
   }
-
-  return NextResponse.json({ ok: true, usersChecked: users.length, notified })
+  return NextResponse.json({
+    ok: failed === 0,
+    usersChecked: users.length,
+    notified,
+    failed,
+  })
 }

@@ -12,9 +12,12 @@ import type { IMovieDetail } from './types'
 import StarRating from '@/components/StarRating/StarRating'
 import CastGrid from '../CastGrid/CastGrid'
 import Lightbox from '@/components/Lightbox/Lightbox'
+import FollowNews from '@/components/ui/FollowNews'
 import MovieRow from '@/components/MovieRow/MovieRow'
 import { toSlug } from '@/utils/slug'
 import DiaryLogButton from '@/components/DiaryLog/DiaryLogButton'
+import Availability from './Availability'
+import { notify } from '@/components/ui/Feedback'
 import ListPicker from '@/components/ListPicker/ListPicker'
 
 const formatRuntime = (minutes?: number | null) => {
@@ -73,40 +76,6 @@ const ScoreBadge = ({
   )
 }
 
-const ProviderRow = ({
-  label,
-  providers,
-}: {
-  label: string
-  providers: { name: string; logoUrl: string }[]
-}) => {
-  if (providers.length === 0) return null
-  return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-        {label}
-      </p>
-      <div className="mt-2 flex flex-wrap gap-3">
-        {providers.map((provider) => (
-          <div
-            key={provider.name}
-            title={provider.name}
-            className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-zinc-800"
-          >
-            <Image
-              src={provider.logoUrl}
-              fill
-              sizes="40px"
-              alt={provider.name}
-              className="object-cover"
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   const { data: session } = useSession()
   const utils = api.useUtils()
@@ -127,10 +96,31 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   }
 
   const addMovie = api.movie.create.useMutation({
-    onSuccess: invalidateWatchlist,
+    onSuccess: () => {
+      invalidateWatchlist()
+      notify('Collection updated')
+    },
+    onError: () =>
+      notify('Could not save your change. Please try again.', 'error'),
   })
   const removeMovie = api.movie.delete.useMutation({
-    onSuccess: invalidateWatchlist,
+    onSuccess: () => {
+      invalidateWatchlist()
+      notify(
+        'Removed from watchlist. Your rating and history are kept.',
+        'success',
+        () =>
+          addMovie.mutate({
+            movieData: createMovieObj(
+              movie,
+              id,
+              movie.genres.map((g) => g.name)
+            ),
+          })
+      )
+    },
+    onError: () =>
+      notify('Could not save your change. Please try again.', 'error'),
   })
   // The query is a protected procedure, so only run it when signed in
   const watchlistItem = api.movie.query.useQuery(
@@ -138,6 +128,14 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
     { enabled: !!session }
   )
 
+  const setState = api.movie.setState.useMutation({
+    onSuccess: invalidateWatchlist,
+    onError: (e) => notify(e.message, 'error'),
+  })
+  const history = api.diary.history.useQuery(
+    { movieId: id },
+    { enabled: !!session }
+  )
   const genres: string[] = (movie.genres || []).map((genre) => genre.name)
   const poster = movie.posterImage?.url || '/placeholderposter.png'
   const backdrop = movie.backgroundImage?.url || poster
@@ -145,10 +143,6 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   const fullReleaseDate = formatFullDate(movie.releaseDate)
   const runtime = formatRuntime(movie.durationMinutes)
   const gallery = (movie.images || []).filter((img) => img?.url)
-  const providers = movie.watchProviders
-  const hasProviders =
-    !!providers &&
-    [...providers.flatrate, ...providers.rent, ...providers.buy].length > 0
 
   const facts: { label: string; value: string | null }[] = [
     { label: 'Release date', value: fullReleaseDate },
@@ -179,14 +173,15 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   const handleRemoveMovie = () => removeMovie.mutate({ movieId: id })
   // The server upserts on [userId, movieId], so rating a movie is a single
   // mutation whether or not it is already on the watchlist
-  const handleSeenMovie = (userRating: number) => {
-    addMovie.mutate({
-      movieData: createMovieObj(movie, id, genres, userRating),
+  const handleSeenMovie = (userRating: number) =>
+    setState.mutate({
+      movieId: id,
+      userRating: userRating || null,
+      ...(userRating ? { watched: true } : {}),
     })
-  }
-
-  const onWatchlist = !!watchlistItem.data?.movie.length
-  const currentUserRating = watchlistItem.data?.movie[0]?.userRating || 0
+  const item = watchlistItem.data?.movie[0]
+  const onWatchlist = !!item?.inWatchlist
+  const currentUserRating = item?.userRating || 0
 
   return (
     <article className="pb-32 text-white sm:pb-24">
@@ -207,7 +202,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
 
         <div className="relative mx-auto flex max-w-screen-xl flex-col gap-8 px-4 py-8 sm:flex-row sm:px-8 sm:py-12">
           {/* Poster */}
-          <div className="relative mx-auto aspect-[2/3] w-44 shrink-0 overflow-hidden rounded-xl border border-zinc-700 shadow-2xl sm:mx-0 sm:w-60">
+          <div className="relative mx-auto aspect-[2/3] w-44 shrink-0 overflow-hidden rounded-xl border border-zinc-700 shadow-2xl sm:mx-0 sm:w-60 sm:self-start">
             <Image
               src={poster}
               fill
@@ -280,9 +275,10 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
               </p>
             )}
 
+            <Availability key={id} id={id} initial={movie.watchProviders} />
             {/* Watchlist / rating / share actions */}
             <div className="mt-8">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex flex-wrap items-center gap-3">
                 {!session ? (
                   <button className="btn-brand" onClick={() => signIn()}>
                     Sign in to add to watchlist &amp; rate
@@ -294,25 +290,61 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
                         Your rating:
                       </span>
                       <StarRating
+                        disabled={setState.isPending}
                         value={currentUserRating}
                         onChange={handleSeenMovie}
                       />
                     </div>
                     {onWatchlist ? (
-                      <button className="btn-ghost" onClick={handleRemoveMovie}>
+                      <button
+                        disabled={removeMovie.isPending || addMovie.isPending}
+                        className="btn-ghost"
+                        onClick={handleRemoveMovie}
+                      >
                         Remove from watchlist
                       </button>
                     ) : (
-                      <button className="btn-brand" onClick={handleAddMovie}>
+                      <button
+                        disabled={removeMovie.isPending || addMovie.isPending}
+                        className="btn-brand"
+                        onClick={handleAddMovie}
+                      >
                         + Add to watchlist
                       </button>
                     )}
+                    <button
+                      className="btn-ghost"
+                      aria-pressed={!!item?.watched}
+                      disabled={setState.isPending}
+                      onClick={() =>
+                        setState.mutate({
+                          movieId: id,
+                          watched: !item?.watched,
+                        })
+                      }
+                    >
+                      {item?.watched ? '✓ Watched' : 'Mark watched'}
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      aria-pressed={!!item?.favorite}
+                      disabled={setState.isPending}
+                      onClick={() =>
+                        setState.mutate({
+                          movieId: id,
+                          favorite: !item?.favorite,
+                        })
+                      }
+                    >
+                      {item?.favorite ? '♥ Favorite' : '♡ Favorite'}
+                    </button>
                     <DiaryLogButton
                       id={id}
                       movie={movie}
                       initialRating={currentUserRating}
                     />
                     <ListPicker id={id} movie={movie} />
+                    <FollowNews subject={movie.name} />
                   </>
                 )}
                 <button
@@ -339,6 +371,23 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
       </div>
 
       <div className="mx-auto max-w-screen-xl px-4 sm:px-8">
+        {!!history.data?.length && (
+          <section className="surface mt-6 p-5">
+            <h2 className="font-semibold">Your history with this film</h2>
+            {history.data.slice(0, 3).map((e) => (
+              <p key={e.id} className="mt-2 text-sm text-zinc-300">
+                {e.watchedAt.toLocaleDateString()} ·{' '}
+                {e.rating ? `${e.rating}★` : 'Unrated watch'}
+              </p>
+            ))}
+            <Link
+              className="mt-3 inline-block text-sm text-pink-300"
+              href="/diary"
+            >
+              Edit your diary ↗
+            </Link>
+          </section>
+        )}
         {/* Tagline */}
         {movie.consensus && (
           <blockquote className="surface my-8 border-l-4 border-pink-500 p-5 text-lg italic text-zinc-200 md:text-xl">
@@ -420,8 +469,23 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
         )}
 
         {/* Cast & crew */}
-        {movie.cast?.length > 0 && <CastGrid cast={movie.cast} title="Cast" />}
-        {movie.crew?.length > 0 && <CastGrid cast={movie.crew} title="Crew" />}
+        {movie.cast?.length > 0 && (
+          <CastGrid cast={movie.cast.slice(0, 6)} title="Cast" />
+        )}
+        {movie.cast?.length > 6 && (
+          <details className="my-5">
+            <summary className="text-pink-300">
+              Full cast ({movie.cast.length})
+            </summary>
+            <CastGrid cast={movie.cast.slice(6)} title="More cast" />
+          </details>
+        )}
+        {movie.crew?.length > 0 && (
+          <details className="my-5">
+            <summary className="text-pink-300">Explore the crew</summary>
+            <CastGrid cast={movie.crew} title="Crew" />
+          </details>
+        )}
 
         {/* Movie facts */}
         {facts.length > 0 && (
@@ -439,33 +503,6 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
             </dl>
           </section>
         )}
-
-        {/* Where to watch */}
-        {hasProviders && providers && (
-          <section className="my-10">
-            <h3 className="section-heading mb-4">Where to watch</h3>
-            <div className="surface flex flex-col gap-5 p-5">
-              <ProviderRow label="Stream" providers={providers.flatrate} />
-              <ProviderRow label="Rent" providers={providers.rent} />
-              <ProviderRow label="Buy" providers={providers.buy} />
-              <div className="flex flex-col gap-2 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-zinc-500">
-                  Streaming data provided by JustWatch
-                </p>
-                {providers.link && (
-                  <a
-                    href={providers.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-ghost"
-                  >
-                    More info
-                  </a>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
       </div>
 
       {/* More like this — full-bleed carousel outside the padded container */}
@@ -481,28 +518,23 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
           <button className="btn-brand w-full" onClick={() => signIn()}>
             Sign in to add &amp; rate
           </button>
-        ) : onWatchlist ? (
-          // On the watchlist: rate inline (left) and remove (right)
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-400">Rate</span>
-              <StarRating
-                value={currentUserRating}
-                onChange={handleSeenMovie}
-                size={26}
-              />
-            </div>
-            <button
-              className="btn-ghost !px-4 !py-2 !text-sm"
-              onClick={handleRemoveMovie}
-            >
-              Remove
-            </button>
-          </div>
         ) : (
-          <button className="btn-brand w-full" onClick={handleAddMovie}>
-            + Add to watchlist
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href="/library" className="btn-ghost !px-3 !py-2 !text-sm">
+              Library
+            </Link>
+            <button
+              className="btn-ghost flex-1 !px-3 !py-2 !text-sm"
+              onClick={onWatchlist ? handleRemoveMovie : handleAddMovie}
+            >
+              {onWatchlist ? '✓ Saved' : '+ Watchlist'}
+            </button>
+            <DiaryLogButton
+              id={id}
+              movie={movie}
+              initialRating={currentUserRating}
+            />
+          </div>
         )}
       </div>
     </article>

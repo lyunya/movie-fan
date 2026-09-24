@@ -8,6 +8,7 @@
  */
 import { useSession, signIn } from 'next-auth/react'
 import type { WatchListItem } from '@prisma/client'
+import { notify } from '@/components/ui/Feedback'
 import { api } from '@/utils/api'
 
 // A placeholder row inserted into the cache while an add is in flight. Only
@@ -32,6 +33,13 @@ const optimisticRow = (movieId: string): WatchListItem => ({
   motionPictureRating: null,
   userRating: null,
   hasStreaming: false,
+  inWatchlist: true,
+  watched: false,
+  favorite: false,
+  dismissed: false,
+  savedAt: null,
+  lastWatchedAt: null,
+  updatedAt: new Date(),
 })
 
 export const useWatchlist = () => {
@@ -57,41 +65,90 @@ export const useWatchlist = () => {
       const prev = utils.user.query.getData()
       utils.user.query.setData(undefined, (old) => {
         if (!old) return old
-        if (old.movies.some((m) => m.movieId === movieId)) return old
+        if (old.movies.some((m) => m.movieId === movieId))
+          return {
+            ...old,
+            movies: old.movies.map((m) =>
+              m.movieId === movieId ? { ...m, inWatchlist: true } : m
+            ),
+          }
         return { ...old, movies: [...old.movies, optimisticRow(movieId)] }
       })
       return { prev }
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) utils.user.query.setData(undefined, ctx.prev)
+      if (ctx?.prev)
+        utils.user.query.setData(undefined, (old) =>
+          old
+            ? {
+                ...old,
+                movies: old.movies
+                  .filter((m) => m.movieId !== _vars.movieId)
+                  .concat(
+                    ctx.prev!.movies.filter((m) => m.movieId === _vars.movieId)
+                  ),
+              }
+            : old
+        )
+      notify('Could not save your change. Please try again.', 'error')
     },
     onSettled: invalidate,
   })
   const remove = api.movie.delete.useMutation({
+    onSuccess: (_result, { movieId }) =>
+      notify(
+        'Removed from watchlist. Your rating and history are kept.',
+        'success',
+        () => quickAdd.mutate({ movieId })
+      ),
     onMutate: async ({ movieId }) => {
       await utils.user.query.cancel()
       const prev = utils.user.query.getData()
       utils.user.query.setData(undefined, (old) =>
         old
-          ? { ...old, movies: old.movies.filter((m) => m.movieId !== movieId) }
+          ? {
+              ...old,
+              movies: old.movies.map((m) =>
+                m.movieId === movieId ? { ...m, inWatchlist: false } : m
+              ),
+            }
           : old
       )
       return { prev }
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) utils.user.query.setData(undefined, ctx.prev)
+      if (ctx?.prev)
+        utils.user.query.setData(undefined, (old) =>
+          old
+            ? {
+                ...old,
+                movies: old.movies.map((m) =>
+                  m.movieId === _vars.movieId
+                    ? ctx.prev!.movies.find((p) => p.movieId === m.movieId) || m
+                    : m
+                ),
+              }
+            : old
+        )
+      notify('Could not save your change. Please try again.', 'error')
     },
     onSettled: invalidate,
   })
 
   const ids = new Set(
-    (watchlist.data?.movies ?? []).map((movie) => movie.movieId)
+    (watchlist.data?.movies ?? [])
+      .filter((m) => m.inWatchlist)
+      .map((movie) => movie.movieId)
   )
 
   const has = (movieId: string) => ids.has(movieId)
 
   const toggle = (movieId: string) => {
+    if (quickAdd.isPending || remove.isPending) return
     if (!session) {
+      try {
+        sessionStorage.setItem('movie-fan-pending-save', movieId)
+      } catch {}
       signIn()
       return
     }

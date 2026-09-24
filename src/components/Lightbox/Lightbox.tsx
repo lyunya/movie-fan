@@ -1,114 +1,62 @@
 'use client'
-
-/**
- * Minimal dependency-free image lightbox: backdrop click / Esc to close,
- * arrow keys or on-screen chevrons to navigate, with a position counter.
- */
 import { useCallback, useEffect, useState } from 'react'
-import type { FC } from 'react'
 import Image from 'next/image'
-import { HiChevronLeft, HiChevronRight, HiX } from 'react-icons/hi'
-
-interface LightboxProps {
-  images: { url: string }[]
-  startIndex: number
-  altBase: string
-  onClose: () => void
-}
-
-const Lightbox: FC<LightboxProps> = ({
+import Dialog from '@/components/ui/Dialog'
+export default function Lightbox({
   images,
   startIndex,
   altBase,
   onClose,
-}) => {
+}: {
+  images: { url: string }[]
+  startIndex: number
+  altBase: string
+  onClose: () => void
+}) {
   const [index, setIndex] = useState(startIndex)
-
   const step = useCallback(
     (direction: number) =>
-      setIndex(
-        (current) => (current + direction + images.length) % images.length
-      ),
+      setIndex((i) => (i + direction + images.length) % images.length),
     [images.length]
   )
-
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      if (e.key === 'ArrowLeft') step(-1)
-      if (e.key === 'ArrowRight') step(1)
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        step(-1)
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        step(1)
+      }
     }
-    window.addEventListener('keydown', onKeyDown)
-    // Lock page scroll while the lightbox is open
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', onKeyDown)
-      document.body.style.overflow = previousOverflow
-    }
-  }, [onClose, step])
-
-  const image = images[index]
-  if (!image) return null
-
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [step])
+  if (!images[index]) return null
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${altBase} photo viewer`}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm"
-      onClick={onClose}
+    <Dialog
+      open
+      onClose={onClose}
+      title={`${altBase} · ${index + 1} of ${images.length}`}
     >
-      <button
-        onClick={onClose}
-        aria-label="Close photo viewer"
-        className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/90"
-      >
-        <HiX className="h-6 w-6" />
-      </button>
-
+      <Image
+        src={images[index]!.url}
+        width={1200}
+        height={800}
+        alt={`${altBase}, photo ${index + 1}`}
+        className="max-h-[60dvh] w-full rounded-lg object-contain"
+      />
       {images.length > 1 && (
-        <>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              step(-1)
-            }}
-            aria-label="Previous photo"
-            className="absolute left-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/90 sm:left-6"
-          >
-            <HiChevronLeft className="h-7 w-7" />
+        <div className="mt-4 flex justify-between">
+          <button className="btn-ghost" onClick={() => step(-1)}>
+            ← Previous photo
           </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              step(1)
-            }}
-            aria-label="Next photo"
-            className="absolute right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/90 sm:right-6"
-          >
-            <HiChevronRight className="h-7 w-7" />
+          <button className="btn-ghost" onClick={() => step(1)}>
+            Next photo →
           </button>
-        </>
+        </div>
       )}
-
-      <figure
-        className="relative h-[80vh] w-[92vw] max-w-6xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Image
-          src={image.url}
-          fill
-          sizes="92vw"
-          alt={`${altBase} still ${index + 1}`}
-          className="object-contain"
-        />
-        <figcaption className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-sm text-zinc-300 backdrop-blur">
-          {index + 1} / {images.length}
-        </figcaption>
-      </figure>
-    </div>
+    </Dialog>
   )
 }
-
-export default Lightbox

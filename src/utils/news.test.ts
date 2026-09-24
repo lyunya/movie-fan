@@ -22,7 +22,11 @@ describe('partitionNews', () => {
   it('picks the first image-bearing story as the main story', () => {
     const { mainStory, restStories } = partitionNews([
       story({ id: '1', title: 'no image', mainImage: { url: '' } }),
-      story({ id: '2', title: 'has image', mainImage: { url: 'http://x/i.jpg' } }),
+      story({
+        id: '2',
+        title: 'has image',
+        mainImage: { url: 'http://x/i.jpg' },
+      }),
     ])
     expect(mainStory?.id).toBe('2')
     expect(restStories.map((s) => s.id)).toEqual(['1'])
@@ -43,5 +47,41 @@ describe('partitionNews', () => {
     const { stories, mainStory } = partitionNews(undefined)
     expect(stories).toEqual([])
     expect(mainStory).toBeUndefined()
+  })
+})
+
+import { clusterNews } from './news'
+describe('coverage clustering', () => {
+  it('groups overlapping event headlines without mutating the input', () => {
+    const input = [
+      story({
+        id: 'a',
+        title:
+          'Venice festival announces official competition lineup for September',
+        link: 'https://one.test/a',
+      }),
+      story({
+        id: 'b',
+        title:
+          'Official Venice festival competition lineup announces September selections',
+        link: 'https://two.test/b',
+      }),
+    ]
+    const grouped = clusterNews(input)
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0]?.coverage?.[0]?.link).toBe('https://two.test/b')
+    expect(input[0]?.coverage).toBeUndefined()
+  })
+  it('keeps different events about the same film separate', () => {
+    expect(
+      clusterNews([
+        story({
+          title: 'Arrival returns to cinemas for an anniversary screening',
+        }),
+        story({
+          title: 'Arrival composer reflects on creating the unsettling score',
+        }),
+      ])
+    ).toHaveLength(2)
   })
 })

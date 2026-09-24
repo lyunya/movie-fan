@@ -7,6 +7,8 @@ import { useSearchParams } from 'next/navigation'
 import { signIn, useSession } from 'next-auth/react'
 import { HiOutlineShare, HiOutlineSparkles } from 'react-icons/hi'
 
+import RecapImage from '@/components/ui/RecapImage'
+import { QueryError } from '@/components/ui/Feedback'
 import { api } from '@/utils/api'
 
 const currentYear = new Date().getFullYear()
@@ -54,7 +56,30 @@ export default function YearRecapClient() {
       const month = entry.watchedAt.getMonth()
       months[month] = (months[month] ?? 0) + 1
     }
-    return { watches, unique, minutes, average, topGenre, favorite, months }
+    const chronological = [...watches].sort(
+      (a, b) => a.watchedAt.getTime() - b.watchedAt.getTime()
+    )
+    const revisits = new Map<string, { name: string; count: number }>()
+    for (const watch of watches)
+      revisits.set(watch.movieId, {
+        name: watch.name,
+        count: (revisits.get(watch.movieId)?.count || 0) + 1,
+      })
+    const mostRevisited = [...revisits.values()].sort(
+      (a, b) => b.count - a.count
+    )[0]
+    return {
+      watches,
+      unique,
+      minutes,
+      average,
+      topGenre,
+      favorite,
+      months,
+      first: chronological[0],
+      last: chronological.at(-1),
+      mostRevisited,
+    }
   }, [entries.data])
 
   if (status === 'loading') return <div className="min-h-[60vh]" />
@@ -76,6 +101,13 @@ export default function YearRecapClient() {
   }
 
   const maxMonth = Math.max(...stats.months, 1)
+  const recapTitles = [
+    ...new Map(
+      [...stats.watches]
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .map((e) => [e.movieId, e.name])
+    ).values(),
+  ]
   const shareText = `My ${year} in movies: ${stats.watches.length} watches, ${stats.unique} different films, ${Math.round(stats.minutes / 60)} hours${stats.topGenre ? `, and ${stats.topGenre[0]} was my top genre` : ''}.`
 
   return (
@@ -103,10 +135,12 @@ export default function YearRecapClient() {
             ›
           </button>
         </div>
-        <p className="mt-3 text-zinc-400">Your year in movies</p>
+        <p className="mt-3 text-zinc-400">Your year in frames</p>
       </header>
 
-      {entries.isLoading ? (
+      {entries.isError ? (
+        <QueryError retry={() => entries.refetch()} />
+      ) : entries.isLoading ? (
         <div className="surface mt-10 h-96 animate-pulse" />
       ) : stats.watches.length ? (
         <>
@@ -174,6 +208,23 @@ export default function YearRecapClient() {
             </div>
           </section>
 
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[
+              ['Opening scene', stats.first?.name],
+              ['Closing credits', stats.last?.name],
+              [
+                'On repeat',
+                stats.mostRevisited && stats.mostRevisited.count > 1
+                  ? `${stats.mostRevisited.name} · ${stats.mostRevisited.count} watches`
+                  : 'Every film had its own night',
+              ],
+            ].map(([label, value]) => (
+              <div key={label} className="surface p-5">
+                <p className="eyebrow">{label}</p>
+                <p className="mt-3 font-semibold">{value}</p>
+              </div>
+            ))}
+          </div>
           <section className="surface mt-6 p-6">
             <h2 className="font-heading text-xl font-bold">
               Your year at a glance
@@ -204,7 +255,14 @@ export default function YearRecapClient() {
             </div>
           </section>
 
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <RecapImage
+              year={year}
+              count={stats.watches.length}
+              unique={stats.unique}
+              hours={Math.round(stats.minutes / 60)}
+              titles={recapTitles}
+            />
             <button
               className="btn-brand"
               onClick={async () => {

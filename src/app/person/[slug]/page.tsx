@@ -12,7 +12,8 @@ import { parseIdFromSlug } from '@/utils/slug'
 // People data barely changes — rebuild at most daily
 export const revalidate = 86400
 
-const MAX_CREDITS = 18
+import Filmography from './Filmography'
+import FollowNews from '@/components/ui/FollowNews'
 
 type PageProps = { params: Promise<{ slug: string }> }
 
@@ -95,8 +96,6 @@ export default async function PersonPage({ params }: PageProps) {
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
 
-  const credits = person.credits.slice(0, MAX_CREDITS)
-
   return (
     <main className="mx-auto max-w-screen-xl px-4 pb-16 text-white sm:px-8">
       {/* Profile header */}
@@ -116,6 +115,9 @@ export default async function PersonPage({ params }: PageProps) {
           <h1 className="font-heading text-3xl font-bold sm:text-5xl">
             {person.name}
           </h1>
+          <div className="mt-4">
+            <FollowNews subject={person.name} />
+          </div>
 
           {facts.length > 0 && (
             <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
@@ -129,17 +131,17 @@ export default async function PersonPage({ params }: PageProps) {
 
           {bioParagraphs.length > 0 && (
             <div className="mt-5 max-w-2xl space-y-3 text-left leading-relaxed text-zinc-300">
-              {bioParagraphs.slice(0, 2).map((paragraph, idx) => (
+              {bioParagraphs.slice(0, 1).map((paragraph, idx) => (
                 <p key={idx}>{paragraph}</p>
               ))}
-              {bioParagraphs.length > 2 && (
+              {bioParagraphs.length > 1 && (
                 <details className="group">
                   <summary className="cursor-pointer list-none text-sm font-semibold text-pink-400 transition hover:text-pink-300">
                     <span className="group-open:hidden">Read full bio</span>
                     <span className="hidden group-open:inline">Show less</span>
                   </summary>
                   <div className="mt-3 space-y-3">
-                    {bioParagraphs.slice(2).map((paragraph, idx) => (
+                    {bioParagraphs.slice(1).map((paragraph, idx) => (
                       <p key={idx}>{paragraph}</p>
                     ))}
                   </div>
@@ -150,43 +152,7 @@ export default async function PersonPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Filmography */}
-      {credits.length > 0 && (
-        <section>
-          <h2 className="section-heading mb-4">
-            <span className="gradient-text">Known for</span>
-          </h2>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {credits.map((credit) => (
-              <Link
-                key={credit.tmdbId}
-                href={`/movie/${credit.tmdbId}`}
-                className="group block"
-              >
-                <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-lg transition duration-300 group-hover:border-zinc-600 group-hover:shadow-pink-900/20">
-                  <Image
-                    src={credit.posterUrl || '/placeholderposter.png'}
-                    fill
-                    sizes="(max-width: 640px) 45vw, 180px"
-                    alt={`${credit.title} poster`}
-                    className="object-cover transition duration-300 group-hover:scale-105"
-                  />
-                </div>
-                <div className="mt-2 px-0.5">
-                  <p className="truncate font-heading text-sm font-semibold text-white transition group-hover:text-pink-400">
-                    {credit.title}
-                  </p>
-                  <p className="truncate text-xs text-zinc-500">
-                    {[credit.year, credit.character && `as ${credit.character}`]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      <Filmography credits={person.credits} />
     </main>
   )
 }

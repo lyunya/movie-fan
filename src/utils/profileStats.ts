@@ -27,6 +27,9 @@ export interface TasteStats {
 
 export const computeTasteStats = (movies: WatchListItem[]): TasteStats => {
   const rated = movies.filter((movie) => movie.userRating)
+  const watched = movies.filter(
+    (movie) => movie.watched || movie.userRating != null
+  )
 
   // Favorite genres across everything saved
   const genreCounts = new Map<string, number>()
@@ -43,7 +46,7 @@ export const computeTasteStats = (movies: WatchListItem[]): TasteStats => {
   const maxGenreCount = topGenres[0]?.[1] ?? 0
 
   // Hours watched: runtimes of everything rated as seen
-  const minutesWatched = rated.reduce(
+  const minutesWatched = watched.reduce(
     (sum, movie) => sum + (movie.durationMinutes || 0),
     0
   )
@@ -70,7 +73,7 @@ export const computeTasteStats = (movies: WatchListItem[]): TasteStats => {
 
   // Most-watched director among rated movies
   const directorCounts = new Map<string, number>()
-  for (const movie of rated) {
+  for (const movie of watched) {
     const director = movie.directedBy?.trim()
     if (director) {
       directorCounts.set(director, (directorCounts.get(director) || 0) + 1)
@@ -87,7 +90,7 @@ export const computeTasteStats = (movies: WatchListItem[]): TasteStats => {
 
   // Which decades the user actually watches, by release year of rated movies
   const decadeCounts = new Map<number, number>()
-  for (const movie of rated) {
+  for (const movie of watched) {
     const year = movie.releaseDate
       ? Number(String(movie.releaseDate).slice(0, 4))
       : NaN

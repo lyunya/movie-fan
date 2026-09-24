@@ -1,183 +1,299 @@
 'use client'
-
-import { useMemo, useState } from 'react'
-import Image from 'next/image'
+import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { signIn, useSession } from 'next-auth/react'
-import { HiOutlineBookOpen, HiOutlineTrash } from 'react-icons/hi'
-
+import type { WatchEvent } from '@prisma/client'
+import type { IMovieDetail } from '@/components/MovieDetails/types'
 import { api } from '@/utils/api'
-
-const currentYear = new Date().getFullYear()
-const YEARS = Array.from({ length: 8 }, (_, index) => currentYear - index)
-
+import Dialog from '@/components/ui/Dialog'
+import MovieFinder from '@/components/ui/MovieFinder'
+import WatchEditor from '@/components/DiaryLog/WatchEditor'
+import { notify, QueryError } from '@/components/ui/Feedback'
 export default function DiaryClient() {
-  const { status } = useSession()
-  const utils = api.useUtils()
-  const [year, setYear] = useState(currentYear)
+  const { status } = useSession(),
+    utils = api.useUtils()
+  const [dirty, setDirty] = useState(false)
+  const [year, setYear] = useState(new Date().getFullYear()),
+    [filter, setFilter] = useState(''),
+    [limit, setLimit] = useState(40),
+    [finder, setFinder] = useState(false),
+    [movie, setMovie] = useState<IMovieDetail | null>(null),
+    [entry, setEntry] = useState<WatchEvent | null>(null),
+    [loading, setLoading] = useState(false),
+    [calendar, setCalendar] = useState(false)
   const entries = api.diary.list.useQuery(
-    { year },
-    { enabled: status === 'authenticated' }
-  )
+      { year },
+      { enabled: status === 'authenticated' }
+    ),
+    years = api.diary.years.useQuery(undefined, {
+      enabled: status === 'authenticated',
+    })
   const remove = api.diary.delete.useMutation({
-    onSuccess: () => utils.diary.list.invalidate({ year }),
+    onSuccess: () => {
+      utils.diary.invalidate()
+      notify('Diary entry removed')
+    },
+    onError: () => notify('Could not remove this entry.', 'error'),
   })
-
-  const rewatches = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const entry of entries.data ?? []) {
-      counts.set(entry.movieId, (counts.get(entry.movieId) ?? 0) + 1)
-    }
-    return counts
-  }, [entries.data])
-
-  if (status === 'loading') return <div className="min-h-[60vh]" />
-  if (status !== 'authenticated') {
+  if (status === 'loading')
     return (
-      <main className="mx-auto flex min-h-[65vh] max-w-xl flex-col items-center justify-center px-4 text-center">
-        <HiOutlineBookOpen className="h-12 w-12 text-pink-400" />
-        <h1 className="mt-5 font-heading text-4xl font-bold">
-          Your life in movie nights
-        </h1>
-        <p className="mt-4 text-zinc-400">
-          Log watches, rewatches, quick reviews, ratings, and who you watched
-          with.
-        </p>
-        <button className="btn-brand mt-8" onClick={() => signIn()}>
-          Sign in to open your diary
+      <main className="page-shell">
+        <div className="surface h-72 animate-pulse" />
+      </main>
+    )
+  if (status !== 'authenticated')
+    return (
+      <main className="page-shell max-w-2xl text-center">
+        <p className="eyebrow">The films. The feelings. The company.</p>
+        <h1 className="mt-3 text-4xl font-bold">Your life in movie nights.</h1>
+        <button className="btn-brand mt-6" onClick={() => signIn()}>
+          Open your diary
         </button>
       </main>
     )
+  const matches = (entries.data || []).filter((e) =>
+    `${e.name} ${e.tags.join(' ')}`.toLowerCase().includes(filter.toLowerCase())
+  )
+  const exportDiary = () => {
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(entries.data, null, 2)], {
+        type: 'application/json',
+      })
+    )
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `movie-fan-diary-${year}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
-
   return (
-    <main className="mx-auto w-11/12 max-w-screen-lg pb-16 pt-10">
-      <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+    <main className="page-shell max-w-5xl">
+      <div className="flex flex-wrap justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-pink-400">
-            Watching history
-          </p>
-          <h1 className="mt-2 font-heading text-4xl font-bold sm:text-5xl">
-            Your diary
-          </h1>
-          <p className="mt-2 text-zinc-400">
-            {entries.data?.length ?? 0} movie nights in {year}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <select
-            value={year}
-            onChange={(event) => setYear(Number(event.target.value))}
-            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-pink-500"
-          >
-            {YEARS.map((value) => (
-              <option key={value}>{value}</option>
-            ))}
-          </select>
-          <Link href={`/year?year=${year}`} className="btn-brand !px-5 !py-3">
-            See {year} recap
+          <Link href="/library" className="eyebrow">
+            Your library
           </Link>
+          <h1 className="mt-3 text-4xl font-bold">Your diary</h1>
+          <p className="mt-2 text-zinc-400">
+            {entries.data?.length || 0} movie nights in {year}
+          </p>
         </div>
-      </header>
-
-      {entries.isLoading ? (
-        <div className="mt-8 flex flex-col gap-4">
-          {[0, 1, 2].map((item) => (
-            <div key={item} className="surface h-40 animate-pulse" />
+        <button
+          className="btn-brand self-start"
+          onClick={() => setFinder(true)}
+        >
+          + Log a movie
+        </button>
+      </div>
+      <div className="my-6 flex flex-wrap gap-3">
+        <select
+          aria-label="Diary year"
+          className="field !w-auto"
+          value={year}
+          onChange={(e) => {
+            setYear(Number(e.target.value))
+            setLimit(40)
+          }}
+        >
+          {(years.data?.years || [year]).map((y) => (
+            <option key={y}>{y}</option>
           ))}
-        </div>
-      ) : entries.data?.length ? (
-        <div className="mt-8 flex flex-col gap-4">
-          {entries.data.map((entry) => (
-            <article key={entry.id} className="surface flex gap-4 p-4 sm:gap-6">
-              <Link
-                href={`/movie/${entry.movieId}`}
-                className="relative aspect-[2/3] w-24 shrink-0 overflow-hidden rounded-xl sm:w-32"
-              >
-                <Image
-                  src={entry.posterImage || '/placeholderposter.png'}
-                  fill
-                  sizes="128px"
-                  alt={`${entry.name} poster`}
-                  className="object-cover"
-                />
-              </Link>
-              <div className="min-w-0 flex-1 py-1">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-pink-400">
-                      {new Date(entry.watchedAt).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                      {(rewatches.get(entry.movieId) ?? 0) > 1
-                        ? ' · Rewatch'
-                        : ''}
-                    </p>
-                    <Link
-                      href={`/movie/${entry.movieId}`}
-                      className="mt-1 block truncate font-heading text-xl font-bold hover:text-pink-400 sm:text-2xl"
-                    >
-                      {entry.name}
-                    </Link>
-                  </div>
+        </select>
+        <input
+          className="field !w-auto flex-1"
+          aria-label="Filter diary by title or tag"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Find a film or tag…"
+        />
+        <button
+          className="btn-ghost !px-4"
+          onClick={() => setCalendar(!calendar)}
+        >
+          {calendar ? 'Timeline' : 'Calendar'}
+        </button>
+        <Link className="btn-ghost !px-4" href={`/year?year=${year}`}>
+          Year in Frames
+        </Link>
+        <button className="btn-ghost !px-4" onClick={exportDiary}>
+          Export diary
+        </button>
+      </div>
+      {entries.isError ? (
+        <QueryError retry={() => entries.refetch()} />
+      ) : entries.isLoading ? (
+        <div className="surface h-64 animate-pulse" />
+      ) : calendar ? (
+        <div className="grid gap-4 sm:grid-cols-3">
+          {Array.from({ length: 12 }, (_, m) => (
+            <section key={m} className="surface p-4">
+              <h2 className="font-semibold">
+                {new Date(year, m).toLocaleDateString(undefined, {
+                  month: 'long',
+                })}
+              </h2>
+              {matches
+                .filter((e) => e.watchedAt.getUTCMonth() === m)
+                .map((e) => (
                   <button
-                    aria-label={`Delete diary entry for ${entry.name}`}
-                    className="rounded-full p-2 text-zinc-500 hover:bg-zinc-800 hover:text-red-300"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Delete this diary entry for “${entry.name}”?`
-                        )
-                      ) {
-                        remove.mutate({ id: entry.id })
-                      }
-                    }}
+                    key={e.id}
+                    onClick={() => setEntry(e)}
+                    className="mt-3 block text-left text-sm text-zinc-300"
                   >
-                    <HiOutlineTrash className="h-5 w-5" />
-                  </button>
-                </div>
-                {entry.rating != null && (
-                  <p className="mt-2 text-yellow-400">
-                    {'★'.repeat(entry.rating)}
-                    <span className="text-zinc-700">
-                      {'★'.repeat(5 - entry.rating)}
+                    <span className="mr-2 text-pink-300">
+                      {e.watchedAt.getUTCDate()}
                     </span>
-                  </p>
-                )}
-                {entry.review && (
-                  <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-zinc-300 sm:text-base">
-                    {entry.review}
-                  </p>
-                )}
-                {entry.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {entry.tags.map((tag) => (
-                      <span key={tag} className="chip !px-2.5 !py-0.5 !text-xs">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </article>
+                    {e.name}
+                  </button>
+                ))}
+            </section>
           ))}
         </div>
       ) : (
-        <div className="surface mt-8 p-12 text-center">
-          <HiOutlineBookOpen className="mx-auto h-10 w-10 text-zinc-600" />
-          <h2 className="mt-4 font-heading text-2xl font-bold">
-            No entries for {year}
-          </h2>
-          <p className="mt-2 text-zinc-400">
-            Open any movie and choose “Log watch” to start your diary.
-          </p>
-          <Link href="/" className="btn-brand mt-6">
-            Find a movie
-          </Link>
+        <div className="space-y-4">
+          {matches.slice(0, limit).map((e) => (
+            <article key={e.id} className="surface flex gap-4 p-4">
+              <Link className="shrink-0" href={`/movie/${e.movieId}`}>
+                <Image
+                  src={e.posterImage || '/placeholderposter.png'}
+                  width={80}
+                  height={120}
+                  className="rounded-lg"
+                  alt={`${e.name} poster`}
+                />
+              </Link>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-pink-300">
+                  {e.watchedAt.toLocaleDateString(undefined, {
+                    timeZone: 'UTC',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                  {years.data?.firstWatches[e.movieId] &&
+                  e.watchedAt.getTime() >
+                    new Date(years.data.firstWatches[e.movieId]!).getTime()
+                    ? ' · Rewatch'
+                    : ''}{' '}
+                  · {e.isPublic ? 'Shared' : 'Private'}
+                </p>
+                <Link
+                  className="mt-1 block text-xl font-semibold"
+                  href={`/movie/${e.movieId}`}
+                >
+                  {e.name}
+                </Link>
+                {e.rating && (
+                  <p
+                    className="mt-1 text-yellow-300"
+                    aria-label={`${e.rating} out of 5 stars`}
+                  >
+                    {'★'.repeat(e.rating)}
+                  </p>
+                )}
+                {e.review && (
+                  <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-300">
+                    {e.review}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-zinc-400">
+                  {e.tags.map((t) => `#${t}`).join(' ')}
+                </p>
+                <div className="mt-3 flex gap-4 text-sm">
+                  <button className="text-pink-300" onClick={() => setEntry(e)}>
+                    Edit
+                  </button>
+                  <button
+                    className="text-zinc-400"
+                    disabled={remove.isPending}
+                    onClick={() => {
+                      if (
+                        confirm(
+                          `Remove this viewing of ${e.name}? Other viewings and your rating will stay.`
+                        )
+                      )
+                        remove.mutate({ id: e.id })
+                    }}
+                  >
+                    Delete entry
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+          {!matches.length && (
+            <div className="surface p-10 text-center">
+              <h2 className="text-xl">
+                Your next movie night starts a new page.
+              </h2>
+              <button
+                className="btn-brand mt-5"
+                onClick={() => setFinder(true)}
+              >
+                Find a film to log
+              </button>
+            </div>
+          )}
+          {matches.length > limit && (
+            <button
+              className="btn-ghost"
+              onClick={() => setLimit((n) => n + 40)}
+            >
+              More entries
+            </button>
+          )}
         </div>
       )}
+      <Dialog
+        open={finder}
+        onClose={() => setFinder(false)}
+        title="What did you watch?"
+      >
+        <MovieFinder
+          busy={loading}
+          onChoose={async (m) => {
+            setLoading(true)
+            try {
+              const res = await utils.tmdb.details.fetch({ id: m.emsVersionId })
+              if (res.movie) {
+                setMovie(res.movie)
+                setFinder(false)
+              }
+            } catch {
+              notify('Could not load that film. Try again.', 'error')
+            } finally {
+              setLoading(false)
+            }
+          }}
+        />
+      </Dialog>
+      <Dialog
+        open={!!movie || !!entry}
+        onClose={() => {
+          if (
+            !dirty ||
+            confirm('Close this draft? Unsaved changes will be lost.')
+          ) {
+            setMovie(null)
+            setEntry(null)
+          }
+        }}
+        title={entry ? `Edit ${entry.name}` : `Log ${movie?.name || 'a movie'}`}
+      >
+        {(movie || entry) && (
+          <WatchEditor
+            onDirtyChange={setDirty}
+            key={entry?.id || movie?.id}
+            movie={movie || undefined}
+            id={movie?.id}
+            entry={entry || undefined}
+            onSaved={() => {
+              setMovie(null)
+              setEntry(null)
+            }}
+          />
+        )}
+      </Dialog>
     </main>
   )
 }

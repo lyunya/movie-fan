@@ -1,5 +1,5 @@
-import type { z } from 'zod';
-import { object, string, number, array } from 'zod';
+import type { z } from 'zod'
+import { object, string, number, array } from 'zod'
 
 export const MovieSchema = object({
   movieId: string(),
@@ -15,7 +15,7 @@ export const MovieSchema = object({
   releaseDate: string(),
   motionPictureRating: string().nullable(),
   genres: array(string()),
-  userRating: number().nullable(),
-});
+  userRating: number().int().min(1).max(5).nullable(),
+})
 
-export type MovieType = z.infer<typeof MovieSchema>;
+export type MovieType = z.infer<typeof MovieSchema>

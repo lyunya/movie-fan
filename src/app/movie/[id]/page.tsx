@@ -30,7 +30,7 @@ export async function generateMetadata({
 
 export default async function MoviePage({ params }: PageProps) {
   const { id } = await params
-  const movie = await fetchMovieDetails(id).catch(() => null)
+  const movie = await fetchMovieDetails(id)
   if (!movie) notFound()
 
   // Schema.org Movie markup so search engines can render a rich result
@@ -70,7 +70,9 @@ export default async function MoviePage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+        }}
       />
       <MovieDetails id={id} movie={movie} />
     </>

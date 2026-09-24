@@ -33,6 +33,61 @@ export const REVALIDATE = {
 
 export const isTmdbConfigured = () => !!env.TMDB_API_KEY
 
+/** Fetch availability without downloading credits, images, or external ratings. */
+export async function fetchMovieAvailability(movieId: string, region: string) {
+  const data = (await tmdbFetch(
+    `/movie/${movieId}/watch/providers`,
+    {},
+    3600
+  )) as {
+    results?: Record<
+      string,
+      {
+        link?: string
+        flatrate?: {
+          provider_id: number
+          provider_name: string
+          logo_path?: string
+        }[]
+        rent?: {
+          provider_id: number
+          provider_name: string
+          logo_path?: string
+        }[]
+        buy?: {
+          provider_id: number
+          provider_name: string
+          logo_path?: string
+        }[]
+      }
+    >
+  }
+  const entry = data.results?.[region]
+  if (!entry) return null
+  const map = (items = entry.flatrate) =>
+    (items || []).map((p) => ({
+      id: p.provider_id,
+      name: p.provider_name,
+      logoUrl: p.logo_path
+        ? `https://image.tmdb.org/t/p/w92${p.logo_path}`
+        : '',
+    }))
+  return {
+    flatrate: map(entry.flatrate),
+    rent: map(entry.rent || []),
+    buy: map(entry.buy || []),
+    link: entry.link || null,
+  }
+}
+
+class TmdbRequestError extends Error {
+  constructor(
+    public status: number,
+    path: string
+  ) {
+    super(`TMDB request failed (${status}): ${path}`)
+  }
+}
 const tmdbFetch = async (
   path: string,
   params: Record<string, string> = {},
@@ -51,8 +106,9 @@ const tmdbFetch = async (
   const res = await fetch(url, {
     headers: isBearerToken ? { Authorization: `Bearer ${key}` } : undefined,
     next: { revalidate },
+    signal: AbortSignal.timeout(15000),
   })
-  if (!res.ok) throw new Error(`TMDB request failed (${res.status}): ${path}`)
+  if (!res.ok) throw new TmdbRequestError(res.status, path)
   return res.json()
 }
 
@@ -67,6 +123,7 @@ export interface PersonCredit {
   character: string | null
   posterUrl: string | null
   popularity: number
+  role: 'Acting' | 'Directing'
 }
 
 export interface Person {
@@ -88,6 +145,7 @@ interface TmdbPersonCredit {
   release_date?: string
   poster_path?: string
   popularity?: number
+  job?: string
 }
 
 interface TmdbPerson {
@@ -99,16 +157,20 @@ interface TmdbPerson {
   place_of_birth?: string
   known_for_department?: string
   profile_path?: string
-  movie_credits?: { cast?: TmdbPersonCredit[] }
+  movie_credits?: { cast?: TmdbPersonCredit[]; crew?: TmdbPersonCredit[] }
 }
 
 const buildPerson = (person: TmdbPerson): Person => {
-  const seen = new Set<number>()
-  const credits: PersonCredit[] = (person.movie_credits?.cast ?? [])
+  const seen = new Set<string>()
+  const credits: PersonCredit[] = [
+    ...(person.movie_credits?.cast ?? []),
+    ...(person.movie_credits?.crew ?? []).filter((c) => c.job === 'Director'),
+  ]
     .filter(
       (credit): credit is TmdbPersonCredit & { id: number; title: string } => {
-        if (!credit.id || !credit.title || seen.has(credit.id)) return false
-        seen.add(credit.id)
+        const key = `${credit.id}-${credit.job || 'Acting'}`
+        if (!credit.id || !credit.title || seen.has(key)) return false
+        seen.add(key)
         return true
       }
     )
@@ -121,6 +183,7 @@ const buildPerson = (person: TmdbPerson): Person => {
         ? `${POSTER_BASE}${credit.poster_path}`
         : null,
       popularity: credit.popularity ?? 0,
+      role: credit.job === 'Director' ? 'Directing' : 'Acting',
     }))
     .sort((a, b) => b.popularity - a.popularity)
 
@@ -185,6 +248,7 @@ export interface MovieCardData {
   tomatoMeter: number | null
   imdbRating?: number | null
   imdbVoteCount?: number | null
+  genreIds?: number[]
 }
 
 interface TmdbMovieSummary {
@@ -192,20 +256,23 @@ interface TmdbMovieSummary {
   title: string
   poster_path?: string | null
   release_date?: string
+  vote_count?: number | null
   vote_average?: number | null
+  genre_ids?: number[]
 }
 
 const scoreFromVoteAverage = (voteAverage?: number | null) =>
   voteAverage != null ? Math.round(voteAverage * 10) : null
 
 const mapSummary = (m: TmdbMovieSummary): MovieCardData => ({
+  genreIds: m.genre_ids || [],
   emsVersionId: String(m.id),
   name: m.title,
   posterImage: {
     url: m.poster_path ? `${TMDB_POSTER_URL}${m.poster_path}` : '',
   },
   releaseDate: m.release_date || null,
-  tomatoMeter: scoreFromVoteAverage(m.vote_average),
+  tomatoMeter: m.vote_count === 0 ? null : scoreFromVoteAverage(m.vote_average),
 })
 
 /** Enriches a TMDB card with IMDb data without changing its TMDB score. */
@@ -482,14 +549,18 @@ export const fetchTonightChoices = async ({
     sort_by: 'popularity.desc',
     'vote_average.gte': String(minScore / 10),
     'vote_count.gte': '100',
+    'primary_release_date.lte': new Date().toISOString().slice(0, 10),
   }
   if (providerIds.length > 0) {
     params.watch_region = region
     params.with_watch_providers = providerIds.join('|')
-    params.with_watch_monetization_types = 'flatrate|free|ads'
+    params.with_watch_monetization_types = 'flatrate'
   }
   if (genreIds.length > 0) params.with_genres = genreIds.join('|')
-  if (maxRuntime) params['with_runtime.lte'] = String(maxRuntime)
+  if (maxRuntime) {
+    params['with_runtime.lte'] = String(maxRuntime)
+    params['with_runtime.gte'] = '1'
+  }
 
   const data = await tmdbFetch('/discover/movie', params, REVALIDATE.search)
   return ((data?.results ?? []) as TmdbMovieSummary[])
@@ -526,7 +597,14 @@ export const fetchDiscoverByGenres = async (
 /** A page of popular movies in a genre, via TMDB discover. */
 export const fetchGenre = async (
   genreId: number,
-  page = 1
+  page = 1,
+  filters: {
+    maxRuntime?: number
+    decade?: number
+    region?: string
+    providerIds?: number[]
+    streaming?: boolean
+  } = {}
 ): Promise<GenrePage> => {
   const data = await tmdbFetch(
     '/discover/movie',
@@ -535,7 +613,28 @@ export const fetchGenre = async (
       sort_by: 'popularity.desc',
       include_adult: 'false',
       language: 'en-US',
-      region: 'US',
+      region: filters.region || 'US',
+      ...(filters.maxRuntime
+        ? {
+            'with_runtime.lte': String(filters.maxRuntime),
+            'with_runtime.gte': '1',
+          }
+        : {}),
+      ...(filters.decade
+        ? {
+            'primary_release_date.gte': `${filters.decade}-01-01`,
+            'primary_release_date.lte': `${filters.decade + 9}-12-31`,
+          }
+        : {}),
+      ...(filters.streaming
+        ? {
+            watch_region: filters.region || 'US',
+            with_watch_monetization_types: 'flatrate',
+            ...(filters.providerIds?.length
+              ? { with_watch_providers: filters.providerIds.join('|') }
+              : {}),
+          }
+        : {}),
       'vote_count.gte': '50',
       page: String(page),
     },
@@ -589,7 +688,7 @@ const mapCredit = (
 })
 
 export const fetchMovieDetails = cache(
-  async (id: string): Promise<IMovieDetail | null> => {
+  async (id: string, region = 'US'): Promise<IMovieDetail | null> => {
     let data
     try {
       data = await tmdbFetch(
@@ -601,8 +700,9 @@ export const fetchMovieDetails = cache(
         },
         REVALIDATE.details
       )
-    } catch {
-      return null
+    } catch (error) {
+      if (error instanceof TmdbRequestError && error.status === 404) return null
+      throw error
     }
     if (!data?.id) return null
 
@@ -658,11 +758,12 @@ export const fetchMovieDetails = cache(
       .slice(0, 12)
       .map(mapSummary)
 
-    const usProviders = data['watch/providers']?.results?.US
+    const usProviders = data['watch/providers']?.results?.[region]
     const mapProviders = (
-      list?: { provider_name: string; logo_path: string }[]
+      list?: { provider_id: number; provider_name: string; logo_path: string }[]
     ) =>
       (list ?? []).map((p) => ({
+        id: p.provider_id,
         name: p.provider_name,
         logoUrl: `${TMDB_PROFILE_URL}${p.logo_path}`,
       }))
@@ -704,7 +805,8 @@ export const fetchMovieDetails = cache(
             }).format(data.revenue)
           : null,
       motionPictureRating: { code: certification },
-      tomatoMeter: scoreFromVoteAverage(data.vote_average),
+      tomatoMeter:
+        data.vote_count === 0 ? null : scoreFromVoteAverage(data.vote_average),
       voteCount: data.vote_count ?? null,
       imdbRating: imdb?.rating ?? null,
       imdbVoteCount: imdb?.voteCount ?? null,

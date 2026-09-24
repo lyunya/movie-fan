@@ -102,3 +102,90 @@
     display: none;
   }
 }
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  body {
+    background: #111013;
+    color: #f5f2ef;
+  }
+  :focus-visible {
+    outline: 2px solid #f9a8d4;
+    outline-offset: 4px;
+  }
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  summary {
+    cursor: pointer;
+  }
+}
+@layer components {
+  .btn-brand {
+    @apply rounded-xl bg-pink-600 bg-none shadow-none hover:bg-pink-500 hover:shadow-none;
+  }
+  .btn-ghost {
+    @apply rounded-xl;
+  }
+  .surface {
+    @apply border-zinc-800 bg-[#1b191e];
+  }
+  .gradient-text {
+    @apply bg-none text-pink-400;
+  }
+  .page-shell {
+    @apply mx-auto w-full max-w-screen-xl px-4 pb-16 pt-8 sm:px-8 sm:pt-10;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.2em] text-pink-300;
+  }
+  .field-label {
+    @apply flex flex-col gap-2 text-sm font-medium text-zinc-300;
+  }
+  .field {
+    @apply min-h-11 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-base text-white placeholder:text-zinc-500;
+  }
+  .icon-button {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-zinc-800;
+  }
+  .nav-link {
+    @apply py-3 text-sm font-semibold text-zinc-400 transition hover:text-white;
+  }
+  .nav-link-active {
+    @apply border-b-2 border-pink-400 py-3 text-sm font-semibold text-pink-300;
+  }
+  .mobile-nav {
+    @apply flex min-h-12 flex-col items-center justify-center gap-1 text-[11px];
+  }
+  .mobile-nav svg {
+    @apply h-5 w-5;
+  }
+  .skip-link {
+    @apply fixed left-4 top-4 z-[110] -translate-y-24 rounded-lg bg-white p-3 text-black focus:translate-y-0;
+  }
+  .filter-chip {
+    @apply min-h-11 rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300;
+  }
+  .filter-chip[aria-pressed='true'] {
+    @apply border-pink-400 bg-pink-500/10 text-pink-200;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

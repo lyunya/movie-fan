@@ -13,56 +13,101 @@ import {
   fetchTrending,
   fetchTonightChoices,
   fetchWatchProviders,
-  enrichMovieCardWithImdb,
+  fetchMovieAvailability,
 } from '../../tmdb'
 
 const FOR_YOU_LIMIT = 20
+import { selectTonightPicks } from '@/utils/tonightPicks'
 
 export const tmdbRouter = createTRPCRouter({
+  availability: publicProcedure
+    .input(
+      z.object({ movieId: z.string(), region: z.string().regex(/^[A-Z]{2}$/) })
+    )
+    .query(async ({ input }) => {
+      return fetchMovieAvailability(input.movieId, input.region)
+    }),
   providers: publicProcedure
     .input(z.object({ region: z.string().trim().length(2).default('US') }))
     .query(({ input }) => fetchWatchProviders(input.region.toUpperCase())),
 
-  tonight: protectedProcedure
+  tonight: publicProcedure
     .input(
       z.object({
         genreIds: z.array(z.number().int().positive()).max(8).default([]),
         maxRuntime: z.number().int().min(60).max(300).optional(),
         minScore: z.number().int().min(0).max(100).default(60),
-        surprise: z.number().int().min(0).max(4).default(0),
+        surprise: z.number().int().min(0).max(19).default(0),
+        region: z
+          .string()
+          .regex(/^[A-Z]{2}$/)
+          .optional(),
+        providerIds: z.array(z.number().int().positive()).max(20).optional(),
+        excludeIds: z.array(z.string()).max(200).default([]),
       })
     )
     .query(async ({ ctx, input }) => {
-      const [user, watched] = await Promise.all([
-        ctx.prisma.user.findUnique({
-          where: { id: ctx.session.user.id },
-          select: { watchRegion: true, preferredProviders: true },
-        }),
-        ctx.prisma.watchListItem.findMany({
-          where: { userId: ctx.session.user.id, userRating: { not: null } },
-          select: { movieId: true },
-        }),
-      ])
-      const page = 1 + input.surprise
+      const userId = ctx.session?.user?.id
+      const [user, watched] = userId
+        ? await Promise.all([
+            ctx.prisma.user.findUnique({
+              where: { id: userId },
+              select: { watchRegion: true, preferredProviders: true },
+            }),
+            ctx.prisma.watchListItem.findMany({
+              where: { userId },
+              select: {
+                movieId: true,
+                watched: true,
+                dismissed: true,
+                userRating: true,
+                favorite: true,
+                genres: true,
+              },
+            }),
+          ])
+        : [null, []]
+      const region = input.region || user?.watchRegion || 'US',
+        providerIds = input.providerIds || user?.preferredProviders || []
       const movies = await fetchTonightChoices({
-        region: user?.watchRegion ?? 'US',
-        providerIds: user?.preferredProviders ?? [],
+        region,
+        providerIds,
         genreIds: input.genreIds,
         maxRuntime: input.maxRuntime,
         minScore: input.minScore,
-        page,
+        page: 1 + input.surprise,
       })
-      const seen = new Set(watched.map((movie) => movie.movieId))
-      const shortlist = movies
-        .filter((movie) => !seen.has(movie.emsVersionId))
-        .slice(0, 6)
-      const enriched = await Promise.all(shortlist.map(enrichMovieCardWithImdb))
-      const score = (movie: (typeof enriched)[number]) =>
-        movie.imdbRating ?? (movie.tomatoMeter ?? 0) / 10
-
+      const excluded = new Set([
+        ...watched
+          .filter((m) => m.watched || m.dismissed)
+          .map((m) => m.movieId),
+        ...input.excludeIds,
+      ])
+      const eligible = movies.filter((m) => !excluded.has(m.emsVersionId))
+      const lovedGenres = new Set(
+        watched
+          .filter(
+            (m) => !m.dismissed && (m.favorite || (m.userRating || 0) >= 4)
+          )
+          .flatMap((m) => m.genres)
+      )
+      const genres = lovedGenres.size
+        ? await fetchGenreList().catch(() => [])
+        : []
+      const picks = selectTonightPicks(
+        eligible,
+        genres.filter((g) => lovedGenres.has(g.name)).map((g) => g.id)
+      )
+      const chosen = picks.map((p) => p.movie)
       return {
-        movies: enriched.sort((a, b) => score(b) - score(a)).slice(0, 3),
-        usingProviders: (user?.preferredProviders.length ?? 0) > 0,
+        movies: chosen,
+        usingProviders: providerIds.length > 0,
+        region,
+        roles: picks.map((p) => p.role),
+        reasons: picks.map(
+          (p) =>
+            `${p.reason}. ${input.maxRuntime ? `Up to ${input.maxRuntime} minutes · ` : ''}${providerIds.length ? 'On your selected services' : 'Matches your filters'} · TMDB ${input.minScore}% or higher`
+        ),
       }
     }),
 
@@ -86,10 +131,18 @@ export const tmdbRouter = createTRPCRouter({
       z.object({
         genreId: z.number().int().positive(),
         page: z.number().int().min(1).max(500).default(1),
+        maxRuntime: z.number().int().min(1).max(300).optional(),
+        decade: z.number().int().min(1900).max(2200).optional(),
+        region: z
+          .string()
+          .regex(/^[A-Z]{2}$/)
+          .optional(),
+        providerIds: z.array(z.number().int().positive()).max(20).optional(),
+        streaming: z.boolean().optional(),
       })
     )
     .query(async ({ input }) => {
-      return fetchGenre(input.genreId, input.page)
+      return fetchGenre(input.genreId, input.page, input)
     }),
   trending: publicProcedure
     .input(z.object({ window: z.enum(['day', 'week']) }))
@@ -103,12 +156,22 @@ export const tmdbRouter = createTRPCRouter({
   forYou: protectedProcedure.query(async ({ ctx }) => {
     const rows = await ctx.prisma.watchListItem.findMany({
       where: { userId: ctx.session.user.id },
-      select: { movieId: true, genres: true },
+      select: {
+        movieId: true,
+        genres: true,
+        userRating: true,
+        favorite: true,
+        dismissed: true,
+      },
     })
     if (rows.length === 0) return { movies: [], topGenre: null }
 
     const counts = new Map<string, number>()
-    for (const row of rows) {
+    for (const row of rows.filter(
+      (r) =>
+        !r.dismissed &&
+        (r.userRating == null || r.userRating >= 3 || r.favorite)
+    )) {
       for (const genre of row.genres || []) {
         counts.set(genre, (counts.get(genre) || 0) + 1)
       }

@@ -1,17 +1,13 @@
 import type { Metadata } from 'next'
-import { Krona_One, Overpass } from 'next/font/google'
+import { Overpass } from 'next/font/google'
 
 import '@/styles/globals.css'
 import Providers from '@/trpc/Providers'
 import Nav from '@/components/Nav/Nav'
+import ResumeSave from '@/components/ui/ResumeSave'
+import Feedback from '@/components/ui/Feedback'
 import Footer from '@/components/Footer/Footer'
 import { getSiteUrl } from '@/server/siteUrl'
-
-const kronaOne = Krona_One({
-  subsets: ['latin'],
-  variable: '--font-kronaOne',
-  weight: '400',
-})
 
 const overpass = Overpass({
   subsets: ['latin'],
@@ -29,11 +25,11 @@ export const metadata: Metadata = {
     template: '%s · Movie Fan',
   },
   description:
-    'Discover popular, upcoming, and now-playing movies. Build your watchlist and rate what you have seen.',
+    'Find your next favorite. Remember every movie night. Build a library, rank your favorites, and choose what to watch with friends.',
   openGraph: {
     title: 'Movie Fan',
     description:
-      'Discover popular, upcoming, and now-playing movies. Build your watchlist and rate what you have seen.',
+      'Your own little film club: discover movies, rank your favorites, and remember every movie night.',
     type: 'website',
     images: ['/movie-ticket.png'],
   },
@@ -47,15 +43,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html
-      lang="en"
-      className={`${kronaOne.variable} ${overpass.variable}`}
-    >
-      <body className="font-sans">
+    <html lang="en" className={overpass.variable}>
+      <body className="font-heading">
         <Providers>
-          <div className="flex min-h-screen min-w-full flex-col bg-gradient-to-b from-[#000000] to-[#1e1e1e]">
+          <div className="flex min-h-screen min-w-full flex-col bg-[#111013] pb-20 lg:pb-0">
             <Nav />
-            {children}
+            <div id="main-content" tabIndex={-1} className="flex-1">
+              {children}
+            </div>
+            <Feedback />
+            <ResumeSave />
             <Footer />
           </div>
         </Providers>

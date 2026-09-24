@@ -12,6 +12,7 @@ export interface IGenres {
 }
 
 export interface IWatchProvider {
+  id: number
   name: string
   logoUrl: string
 }

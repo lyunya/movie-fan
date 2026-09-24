@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { FC } from 'react'
 import { HiOutlineClipboardCopy, HiCheck } from 'react-icons/hi'
 import { api } from '@/utils/api'
+import { notify } from '@/components/ui/Feedback'
 
 interface ProfileSettingsProps {
   userId: string
@@ -53,16 +54,30 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
 }) => {
   const utils = api.useUtils()
   const invalidate = () => utils.user.query.invalidate()
-  const setPublic = api.user.setPublic.useMutation({ onSuccess: invalidate })
+  const onError = () =>
+    notify('Your settings could not be saved. Please try again.', 'error')
+  const setPublic = api.user.setPublic.useMutation({
+    onSuccess: invalidate,
+    onError,
+  })
   const setAlerts = api.user.setStreamAlerts.useMutation({
     onSuccess: invalidate,
+    onError,
   })
   const [copied, setCopied] = useState(false)
   const [region, setRegion] = useState(watchRegion)
   const [providers, setProviders] = useState(preferredProviders)
   const providerOptions = api.tmdb.providers.useQuery({ region })
   const savePreferences = api.user.setStreamingPreferences.useMutation({
-    onSuccess: invalidate,
+    onSuccess: async () => {
+      await Promise.all([
+        invalidate(),
+        utils.user.libraryAvailability.invalidate(),
+        utils.tmdb.tonight.invalidate(),
+      ])
+      notify('Streaming preferences saved')
+    },
+    onError,
   })
 
   useEffect(() => {
@@ -87,7 +102,10 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      /* clipboard blocked — nothing to do */
+      notify(
+        'Could not copy the link. You can copy it from your public profile.',
+        'error'
+      )
     }
   }
 
