@@ -4,7 +4,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import Balancer from 'react-wrap-balancer'
 import { useSession, signIn } from 'next-auth/react'
-import { HiOutlineShare, HiCheck, HiPlay } from 'react-icons/hi'
+import {
+  HiOutlineShare,
+  HiCheck,
+  HiBookmark,
+  HiOutlineBookmark,
+} from 'react-icons/hi'
 
 import { api } from '@/utils/api'
 import { createMovieObj } from '@/utils/createMovieObj'
@@ -19,6 +24,8 @@ import DiaryLogButton from '@/components/DiaryLog/DiaryLogButton'
 import Availability from './Availability'
 import { notify } from '@/components/ui/Feedback'
 import ListPicker from '@/components/ListPicker/ListPicker'
+import TrailerButton from '@/components/ui/TrailerButton'
+import { describeScore } from '@/utils/score'
 
 const formatRuntime = (minutes?: number | null) => {
   if (!minutes) return null
@@ -38,50 +45,75 @@ const formatFullDate = (dateString?: string | null) => {
   })
 }
 
-const ScoreBadge = ({
-  tmdbScore,
-  tmdbCount,
-  imdbRating,
-  imdbCount,
-}: {
-  tmdbScore?: number | null
-  tmdbCount?: number | null
-  imdbRating?: number | null
-  imdbCount?: number | null
-}) => {
-  const usingImdb = imdbRating != null
-  const score = usingImdb ? imdbRating : tmdbScore
-  const count = usingImdb ? imdbCount : tmdbCount
-  if (score == null) return null
+const ScoreBadge = ({ movie }: { movie: IMovieDetail }) => {
+  const score = describeScore({
+    tmdbScore: movie.tomatoMeter,
+    tmdbVotes: movie.voteCount,
+    imdbRating: movie.imdbRating,
+    imdbVotes: movie.imdbVoteCount,
+    releaseDate: movie.releaseDate,
+  })
+  if (score.kind === 'none')
+    return (
+      <p
+        suppressHydrationWarning
+        className="chip border-dashed italic text-zinc-300"
+      >
+        {score.label}
+      </p>
+    )
+  const usingImdb = score.kind === 'imdb'
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-2xl" aria-hidden>
-        ⭐
+    <div className="flex items-center gap-3">
+      <span
+        className="grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-black/40 font-display text-lg font-bold text-white"
+        aria-hidden
+      >
+        {usingImdb ? movie.imdbRating!.toFixed(1) : movie.tomatoMeter}
       </span>
       <div className="leading-tight">
-        <p className="text-lg font-bold text-white">
-          {usingImdb ? `${score.toFixed(1)}/10` : `${score}%`}
+        <p className="font-semibold text-white">
+          {usingImdb
+            ? `${movie.imdbRating!.toFixed(1)} / 10 on IMDb`
+            : `${movie.tomatoMeter}% on TMDB`}
         </p>
-        {count ? (
+        {score.count ? (
           <p className="text-xs text-zinc-400">
-            {count.toLocaleString()} {usingImdb ? 'IMDb' : 'TMDB'} ratings
+            {score.count.toLocaleString('en-US')} ratings
           </p>
-        ) : (
-          <p className="text-xs text-zinc-400">
-            {usingImdb ? 'IMDb' : 'TMDB'} score
-          </p>
-        )}
+        ) : null}
       </div>
     </div>
   )
 }
+
+const ShareButton = ({
+  copied,
+  onShare,
+}: {
+  copied: boolean
+  onShare: () => void
+}) => (
+  <button className="btn-quiet" onClick={onShare} aria-label="Share this movie">
+    {copied ? (
+      <>
+        <HiCheck className="h-5 w-5 text-green-400" aria-hidden />
+        Link copied
+      </>
+    ) : (
+      <>
+        <HiOutlineShare className="h-5 w-5" aria-hidden />
+        Share
+      </>
+    )}
+  </button>
+)
 
 const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   const { data: session } = useSession()
   const utils = api.useUtils()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
-  const [showTrailer, setShowTrailer] = useState(false)
 
   // Navigating movie→movie (e.g. via "More like this") stays on the same
   // /movie/[id] route segment, which the App Router reuses without resetting
@@ -137,12 +169,21 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
     { enabled: !!session }
   )
   const genres: string[] = (movie.genres || []).map((genre) => genre.name)
-  const poster = movie.posterImage?.url || '/placeholderposter.png'
+  const poster = movie.posterImage?.url || '/placeholderposter.svg'
   const backdrop = movie.backgroundImage?.url || poster
   const year = movie.releaseDate ? String(movie.releaseDate).slice(0, 4) : null
   const fullReleaseDate = formatFullDate(movie.releaseDate)
   const runtime = formatRuntime(movie.durationMinutes)
   const gallery = (movie.images || []).filter((img) => img?.url)
+  // Link directors to their pages when the crew list carries their TMDB id
+  const directors = (movie.directedBy || '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({
+      name,
+      id: movie.crew?.find((c) => c.role === 'Director' && c.name === name)?.id,
+    }))
 
   const facts: { label: string; value: string | null }[] = [
     { label: 'Release date', value: fullReleaseDate },
@@ -186,8 +227,8 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   return (
     <article className="pb-32 text-white sm:pb-24">
       {/* Backdrop hero */}
-      <div className="relative">
-        <div className="absolute inset-0 overflow-hidden">
+      <div className="relative isolate">
+        <div className="absolute inset-0 -z-10 overflow-hidden">
           <Image
             src={backdrop}
             fill
@@ -195,77 +236,95 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
             sizes="100vw"
             alt=""
             aria-hidden
-            className="object-cover object-top blur-sm brightness-[0.3]"
+            className="object-cover object-top opacity-60"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/85 to-ink/30" />
+          <div className="absolute inset-0 hidden bg-gradient-to-r from-ink via-ink/60 to-transparent sm:block" />
         </div>
 
-        <div className="relative mx-auto flex max-w-screen-xl flex-col gap-8 px-4 py-8 sm:flex-row sm:px-8 sm:py-12">
+        <div className="relative mx-auto flex max-w-screen-xl flex-col gap-8 px-4 py-8 sm:flex-row sm:px-8 sm:py-14">
           {/* Poster */}
-          <div className="relative mx-auto aspect-[2/3] w-44 shrink-0 overflow-hidden rounded-xl border border-zinc-700 shadow-2xl sm:mx-0 sm:w-60 sm:self-start">
+          <div className="relative mx-auto aspect-[2/3] w-44 shrink-0 overflow-hidden rounded-xl shadow-[0_30px_60px_-20px_rgba(0,0,0,0.9)] ring-1 ring-white/10 sm:mx-0 sm:w-64 sm:self-start">
             <Image
               src={poster}
               fill
               priority
-              sizes="(max-width: 640px) 45vw, 240px"
+              sizes="(max-width: 640px) 45vw, 256px"
               alt={`${movie.name} poster`}
               className="object-cover"
             />
           </div>
 
           {/* Meta */}
-          <div className="flex-1">
-            <h1 className="font-heading text-3xl font-bold sm:text-5xl">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-4xl font-semibold leading-[1.05] sm:text-6xl">
               <Balancer>{movie.name}</Balancer>
             </h1>
+            {movie.consensus && (
+              <p className="mt-3 font-display text-lg italic text-pink-100/85 sm:text-xl">
+                “{movie.consensus}”
+              </p>
+            )}
 
             {/* Fact chips */}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-5 flex flex-wrap items-center gap-2">
               {year && <span className="chip">{year}</span>}
               {runtime && <span className="chip">{runtime}</span>}
               {movie.motionPictureRating?.code && (
                 <span className="chip">{movie.motionPictureRating.code}</span>
               )}
+              {movie.genres.map((genre) =>
+                genre.id ? (
+                  <Link
+                    prefetch={false}
+                    key={genre.name}
+                    href={`/genre/${toSlug(genre.id, genre.name)}`}
+                    className="chip min-h-11 border-transparent bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white sm:min-h-0"
+                  >
+                    {genre.name}
+                  </Link>
+                ) : (
+                  <span
+                    key={genre.name}
+                    className="chip border-transparent bg-white/5 text-zinc-300"
+                  >
+                    {genre.name}
+                  </span>
+                )
+              )}
             </div>
 
-            {/* Genres — each links to a browsable genre page when we have its id */}
-            {movie.genres.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {movie.genres.map((genre) =>
-                  genre.id ? (
-                    <Link
-                      key={genre.name}
-                      href={`/genre/${toSlug(genre.id, genre.name)}`}
-                      className="inline-flex min-h-11 items-center rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300 transition hover:bg-zinc-700 hover:text-white sm:min-h-0"
-                    >
-                      {genre.name}
-                    </Link>
-                  ) : (
-                    <span
-                      key={genre.name}
-                      className="rounded-full bg-zinc-800/80 px-3 py-1 text-sm text-zinc-300"
-                    >
-                      {genre.name}
-                    </span>
-                  )
-                )}
-              </div>
-            )}
-
-            {/* Score */}
-            <div className="mt-5 flex flex-wrap items-center gap-6">
-              <ScoreBadge
-                tmdbScore={movie.tomatoMeter}
-                tmdbCount={movie.voteCount}
-                imdbRating={movie.imdbRating}
-                imdbCount={movie.imdbVoteCount}
-              />
+            {/* Score + trailer */}
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4">
+              <ScoreBadge movie={movie} />
+              {movie.trailer?.url && (
+                <TrailerButton
+                  url={movie.trailer.url}
+                  title={movie.name}
+                  className="btn-ghost !rounded-full !py-2.5"
+                />
+              )}
             </div>
 
-            {movie.directedBy && (
-              <p className="mt-5 text-zinc-300">
-                <span className="text-zinc-500">Directed by</span>{' '}
-                {movie.directedBy}
+            {directors.length > 0 && (
+              <p className="mt-6 text-zinc-300">
+                <span className="text-zinc-400">Directed by</span>{' '}
+                {directors.map((d, i) => (
+                  <span key={d.name}>
+                    {i > 0 && ', '}
+                    {d.id ? (
+                      <Link
+                        prefetch={false}
+                        href={`/person/${toSlug(d.id, d.name)}`}
+                        className="font-semibold text-white underline decoration-pink-400/60 underline-offset-4 hover:text-pink-200"
+                      >
+                        {d.name}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold text-white">{d.name}</span>
+                    )}
+                  </span>
+                ))}
               </p>
             )}
 
@@ -276,42 +335,43 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
             )}
 
             <Availability key={id} id={id} initial={movie.watchProviders} />
-            {/* Watchlist / rating / share actions */}
-            <div className="mt-8">
-              <div className="flex flex-wrap items-center gap-3">
-                {!session ? (
+
+            {/* Your panel: primary actions first, the rest quieter */}
+            <div className="mt-6">
+              {!session ? (
+                <div className="flex flex-wrap items-center gap-3">
                   <button className="btn-brand" onClick={() => signIn()}>
-                    Sign in to add to watchlist &amp; rate
+                    Sign in to save &amp; rate
                   </button>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-zinc-400">
-                        Your rating:
-                      </span>
-                      <StarRating
-                        disabled={setState.isPending}
-                        value={currentUserRating}
-                        onChange={handleSeenMovie}
-                      />
-                    </div>
-                    {onWatchlist ? (
-                      <button
-                        disabled={removeMovie.isPending || addMovie.isPending}
-                        className="btn-ghost"
-                        onClick={handleRemoveMovie}
-                      >
-                        Remove from watchlist
-                      </button>
-                    ) : (
-                      <button
-                        disabled={removeMovie.isPending || addMovie.isPending}
-                        className="btn-brand"
-                        onClick={handleAddMovie}
-                      >
-                        + Add to watchlist
-                      </button>
-                    )}
+                  <ShareButton copied={copied} onShare={handleShare} />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-zinc-400">Your rating</span>
+                    <StarRating
+                      disabled={setState.isPending}
+                      value={currentUserRating}
+                      onChange={handleSeenMovie}
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      disabled={removeMovie.isPending || addMovie.isPending}
+                      className={onWatchlist ? 'btn-ghost' : 'btn-brand'}
+                      aria-pressed={onWatchlist}
+                      onClick={onWatchlist ? handleRemoveMovie : handleAddMovie}
+                    >
+                      {onWatchlist ? (
+                        <HiBookmark
+                          className="h-5 w-5 text-pink-300"
+                          aria-hidden
+                        />
+                      ) : (
+                        <HiOutlineBookmark className="h-5 w-5" aria-hidden />
+                      )}
+                      {onWatchlist ? 'On your watchlist' : 'Add to watchlist'}
+                    </button>
                     <button
                       className="btn-ghost"
                       aria-pressed={!!item?.watched}
@@ -325,8 +385,15 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
                     >
                       {item?.watched ? '✓ Watched' : 'Mark watched'}
                     </button>
+                    <DiaryLogButton
+                      id={id}
+                      movie={movie}
+                      initialRating={currentUserRating}
+                    />
+                  </div>
+                  <div className="quiet-actions -ml-3 flex flex-wrap items-center gap-1">
                     <button
-                      className="btn-ghost"
+                      className="btn-quiet"
                       aria-pressed={!!item?.favorite}
                       disabled={setState.isPending}
                       onClick={() =>
@@ -336,35 +403,20 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
                         })
                       }
                     >
-                      {item?.favorite ? '♥ Favorite' : '♡ Favorite'}
+                      <span
+                        aria-hidden
+                        className={item?.favorite ? 'text-pink-400' : ''}
+                      >
+                        {item?.favorite ? '♥' : '♡'}
+                      </span>
+                      {item?.favorite ? 'Favorite' : 'Add to favorites'}
                     </button>
-                    <DiaryLogButton
-                      id={id}
-                      movie={movie}
-                      initialRating={currentUserRating}
-                    />
                     <ListPicker id={id} movie={movie} />
                     <FollowNews subject={movie.name} />
-                  </>
-                )}
-                <button
-                  className="btn-ghost"
-                  onClick={handleShare}
-                  aria-label="Share this movie"
-                >
-                  {copied ? (
-                    <>
-                      <HiCheck className="h-5 w-5 text-green-400" />
-                      Link copied!
-                    </>
-                  ) : (
-                    <>
-                      <HiOutlineShare className="h-5 w-5" />
-                      Share
-                    </>
-                  )}
-                </button>
-              </div>
+                    <ShareButton copied={copied} onShare={handleShare} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -388,47 +440,6 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
             </Link>
           </section>
         )}
-        {/* Tagline */}
-        {movie.consensus && (
-          <blockquote className="surface my-8 border-l-4 border-pink-500 p-5 text-lg italic text-zinc-200 md:text-xl">
-            <Balancer>{movie.consensus}</Balancer>
-          </blockquote>
-        )}
-
-        {/* Trailer — click-to-play facade so YouTube only loads on demand */}
-        {movie.trailer?.url && (
-          <section className="my-10">
-            <h3 className="section-heading mb-4">Trailer</h3>
-            {showTrailer ? (
-              <iframe
-                src={`${movie.trailer.url}?autoplay=1`}
-                title={`${movie.name} trailer`}
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                className="aspect-video w-full rounded-xl border border-zinc-800 bg-black"
-              />
-            ) : (
-              <button
-                onClick={() => setShowTrailer(true)}
-                aria-label={`Play ${movie.name} trailer`}
-                className="group relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl border border-zinc-800 bg-black"
-              >
-                <Image
-                  src={backdrop}
-                  fill
-                  sizes="100vw"
-                  alt=""
-                  aria-hidden
-                  className="object-cover opacity-50 transition duration-300 group-hover:opacity-70"
-                />
-                <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-pink-600/90 text-white shadow-lg transition duration-300 group-hover:scale-110 group-hover:bg-pink-500">
-                  <HiPlay className="h-8 w-8 translate-x-0.5" />
-                </span>
-              </button>
-            )}
-          </section>
-        )}
-
         {/* Photo gallery — click any still to open the lightbox */}
         {gallery.length > 0 && (
           <section className="my-10">

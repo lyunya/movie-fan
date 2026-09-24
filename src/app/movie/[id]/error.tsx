@@ -3,7 +3,9 @@ import Link from 'next/link'
 export default function MovieError({ reset }: { reset: () => void }) {
   return (
     <main className="page-shell max-w-xl py-20 text-center">
-      <h1 className="text-3xl font-bold">The film details couldn’t load.</h1>
+      <h1 className="text-3xl font-semibold">
+        The film details couldn’t load.
+      </h1>
       <p className="mt-4 text-zinc-400">
         Our movie source may be temporarily unavailable. Your library is still
         safe.

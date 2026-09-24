@@ -71,7 +71,7 @@ export default function TonightClient() {
     <main className="page-shell">
       <div className="mx-auto max-w-3xl text-center">
         <p className="eyebrow">Less scrolling. More cinema.</p>
-        <h1 className="mt-3 text-4xl font-bold sm:text-6xl">
+        <h1 className="mt-3 text-4xl font-semibold sm:text-6xl">
           What are we watching?
         </h1>
         <p className="mt-4 text-zinc-400">

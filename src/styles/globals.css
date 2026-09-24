@@ -2,41 +2,182 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------ */
+/* After Hours Film Club — one place for the design system.            */
+/* Warm near-black canvas, raised charcoal surfaces, warm white text,  */
+/* raspberry (pink) for actions, gold for *your* ratings. Fraunces is  */
+/* the display face; Overpass carries the interface.                  */
+/* ------------------------------------------------------------------ */
+
 @layer base {
+  :root {
+    color-scheme: dark;
+    /* Left edge of the page column, reused so full-bleed shelves line up
+       with everything else. Matches .page-shell (max-w-screen-xl + px). */
+    --shell-gutter: 1rem;
+  }
+  @media (min-width: 640px) {
+    :root {
+      --shell-gutter: 2rem;
+    }
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
   body {
-    @apply overflow-x-clip bg-black text-white;
+    @apply overflow-x-clip bg-ink font-heading text-cream antialiased;
+  }
+  /* A whisper of film grain over the whole canvas. Static (no animation),
+     pointer-transparent, and tiny: an inline SVG noise tile. */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  h1 {
+    font-family: var(--font-display), Georgia, serif;
+    font-optical-sizing: auto;
+    letter-spacing: -0.015em;
+  }
+  :focus-visible {
+    outline: 2px solid #f9a8d4;
+    outline-offset: 4px;
+  }
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  summary {
+    cursor: pointer;
+  }
+  ::selection {
+    @apply bg-pink-500/40 text-white;
   }
 }
 
 @layer components {
-  .login-btn {
-    @apply flex items-center justify-center gap-2 rounded-lg border-2 border-pink-600 bg-slate-800 px-5 py-3 transition-all hover:bg-slate-700;
+  /* Layout */
+  .page-shell {
+    @apply mx-auto w-full max-w-screen-xl px-4 pb-16 pt-8 sm:px-8 sm:pt-10;
+  }
+  .shell-x {
+    @apply mx-auto w-full max-w-screen-xl px-4 sm:px-8;
   }
 
-  /* Primary call to action — the brand gradient in pill form */
+  /* Type */
+  .font-display {
+    font-family: var(--font-display), Georgia, serif;
+    font-optical-sizing: auto;
+  }
+  .section-heading {
+    @apply font-display text-2xl font-semibold tracking-tight text-cream sm:text-3xl;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.2em] text-pink-300;
+  }
+  /* Historical name: now a flat raspberry accent, no gradient */
+  .gradient-text {
+    @apply text-pink-300;
+  }
+
+  /* Buttons */
   .btn-brand {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-pink-500 to-red-600 px-6 py-3 font-heading font-semibold text-white shadow-lg shadow-red-900/30 transition hover:from-pink-400 hover:to-red-500 hover:shadow-red-900/50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-pink-600 px-6 py-3 font-heading font-semibold text-white shadow-[0_10px_30px_-12px_rgba(236,72,153,0.7)] transition hover:bg-pink-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50;
   }
-
-  /* Secondary action — outlined on a dark surface */
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/60 px-6 py-3 font-heading font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800 active:scale-95;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/60 px-6 py-3 font-heading font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800 active:scale-95;
+  }
+  /* Secondary actions that shouldn't compete with the primary row */
+  .btn-quiet {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-transparent px-3 py-2 text-sm font-semibold text-zinc-300 transition hover:border-zinc-700 hover:bg-zinc-900 hover:text-white;
+  }
+  .quiet-actions .btn-ghost,
+  .quiet-actions .btn-brand {
+    @apply min-h-11 rounded-full border-transparent bg-transparent px-3 py-2 text-sm text-zinc-300 shadow-none hover:border-zinc-700 hover:bg-zinc-900 hover:text-white;
+  }
+  .icon-button {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-zinc-800;
+  }
+  .login-btn {
+    @apply flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 transition hover:border-pink-400 hover:bg-zinc-800;
   }
 
+  /* Surfaces and chips */
+  .surface {
+    @apply rounded-2xl border border-ink-line bg-ink-raised;
+  }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1 text-sm text-zinc-200;
   }
-
-  .surface {
-    @apply rounded-2xl border border-zinc-800 bg-zinc-900/70;
+  .filter-chip {
+    @apply min-h-11 rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500;
+  }
+  .filter-chip[aria-pressed='true'] {
+    @apply border-pink-400 bg-pink-500/10 text-pink-200;
   }
 
-  .section-heading {
-    @apply font-heading text-2xl font-bold text-white sm:text-3xl;
+  /* Forms */
+  .field-label {
+    @apply flex flex-col gap-2 text-sm font-medium text-zinc-300;
+  }
+  .field {
+    @apply min-h-11 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-base text-white placeholder:text-zinc-500;
   }
 
-  .gradient-text {
-    @apply bg-gradient-to-br from-pink-400 to-red-600 bg-clip-text text-transparent;
+  /* Navigation */
+  .nav-link {
+    @apply py-3 text-sm font-semibold text-zinc-400 transition hover:text-white;
+  }
+  .nav-link-active {
+    @apply border-b-2 border-pink-400 py-3 text-sm font-semibold text-pink-300;
+  }
+  .mobile-nav {
+    @apply flex min-h-12 flex-col items-center justify-center gap-1 text-[11px];
+  }
+  .mobile-nav svg {
+    @apply h-5 w-5;
+  }
+  .skip-link {
+    @apply fixed left-4 top-4 z-[110] -translate-y-24 rounded-lg bg-white p-3 text-black focus:translate-y-0;
+  }
+
+  /* Marquee bulbs: a row of little lights for "now showing" moments */
+  .bulbs {
+    @apply flex gap-1.5;
+  }
+  .bulbs > span {
+    @apply block h-1.5 w-1.5 rounded-full bg-gold shadow-[0_0_8px_2px_rgba(245,196,81,0.55)];
+  }
+  .bulbs > span:nth-child(odd) {
+    @apply animate-bulbs;
+  }
+  .bulbs > span:nth-child(even) {
+    @apply animate-bulbs [animation-delay:600ms];
+  }
+
+  /* Ticket stub edge (used by small "admit one" moments) */
+  .ticket {
+    -webkit-mask:
+      radial-gradient(circle 10px at 0 50%, transparent 98%, #000) left / 51%
+        100% no-repeat,
+      radial-gradient(circle 10px at 100% 50%, transparent 98%, #000) right /
+        51% 100% no-repeat;
+    mask:
+      radial-gradient(circle 10px at 0 50%, transparent 98%, #000) left / 51%
+        100% no-repeat,
+      radial-gradient(circle 10px at 100% 50%, transparent 98%, #000) right /
+        51% 100% no-repeat;
   }
 }
 
@@ -48,24 +189,23 @@
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  /* Softly fades the left/right edges of a horizontal scroll row */
+  /* Softly fades the right edge of a horizontal scroll row */
   .edge-fade-x {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent,
-      black 2.5%,
-      black 97.5%,
-      transparent
+    -webkit-mask-image: linear-gradient(to right, black 92%, transparent);
+    mask-image: linear-gradient(to right, black 92%, transparent);
+  }
+  /* Full-bleed horizontal shelf whose first item lines up with the page
+     column. Percent padding resolves against the row's full width. */
+  .bleed-x {
+    padding-inline: max(
+      var(--shell-gutter),
+      calc((100% - theme('screens.xl')) / 2 + var(--shell-gutter))
     );
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      black 2.5%,
-      black 97.5%,
-      transparent
+    scroll-padding-inline: max(
+      var(--shell-gutter),
+      calc((100% - theme('screens.xl')) / 2 + var(--shell-gutter))
     );
   }
-
   .safe-area-bottom {
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
@@ -79,8 +219,7 @@
   grid-template-columns: repeat(auto-fit, 196px);
 }
 
-/* Confetti burst for a 5-star rating (StarRating). Each piece flies out to
-   its own --tx/--ty offset and fades. */
+/* Confetti burst (StarRating). Each piece flies to its own --tx/--ty. */
 .confetti-piece {
   animation: confetti-fly 700ms ease-out forwards;
 }
@@ -101,90 +240,11 @@
     animation: none;
     display: none;
   }
-}
-
-@layer base {
-  :root {
-    color-scheme: dark;
-  }
-  body {
-    background: #111013;
-    color: #f5f2ef;
-  }
-  :focus-visible {
-    outline: 2px solid #f9a8d4;
-    outline-offset: 4px;
-  }
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    -webkit-tap-highlight-color: transparent;
-  }
-  button:disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-  summary {
-    cursor: pointer;
-  }
-}
-@layer components {
-  .btn-brand {
-    @apply rounded-xl bg-pink-600 bg-none shadow-none hover:bg-pink-500 hover:shadow-none;
-  }
-  .btn-ghost {
-    @apply rounded-xl;
-  }
-  .surface {
-    @apply border-zinc-800 bg-[#1b191e];
-  }
-  .gradient-text {
-    @apply bg-none text-pink-400;
-  }
-  .page-shell {
-    @apply mx-auto w-full max-w-screen-xl px-4 pb-16 pt-8 sm:px-8 sm:pt-10;
-  }
-  .eyebrow {
-    @apply text-xs font-semibold uppercase tracking-[0.2em] text-pink-300;
-  }
-  .field-label {
-    @apply flex flex-col gap-2 text-sm font-medium text-zinc-300;
-  }
-  .field {
-    @apply min-h-11 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-base text-white placeholder:text-zinc-500;
-  }
-  .icon-button {
-    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-zinc-800;
-  }
-  .nav-link {
-    @apply py-3 text-sm font-semibold text-zinc-400 transition hover:text-white;
-  }
-  .nav-link-active {
-    @apply border-b-2 border-pink-400 py-3 text-sm font-semibold text-pink-300;
-  }
-  .mobile-nav {
-    @apply flex min-h-12 flex-col items-center justify-center gap-1 text-[11px];
-  }
-  .mobile-nav svg {
-    @apply h-5 w-5;
-  }
-  .skip-link {
-    @apply fixed left-4 top-4 z-[110] -translate-y-24 rounded-lg bg-white p-3 text-black focus:translate-y-0;
-  }
-  .filter-chip {
-    @apply min-h-11 rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300;
-  }
-  .filter-chip[aria-pressed='true'] {
-    @apply border-pink-400 bg-pink-500/10 text-pink-200;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

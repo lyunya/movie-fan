@@ -13,6 +13,8 @@ import MovieRow from '@/components/MovieRow/MovieRow'
 import SearchResults from '@/components/SearchResults/SearchResults'
 import MovieCardSkeleton from '@/components/MovieCard/MovieCardSkeleton'
 import News from '@/components/News/News'
+import FeatureMarquee from '@/components/FeatureMarquee/FeatureMarquee'
+import FrameGamePromo from '@/components/FrameGame/FrameGamePromo'
 import { QueryError } from '@/components/ui/Feedback'
 export default function HomeClient({ data }: { data: HomeData }) {
   const params = useSearchParams(),
@@ -68,9 +70,8 @@ export default function HomeClient({ data }: { data: HomeData }) {
   const movies = [...(results.data?.movies || []), ...extra].filter(
     (m, i, arr) => arr.findIndex((x) => x.emsVersionId === m.emsVersionId) === i
   )
-  const spotlight = data.popular[0]
   const seen = new Set<string>([
-    ...(spotlight ? [spotlight.emsVersionId] : []),
+    ...(data.feature ? [data.feature.id] : []),
     ...(saved.data?.movies
       .filter((m) => m.inWatchlist)
       .slice(0, 6)
@@ -88,6 +89,11 @@ export default function HomeClient({ data }: { data: HomeData }) {
   const trending = unique(data.trending)
   const theaters = unique(data.opening)
   const upcoming = unique(data.upcoming)
+  // A few stills for the Frame Game teaser, from films not featured above
+  const frameStills = data.topRated
+    .filter((m) => m.backdropUrl)
+    .slice(0, 3)
+    .map((m) => m.backdropUrl as string)
   return (
     <main className="pb-12">
       <div className="page-shell !pb-6">
@@ -95,10 +101,12 @@ export default function HomeClient({ data }: { data: HomeData }) {
           <div className="mb-6 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
               <p className="eyebrow">Your own little film club</p>
-              <h1 className="mt-3 max-w-2xl font-heading text-4xl font-bold leading-tight sm:text-5xl">
+              <h1 className="mt-3 max-w-2xl text-4xl font-semibold leading-[1.05] sm:text-6xl">
                 Find your next favorite.
                 <br />
-                <span className="text-zinc-400">Make a night of it.</span>
+                <span className="italic text-zinc-400">
+                  Make a night of it.
+                </span>
               </h1>
             </div>
             <Link href="/tonight" className="btn-brand self-start sm:shrink-0">
@@ -141,7 +149,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
       </div>
       {query ? (
         <section className="page-shell !pt-2">
-          <h1 className="mb-5 text-2xl font-bold">Results for “{query}”</h1>
+          <h1 className="mb-5 text-2xl font-semibold">Results for “{query}”</h1>
           <div
             className="mb-6 flex gap-2"
             role="group"
@@ -214,6 +222,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
               {results.data?.people.length ? (
                 results.data.people.map((person) => (
                   <Link
+                    prefetch={false}
                     key={person.id}
                     href={`/person/${toSlug(person.id, person.name)}`}
                     className="surface flex items-center gap-4 p-3"
@@ -259,6 +268,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
             />
           )}
           <MovieRow
+            eyebrow="Picked for you"
             title="A little more your thing"
             subtitle={
               forYou.data?.topGenre
@@ -267,73 +277,62 @@ export default function HomeClient({ data }: { data: HomeData }) {
             }
             movies={personalized}
           />
-          <div className="page-shell !py-6">
-            <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
-              {spotlight && (
-                <section className="surface flex flex-col justify-between overflow-hidden p-5 sm:p-7">
-                  <div>
-                    <p className="eyebrow">In the spotlight</p>
-                    <div className="mt-5 flex gap-5">
-                      <Link
-                        href={`/movie/${spotlight.emsVersionId}`}
-                        className="shrink-0"
-                      >
-                        <Image
-                          src={
-                            (typeof spotlight.posterImage === 'string'
-                              ? spotlight.posterImage
-                              : spotlight.posterImage?.url) ||
-                            '/placeholderposter.png'
-                          }
-                          width={150}
-                          height={225}
-                          alt={`${spotlight.name} poster`}
-                          className="w-24 rounded-lg sm:w-36"
-                        />
-                      </Link>
-                      <div className="self-center">
-                        <h2 className="text-2xl font-bold sm:text-3xl">
-                          {spotlight.name}
-                        </h2>
-                        <p className="mt-2 text-sm text-zinc-400">
-                          See what everyone’s talking about.
-                        </p>
-                        <Link
-                          className="btn-ghost mt-4 !px-4 !text-sm"
-                          href={`/movie/${spotlight.emsVersionId}`}
-                        >
-                          Explore the film
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              )}
-              <News newsStories={data.news.slice(0, 4)} />
-            </div>
-          </div>
+          {data.feature && <FeatureMarquee feature={data.feature} />}
           <MovieRow
+            eyebrow="Trending this week"
             title="In the conversation"
-            subtitle="Trending this week"
             movies={trending}
           />
-          <MovieRow title="In theaters" movies={theaters} />
-          <MovieRow title="Coming soon" movies={upcoming} />
-          <div className="page-shell !py-6">
-            <section className="surface flex flex-col justify-between gap-5 p-6 sm:flex-row sm:items-center">
-              <div>
-                <p className="eyebrow">A collection that’s unmistakably you</p>
-                <h2 className="mt-2 text-2xl font-bold">
-                  What makes your Top 10?
-                </h2>
-                <p className="mt-2 text-zinc-400">
-                  Rank the films you love. Give every favorite a place.
-                </p>
-              </div>
-              <Link className="btn-brand shrink-0" href="/lists">
-                Build a ranked list
-              </Link>
-            </section>
+          <div className="shell-x grid gap-6 py-5 lg:grid-cols-[1.2fr_1fr]">
+            <News newsStories={data.news.slice(0, 4)} />
+            <FrameGamePromo stills={frameStills} />
+          </div>
+          <MovieRow
+            eyebrow="On the big screen"
+            title="In theaters"
+            movies={theaters}
+          />
+          <MovieRow
+            eyebrow="Mark your calendar"
+            title="Coming soon"
+            movies={upcoming}
+          />
+          <div className="shell-x grid gap-5 pb-8 pt-5 md:grid-cols-2">
+            {[
+              {
+                eyebrow: 'Admit one · Rankings',
+                title: 'What makes your Top 10?',
+                body: 'Rank the films you love. Give every favorite a place.',
+                href: '/lists',
+                cta: 'Build a ranked list',
+              },
+              {
+                eyebrow: 'Admit one · Film passport',
+                title: 'Collect a stamp for every era.',
+                body: 'Every film you log earns stamps for its decade and genre. How well-traveled is your taste?',
+                href: '/passport',
+                cta: 'Open your passport',
+              },
+            ].map((t) => (
+              <section
+                key={t.href}
+                className="ticket relative flex flex-col justify-between gap-5 rounded-2xl bg-gradient-to-br from-ink-raised to-[#231d25] p-6 px-9 ring-1 ring-inset ring-white/5 sm:flex-row sm:items-center"
+              >
+                <div>
+                  <p className="eyebrow text-gold">{t.eyebrow}</p>
+                  <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight">
+                    {t.title}
+                  </h2>
+                  <p className="mt-2 text-sm text-zinc-400">{t.body}</p>
+                </div>
+                <Link
+                  className="btn-ghost shrink-0 !px-4 !text-sm"
+                  href={t.href}
+                >
+                  {t.cta}
+                </Link>
+              </section>
+            ))}
           </div>
         </>
       )}

@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react'
+import Link from 'next/link'
 import type { MovieCardProps } from '@/components/MovieCard/types'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import Carousel from '@/components/Carousel/Carousel'
@@ -8,25 +9,43 @@ interface MovieRowProps {
   movies: MovieCardProps[]
   /** Optional line under the heading (e.g. "Because you save Horror movies") */
   subtitle?: ReactNode
-  /** Netflix-style rank numerals on the first 10 cards */
+  /** Small label above the heading */
+  eyebrow?: string
+  /** Optional "See all" destination */
+  href?: string
+  /** Rank badges on the first 10 cards */
   ranked?: boolean
 }
 
 /**
  * A titled, horizontally-scrolling row of movie cards. Shared by the home
- * page, movie detail "More like this", and the personalized "For you" row so
- * they stay visually identical.
+ * page, movie detail "More like this", and the personalized rows so they
+ * stay visually identical.
  */
-const MovieRow: FC<MovieRowProps> = ({ title, movies, subtitle, ranked = false }) => {
+const MovieRow: FC<MovieRowProps> = ({
+  title,
+  movies,
+  subtitle,
+  eyebrow,
+  href,
+  ranked = false,
+}) => {
   if (!movies?.length) return null
   return (
-    <section className="py-4">
-      <div className="mx-auto max-w-screen-2xl px-4 pb-3 sm:px-8">
-        <h2 className="section-heading">
-          <span className="gradient-text">{title}</span>
-        </h2>
-        {subtitle && (
-          <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
+    <section className="py-5">
+      <div className="shell-x flex items-end justify-between gap-4 pb-4">
+        <div>
+          {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
+          <h2 className="section-heading">{title}</h2>
+          {subtitle && <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>}
+        </div>
+        {href && (
+          <Link
+            href={href}
+            className="shrink-0 text-sm font-semibold text-pink-300 hover:text-pink-200"
+          >
+            See all →
+          </Link>
         )}
       </div>
       <Carousel

@@ -71,7 +71,6 @@ export default function SigninClient({ callbackUrl }: { callbackUrl: string }) {
           <Image
             src="/shining.webp"
             fill
-            priority
             sizes="(min-width: 1024px) 520px, 0px"
             alt=""
             className="object-cover object-center"
@@ -103,7 +102,7 @@ export default function SigninClient({ callbackUrl }: { callbackUrl: string }) {
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-pink-400">
               Movie Fan
             </p>
-            <h1 className="mt-3 font-heading text-3xl font-bold leading-tight sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
               Your next chapter starts here
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-zinc-400 sm:text-base">

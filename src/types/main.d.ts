@@ -50,4 +50,22 @@ export interface HomeData {
   trending: MovieCardProps[]
   topRated: MovieCardProps[]
   news: NewStory[]
+  /** The home marquee: one film, told well */
+  feature: HomeFeature | null
+}
+
+export interface HomeFeature {
+  id: string
+  name: string
+  tagline: string | null
+  synopsis: string | null
+  backdropUrl: string
+  posterUrl: string | null
+  year: string | null
+  runtimeMinutes: number | null
+  genres: string[]
+  director: string | null
+  certification: string | null
+  trailerUrl: string | null
+  score: string | null
 }

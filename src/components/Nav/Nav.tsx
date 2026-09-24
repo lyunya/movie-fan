@@ -16,7 +16,33 @@ const destinations = [
   { href: '/library', label: 'Library' },
   { href: '/news', label: 'News' },
   { href: '/tonight', label: 'Movie Night' },
+  { href: '/play', label: 'Frame Game' },
 ]
+
+function TicketMark() {
+  return (
+    <svg
+      viewBox="0 0 32 24"
+      className="h-6 w-8 -rotate-6 text-pink-400 transition group-hover:rotate-0"
+      aria-hidden
+    >
+      <path
+        fill="currentColor"
+        d="M3 2h26a1 1 0 0 1 1 1v5a4 4 0 0 0 0 8v5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-5a4 4 0 0 0 0-8V3a1 1 0 0 1 1-1Z"
+      />
+      <path
+        stroke="#111013"
+        strokeWidth="1.5"
+        strokeDasharray="2 2"
+        d="M22 4v16"
+      />
+      <path
+        fill="#111013"
+        d="m12 7.5 1.2 2.6 2.8.3-2.1 1.9.6 2.8-2.5-1.5-2.5 1.5.6-2.8-2.1-1.9 2.8-.3z"
+      />
+    </svg>
+  )
+}
 export default function Nav() {
   const { data: session } = useSession()
   const pathname = usePathname()
@@ -28,13 +54,17 @@ export default function Nav() {
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <header className="sticky top-0 z-50 border-b border-zinc-800 bg-[#111013]/95 backdrop-blur-lg">
-        <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-3 px-4 py-3 sm:px-8">
+      <header className="sticky top-0 z-50 border-b border-ink-line/80 bg-ink/90 backdrop-blur-lg">
+        <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-3 px-4 py-3 sm:px-8">
           <Link
             href="/"
-            className="shrink-0 font-heading text-2xl font-extrabold tracking-tight text-pink-400 sm:text-3xl"
+            className="group flex shrink-0 items-center gap-2"
+            aria-label="Movie Fan home"
           >
-            Movie Fan<span className="ml-1 text-pink-300">.</span>
+            <TicketMark />
+            <span className="font-display text-2xl font-semibold italic tracking-tight text-cream sm:text-[1.7rem]">
+              Movie Fan
+            </span>
           </Link>
           <nav aria-label="Main navigation" className="hidden gap-6 lg:flex">
             {destinations.map((d) => (
@@ -79,6 +109,8 @@ export default function Nav() {
             { href: '/library', label: 'Your library' },
             { href: '/lists', label: 'Lists & rankings' },
             { href: '/diary', label: 'Movie diary' },
+            { href: '/passport', label: 'Film passport' },
+            { href: '/play', label: 'The Frame Game' },
             { href: '/news', label: 'News' },
             { href: '/circle', label: 'Your circle' },
             { href: '/profile', label: 'Profile & settings' },
@@ -100,7 +132,7 @@ export default function Nav() {
       {
         <nav
           aria-label="Mobile navigation"
-          className={`safe-area-bottom fixed inset-x-0 bottom-0 z-40 ${pathname.startsWith('/movie/') ? 'hidden sm:grid' : 'grid'} grid-cols-4 border-t border-zinc-800 bg-[#111013]/95 px-2 pt-2 backdrop-blur lg:hidden`}
+          className={`safe-area-bottom fixed inset-x-0 bottom-0 z-40 ${pathname.startsWith('/movie/') ? 'hidden sm:grid' : 'grid'} grid-cols-4 border-t border-ink-line bg-ink/95 px-2 pt-2 backdrop-blur lg:hidden`}
         >
           {[
             { href: '/', label: 'Discover', icon: HiOutlineHome },

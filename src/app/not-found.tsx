@@ -6,7 +6,7 @@ export default function NotFound() {
       <p className="gradient-text font-heading text-7xl font-black sm:text-8xl">
         404
       </p>
-      <h1 className="mt-4 font-heading text-3xl font-bold sm:text-4xl">
+      <h1 className="mt-4 text-3xl font-semibold sm:text-4xl">
         Page not found
       </h1>
       <p className="mt-4 text-zinc-400">

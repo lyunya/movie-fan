@@ -58,7 +58,9 @@ export default function NewsClient({
         </p>
       )}
       <p className="eyebrow">News, with a little context</p>
-      <h1 className="mt-3 text-4xl font-bold sm:text-5xl">The latest reel</h1>
+      <h1 className="mt-3 text-4xl font-semibold sm:text-5xl">
+        The latest reel
+      </h1>
       <p className="mt-3 max-w-2xl text-zinc-400">
         Fresh stories from film publishers. Follow the movies and people you
         care about, or save a story for later.

@@ -9,7 +9,7 @@ export default function News({ newsStories }: NewsStoryProps) {
           All news ↗
         </Link>
       </div>
-      {newsStories.slice(0, 3).map((story) => (
+      {newsStories.slice(0, 4).map((story) => (
         <article
           key={story.id}
           className="border-b border-zinc-800 py-4 last:border-0"
