@@ -87,7 +87,7 @@ export default function YearRecapClient() {
     return (
       <main className="mx-auto flex min-h-[65vh] max-w-xl flex-col items-center justify-center px-4 text-center">
         <HiOutlineSparkles className="h-12 w-12 text-pink-400" />
-        <h1 className="mt-5 font-heading text-4xl font-bold">
+        <h1 className="mt-5 text-4xl font-semibold">
           Your year deserves credits
         </h1>
         <p className="mt-4 text-zinc-400">
@@ -124,9 +124,7 @@ export default function YearRecapClient() {
           >
             ‹
           </button>
-          <h1 className="font-heading text-5xl font-bold sm:text-7xl">
-            {year}
-          </h1>
+          <h1 className="text-5xl font-semibold sm:text-7xl">{year}</h1>
           <button
             className="flex h-11 w-11 items-center justify-center rounded-full text-3xl text-zinc-500 hover:bg-zinc-900 hover:text-white"
             onClick={() => setYear((value) => Math.min(currentYear, value + 1))}
@@ -169,11 +167,12 @@ export default function YearRecapClient() {
             {stats.favorite && (
               <div className="surface flex gap-5 p-5">
                 <Link
+                  prefetch={false}
                   href={`/movie/${stats.favorite.movieId}`}
                   className="relative aspect-[2/3] w-28 shrink-0 overflow-hidden rounded-xl"
                 >
                   <Image
-                    src={stats.favorite.posterImage || '/placeholderposter.png'}
+                    src={stats.favorite.posterImage || '/placeholderposter.svg'}
                     fill
                     sizes="112px"
                     alt=""

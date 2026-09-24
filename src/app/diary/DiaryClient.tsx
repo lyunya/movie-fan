@@ -46,7 +46,9 @@ export default function DiaryClient() {
     return (
       <main className="page-shell max-w-2xl text-center">
         <p className="eyebrow">The films. The feelings. The company.</p>
-        <h1 className="mt-3 text-4xl font-bold">Your life in movie nights.</h1>
+        <h1 className="mt-3 text-4xl font-semibold">
+          Your life in movie nights.
+        </h1>
         <button className="btn-brand mt-6" onClick={() => signIn()}>
           Open your diary
         </button>
@@ -74,7 +76,7 @@ export default function DiaryClient() {
           <Link href="/library" className="eyebrow">
             Your library
           </Link>
-          <h1 className="mt-3 text-4xl font-bold">Your diary</h1>
+          <h1 className="mt-3 text-4xl font-semibold">Your diary</h1>
           <p className="mt-2 text-zinc-400">
             {entries.data?.length || 0} movie nights in {year}
           </p>
@@ -154,9 +156,13 @@ export default function DiaryClient() {
         <div className="space-y-4">
           {matches.slice(0, limit).map((e) => (
             <article key={e.id} className="surface flex gap-4 p-4">
-              <Link className="shrink-0" href={`/movie/${e.movieId}`}>
+              <Link
+                prefetch={false}
+                className="shrink-0"
+                href={`/movie/${e.movieId}`}
+              >
                 <Image
-                  src={e.posterImage || '/placeholderposter.png'}
+                  src={e.posterImage || '/placeholderposter.svg'}
                   width={80}
                   height={120}
                   className="rounded-lg"
@@ -178,6 +184,7 @@ export default function DiaryClient() {
                   · {e.isPublic ? 'Shared' : 'Private'}
                 </p>
                 <Link
+                  prefetch={false}
                   className="mt-1 block text-xl font-semibold"
                   href={`/movie/${e.movieId}`}
                 >

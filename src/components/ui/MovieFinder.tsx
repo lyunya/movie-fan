@@ -57,7 +57,7 @@ export default function MovieFinder({
               src={
                 (typeof m.posterImage === 'string'
                   ? m.posterImage
-                  : m.posterImage?.url) || '/placeholderposter.png'
+                  : m.posterImage?.url) || '/placeholderposter.svg'
               }
               width={36}
               height={54}

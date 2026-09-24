@@ -95,13 +95,14 @@ export default function Filmography({ credits }: { credits: PersonCredit[] }) {
       <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {movies.slice(0, limit).map((c) => (
           <Link
+            prefetch={false}
             key={`${c.tmdbId}-${c.role}`}
             href={`/movie/${c.tmdbId}`}
             className="group"
           >
             <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-900">
               <Image
-                src={c.posterUrl || '/placeholderposter.png'}
+                src={c.posterUrl || '/placeholderposter.svg'}
                 alt={`${c.title} poster`}
                 fill
                 sizes="(max-width: 640px) 45vw, 180px"

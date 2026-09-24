@@ -94,7 +94,7 @@ export default function ComparisonSession({
                   onClick={() => choose(choice)}
                 >
                   <Image
-                    src={film.posterImage || '/placeholderposter.png'}
+                    src={film.posterImage || '/placeholderposter.svg'}
                     width={140}
                     height={210}
                     alt=""

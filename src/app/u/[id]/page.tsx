@@ -52,7 +52,7 @@ export default async function PublicWatchlistPage({ params }: PageProps) {
             className="object-cover"
           />
         </div>
-        <h1 className="font-heading text-3xl font-bold sm:text-4xl">
+        <h1 className="text-3xl font-semibold sm:text-4xl">
           <span className="gradient-text">{owner}</span>&apos;s film club
         </h1>
         <p className="text-sm text-zinc-400">
@@ -71,7 +71,12 @@ export default async function PublicWatchlistPage({ params }: PageProps) {
           <h2 className="section-heading mb-4">Shared lists</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {lists.map((l) => (
-              <Link key={l.id} className="surface p-4" href={`/lists/${l.id}`}>
+              <Link
+                prefetch={false}
+                key={l.id}
+                className="surface p-4"
+                href={`/lists/${l.id}`}
+              >
                 {l.ranked ? '# ' : ''}
                 {l.name}
                 <span className="mt-1 block text-xs text-zinc-400">
@@ -89,6 +94,7 @@ export default async function PublicWatchlistPage({ params }: PageProps) {
             {entries.map((e) => (
               <article key={e.id} className="surface p-5">
                 <Link
+                  prefetch={false}
                   className="text-lg font-semibold"
                   href={`/movie/${e.movieId}`}
                 >

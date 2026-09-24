@@ -9,7 +9,6 @@ import type { Image } from '@/types/main'
 export const getPosterSrc = (
   posterImage: Image | string | null | undefined
 ): string => {
-  const url =
-    typeof posterImage === 'string' ? posterImage : posterImage?.url
-  return url || '/placeholderposter.png'
+  const url = typeof posterImage === 'string' ? posterImage : posterImage?.url
+  return url || '/placeholderposter.svg'
 }

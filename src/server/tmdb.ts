@@ -12,7 +12,6 @@ import {
   TMDB_BASE_API_URL,
   TMDB_POSTER_URL,
   TMDB_BACKDROP_URL,
-  TMDB_PROFILE_URL,
   TMDB_BACKDROP_THUMB_URL,
 } from '@/data/Constants'
 import type { Credit } from '@/components/CastGrid/types'
@@ -21,6 +20,9 @@ import { fetchImdbRating } from './omdb'
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342'
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w500'
+// Cast cards and search avatars render at <=160px; provider logos at 24px.
+const HEADSHOT_BASE = 'https://image.tmdb.org/t/p/w185'
+const LOGO_BASE = 'https://image.tmdb.org/t/p/w92'
 
 // Cache lifetimes in seconds
 export const REVALIDATE = {
@@ -249,12 +251,17 @@ export interface MovieCardData {
   imdbRating?: number | null
   imdbVoteCount?: number | null
   genreIds?: number[]
+  /** w780 still, used by the home marquee and the Frame Game */
+  backdropUrl?: string | null
+  /** TMDB vote count, so cards can tell "no reviews" from a real 0% */
+  voteCount?: number | null
 }
 
 interface TmdbMovieSummary {
   id: number
   title: string
   poster_path?: string | null
+  backdrop_path?: string | null
   release_date?: string
   vote_count?: number | null
   vote_average?: number | null
@@ -272,7 +279,14 @@ const mapSummary = (m: TmdbMovieSummary): MovieCardData => ({
     url: m.poster_path ? `${TMDB_POSTER_URL}${m.poster_path}` : '',
   },
   releaseDate: m.release_date || null,
-  tomatoMeter: m.vote_count === 0 ? null : scoreFromVoteAverage(m.vote_average),
+  tomatoMeter:
+    !m.vote_count || !m.vote_average
+      ? null
+      : scoreFromVoteAverage(m.vote_average),
+  voteCount: m.vote_count ?? null,
+  backdropUrl: m.backdrop_path
+    ? `${TMDB_BACKDROP_THUMB_URL}${m.backdrop_path}`
+    : null,
 })
 
 /** Enriches a TMDB card with IMDb data without changing its TMDB score. */
@@ -376,7 +390,7 @@ interface TmdbMultiResult extends TmdbMovieSummary {
 const mapPerson = (p: TmdbMultiResult): PersonResult => ({
   id: p.id,
   name: p.name ?? '',
-  profileUrl: p.profile_path ? `${TMDB_PROFILE_URL}${p.profile_path}` : null,
+  profileUrl: p.profile_path ? `${HEADSHOT_BASE}${p.profile_path}` : null,
   knownFor: Array.isArray(p.known_for)
     ? p.known_for
         .map((k) => k.title || k.name)
@@ -501,9 +515,7 @@ export const fetchWatchProviders = async (
     .map((provider) => ({
       id: provider.provider_id,
       name: provider.provider_name,
-      logoUrl: provider.logo_path
-        ? `${TMDB_PROFILE_URL}${provider.logo_path}`
-        : null,
+      logoUrl: provider.logo_path ? `${LOGO_BASE}${provider.logo_path}` : null,
       priority: provider.display_priority ?? 999,
     }))
     .sort((a, b) => {
@@ -683,7 +695,7 @@ const mapCredit = (
   name: person.name,
   ...extra,
   headShotImage: person.profile_path
-    ? { url: `${TMDB_PROFILE_URL}${person.profile_path}` }
+    ? { url: `${HEADSHOT_BASE}${person.profile_path}` }
     : undefined,
 })
 
@@ -765,7 +777,7 @@ export const fetchMovieDetails = cache(
       (list ?? []).map((p) => ({
         id: p.provider_id,
         name: p.provider_name,
-        logoUrl: `${TMDB_PROFILE_URL}${p.logo_path}`,
+        logoUrl: `${LOGO_BASE}${p.logo_path}`,
       }))
     const watchProviders = usProviders
       ? {
@@ -806,14 +818,16 @@ export const fetchMovieDetails = cache(
           : null,
       motionPictureRating: { code: certification },
       tomatoMeter:
-        data.vote_count === 0 ? null : scoreFromVoteAverage(data.vote_average),
+        !data.vote_count || !data.vote_average
+          ? null
+          : scoreFromVoteAverage(data.vote_average),
       voteCount: data.vote_count ?? null,
       imdbRating: imdb?.rating ?? null,
       imdbVoteCount: imdb?.voteCount ?? null,
       consensus: data.tagline || null,
       trailer: {
         url: trailerVideo?.key
-          ? `https://www.youtube.com/embed/${trailerVideo.key}`
+          ? `https://www.youtube-nocookie.com/embed/${trailerVideo.key}`
           : null,
       },
       images,

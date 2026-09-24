@@ -12,6 +12,14 @@ import { parseIdFromSlug } from '@/utils/slug'
 // People data barely changes — rebuild at most daily
 export const revalidate = 86400
 
+// An empty list opts every path into on-demand ISR: the first visit renders
+// and caches the page, later visits (and crawlers) are served from the cache
+// until `revalidate` elapses. Without this, Next treats the route as fully
+// dynamic and every view is a fresh serverless render.
+export async function generateStaticParams() {
+  return []
+}
+
 import Filmography from './Filmography'
 import FollowNews from '@/components/ui/FollowNews'
 
@@ -61,9 +69,7 @@ export default async function PersonPage({ params }: PageProps) {
   if (!person) {
     return (
       <main className="mx-auto max-w-screen-md px-4 py-24 text-center text-white sm:px-8">
-        <h1 className="font-heading text-3xl font-bold sm:text-4xl">
-          {decoded}
-        </h1>
+        <h1 className="text-3xl font-semibold sm:text-4xl">{decoded}</h1>
         <p className="mt-4 text-zinc-400">
           We couldn&apos;t load a profile for this person right now.
         </p>
@@ -102,7 +108,7 @@ export default async function PersonPage({ params }: PageProps) {
       <div className="flex flex-col items-center gap-6 py-10 sm:flex-row sm:items-start sm:gap-10">
         <div className="relative aspect-[2/3] w-40 shrink-0 overflow-hidden rounded-xl border border-zinc-700 shadow-2xl sm:w-52">
           <Image
-            src={person.profileUrl || '/Default-Avatar.png'}
+            src={person.profileUrl || '/avatar.svg'}
             fill
             priority
             sizes="(max-width: 640px) 45vw, 210px"
@@ -112,9 +118,7 @@ export default async function PersonPage({ params }: PageProps) {
         </div>
 
         <div className="text-center sm:text-left">
-          <h1 className="font-heading text-3xl font-bold sm:text-5xl">
-            {person.name}
-          </h1>
+          <h1 className="text-3xl font-semibold sm:text-5xl">{person.name}</h1>
           <div className="mt-4">
             <FollowNews subject={person.name} />
           </div>

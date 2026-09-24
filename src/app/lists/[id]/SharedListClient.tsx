@@ -13,7 +13,7 @@ export default function SharedListClient({ id }: { id: string }) {
   if (!list.data) {
     return (
       <main className="mx-auto min-h-[65vh] max-w-xl px-4 py-24 text-center">
-        <h1 className="font-heading text-3xl font-bold">List not available</h1>
+        <h1 className="text-3xl font-semibold">List not available</h1>
         <p className="mt-3 text-zinc-400">
           It may be private or no longer exist.
         </p>
@@ -51,13 +51,14 @@ export default function SharedListClient({ id }: { id: string }) {
         <p className="mt-3 text-sm text-zinc-500">
           A list by{' '}
           <Link
+            prefetch={false}
             className="text-pink-300"
             href={`/u/${list.data.user.handle || list.data.user.id}`}
           >
             {list.data.user.name || 'a movie fan'}
           </Link>
         </p>
-        <h1 className="mt-2 font-heading text-4xl font-bold sm:text-5xl">
+        <h1 className="mt-2 text-4xl font-semibold sm:text-5xl">
           {list.data.name}
         </h1>
         {list.data.description && (

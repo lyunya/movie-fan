@@ -98,7 +98,7 @@ export default function ListsClient() {
     return (
       <main className="page-shell max-w-2xl text-center">
         <p className="eyebrow">Your taste. Your order.</p>
-        <h1 className="mt-3 text-4xl font-bold">
+        <h1 className="mt-3 text-4xl font-semibold">
           Every favorite deserves a place.
         </h1>
         <p className="mt-4 text-zinc-400">
@@ -117,7 +117,7 @@ export default function ListsClient() {
           <Link href="/library" className="eyebrow">
             Your library
           </Link>
-          <h1 className="mt-3 text-4xl font-bold">Lists & rankings</h1>
+          <h1 className="mt-3 text-4xl font-semibold">Lists & rankings</h1>
         </div>
         <button
           className="btn-brand"
@@ -247,11 +247,12 @@ export default function ListsClient() {
                         </span>
                       )}
                       <Link
+                        prefetch={false}
                         className="shrink-0"
                         href={`/movie/${item.movieId}`}
                       >
                         <Image
-                          src={item.posterImage || '/placeholderposter.png'}
+                          src={item.posterImage || '/placeholderposter.svg'}
                           width={64}
                           height={96}
                           className="rounded"
@@ -260,6 +261,7 @@ export default function ListsClient() {
                       </Link>
                       <div className="min-w-0 flex-1">
                         <Link
+                          prefetch={false}
                           className="font-semibold hover:text-pink-300"
                           href={`/movie/${item.movieId}`}
                         >

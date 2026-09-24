@@ -30,7 +30,7 @@ export default function CircleClient() {
     return (
       <main className="page-shell max-w-2xl text-center">
         <p className="eyebrow">Good taste travels between friends</p>
-        <h1 className="mt-3 text-4xl font-bold">Your circle</h1>
+        <h1 className="mt-3 text-4xl font-semibold">Your circle</h1>
         <p className="mt-4 text-zinc-400">
           Follow people whose movie nights you’d like to borrow.
         </p>
@@ -58,7 +58,7 @@ export default function CircleClient() {
   return (
     <main className="page-shell">
       <p className="eyebrow">A small circle. A wider world of films.</p>
-      <h1 className="mt-3 text-4xl font-bold">From your people</h1>
+      <h1 className="mt-3 text-4xl font-semibold">From your people</h1>
       <p className="mt-3 text-zinc-400">
         Shared movie nights and lists, newest first. Private diaries stay
         private.
@@ -74,6 +74,7 @@ export default function CircleClient() {
                 return (
                   <article key={`${a.kind}-${a.id}`} className="surface p-5">
                     <Link
+                      prefetch={false}
                       className="text-sm text-pink-300"
                       href={`/u/${user?.handle || a.userId}`}
                     >
@@ -86,7 +87,10 @@ export default function CircleClient() {
                       <>
                         <h2 className="mt-3 text-xl font-semibold">
                           Logged{' '}
-                          <Link href={`/movie/${a.entry.movieId}`}>
+                          <Link
+                            prefetch={false}
+                            href={`/movie/${a.entry.movieId}`}
+                          >
                             {a.entry.name}
                           </Link>
                         </h2>
@@ -106,6 +110,7 @@ export default function CircleClient() {
                       <h2 className="mt-3 text-xl font-semibold">
                         Updated{' '}
                         <Link
+                          prefetch={false}
                           href={`/lists/${a.list.id}`}
                           className="text-pink-300"
                         >
@@ -179,6 +184,7 @@ export default function CircleClient() {
               return (
                 <div key={p.id} className="surface p-4">
                   <Link
+                    prefetch={false}
                     className="font-semibold"
                     href={`/u/${p.handle || p.id}`}
                   >

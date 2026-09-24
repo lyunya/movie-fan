@@ -7,6 +7,14 @@ import MovieDetails from '@/components/MovieDetails/MovieDetails'
 // Movie facts are effectively static — regenerate at most daily
 export const revalidate = 86400
 
+// An empty list opts every path into on-demand ISR: the first visit renders
+// and caches the page, later visits (and crawlers) are served from the cache
+// until `revalidate` elapses. Without this, Next treats the route as fully
+// dynamic and every view is a fresh serverless render.
+export async function generateStaticParams() {
+  return []
+}
+
 type PageProps = { params: Promise<{ id: string }> }
 
 export async function generateMetadata({

@@ -93,7 +93,7 @@ export default function LibraryClient() {
       <main className="page-shell">
         <section className="surface mx-auto my-8 max-w-2xl p-8 text-center">
           <p className="eyebrow">A home for every favorite</p>
-          <h1 className="mt-3 text-4xl font-bold">
+          <h1 className="mt-3 text-4xl font-semibold">
             Your movie life, remembered.
           </h1>
           <p className="mt-4 text-zinc-400">
@@ -156,7 +156,9 @@ export default function LibraryClient() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Collected by you</p>
-          <h1 className="mt-2 text-4xl font-bold sm:text-5xl">Your library</h1>
+          <h1 className="mt-2 text-4xl font-semibold sm:text-5xl">
+            Your library
+          </h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/lists" className="btn-ghost !px-4">
@@ -462,6 +464,7 @@ export default function LibraryClient() {
                 ) : (
                   <>
                     <Link
+                      prefetch={false}
                       className="flex-1 font-semibold"
                       href={`/movie/${m.movieId}`}
                     >

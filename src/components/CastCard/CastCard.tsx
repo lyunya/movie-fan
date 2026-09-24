@@ -17,7 +17,7 @@ const CastCard: FC<CastCardProps> = ({
     <>
       <div className="relative aspect-[2/3] overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition duration-300 group-hover:border-zinc-600">
         <Image
-          src={headShotImage?.url || '/Default-Avatar.png'}
+          src={headShotImage?.url || '/avatar.svg'}
           fill
           sizes="(max-width: 640px) 30vw, 160px"
           className="object-cover transition duration-300 group-hover:scale-105"
@@ -36,9 +36,12 @@ const CastCard: FC<CastCardProps> = ({
   // Clicking a person opens their in-app profile with a filmography.
   // Link by TMDB id when we have one so the right person always resolves.
   if (name) {
-    const href = id ? `/person/${toSlug(id, name)}` : `/person/${encodeURIComponent(name)}`
+    const href = id
+      ? `/person/${toSlug(id, name)}`
+      : `/person/${encodeURIComponent(name)}`
     return (
       <Link
+        prefetch={false}
         href={href}
         title={`See movies with ${name}`}
         className="group w-28 shrink-0 text-center sm:w-full"

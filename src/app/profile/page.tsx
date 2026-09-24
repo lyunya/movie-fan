@@ -89,7 +89,7 @@ export default function Profile() {
   return (
     <main className="page-shell max-w-3xl">
       <p className="eyebrow">Your corner of the club</p>
-      <h1 className="mb-6 mt-2 text-4xl font-bold">Profile & settings</h1>
+      <h1 className="mb-6 mt-2 text-4xl font-semibold">Profile & settings</h1>
       <Link href="/library" className="mb-6 inline-block text-pink-300">
         ← Your library
       </Link>
@@ -110,7 +110,11 @@ export default function Profile() {
             preferredProviders={user.preferredProviders}
           />
           {user.publicWatchlist && (
-            <Link className="btn-ghost" href={`/u/${user.handle || user.id}`}>
+            <Link
+              prefetch={false}
+              className="btn-ghost"
+              href={`/u/${user.handle || user.id}`}
+            >
               Preview your public profile
             </Link>
           )}
