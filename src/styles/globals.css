@@ -72,6 +72,10 @@
     background-size: 1.1rem;
     padding-right: 2.75rem !important;
   }
+  select:not([multiple]):not([size]):focus-visible {
+    border-color: rgb(236 72 153 / 0.7);
+    box-shadow: 0 0 0 3px rgb(236 72 153 / 0.18);
+  }
   ::selection {
     @apply bg-pink-500/40 text-white;
   }
