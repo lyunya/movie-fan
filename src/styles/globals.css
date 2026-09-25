@@ -74,6 +74,8 @@
   }
   select:not([multiple]):not([size]):focus-visible {
     border-color: rgb(236 72 153 / 0.7);
+    outline: 2px solid #f9a8d4;
+    outline-offset: 4px;
     box-shadow: 0 0 0 3px rgb(236 72 153 / 0.18);
   }
   @media (forced-colors: active) {
