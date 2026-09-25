@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { signIn, useSession } from 'next-auth/react'
 import type { WatchEvent } from '@prisma/client'
-import type { FilmDetail } from '@/server/catalog/types'
+import type { Film } from '@/server/catalog/types'
 import { api } from '@/utils/api'
 import { POSTER_PLACEHOLDER, filmImage } from '@/utils/film'
 import Dialog from '@/components/ui/Dialog'
@@ -19,9 +19,8 @@ export default function DiaryClient() {
     [filter, setFilter] = useState(''),
     [limit, setLimit] = useState(40),
     [finder, setFinder] = useState(false),
-    [film, setFilm] = useState<FilmDetail | null>(null),
+    [film, setFilm] = useState<Film | null>(null),
     [entry, setEntry] = useState<WatchEvent | null>(null),
-    [loading, setLoading] = useState(false),
     [calendar, setCalendar] = useState(false)
   const entries = api.diary.list.useQuery(
       { year },
@@ -30,9 +29,10 @@ export default function DiaryClient() {
     years = api.diary.years.useQuery(undefined, {
       enabled: status === 'authenticated',
     })
-  const remove = api.diary.delete.useMutation({
+  const remove = api.library.deleteViewing.useMutation({
     onSuccess: () => {
-      utils.diary.invalidate()
+      void utils.diary.invalidate()
+      void utils.library.invalidate()
       notify('Diary entry removed')
     },
     onError: () => notify('Could not remove this entry.', 'error'),
@@ -258,20 +258,9 @@ export default function DiaryClient() {
         title="What did you watch?"
       >
         <MovieFinder
-          busy={loading}
-          onChoose={async (m) => {
-            setLoading(true)
-            try {
-              const res = await utils.catalog.details.fetch({ id: m.id })
-              if (res.film) {
-                setFilm(res.film)
-                setFinder(false)
-              }
-            } catch {
-              notify('Could not load that film. Try again.', 'error')
-            } finally {
-              setLoading(false)
-            }
+          onChoose={(m) => {
+            setFilm(m)
+            setFinder(false)
           }}
         />
       </Dialog>

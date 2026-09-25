@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import MovieCard from '@/components/MovieCard/MovieCard'
+import { useLibrary } from '@/hooks/useLibrary'
 import { api } from '@/utils/api'
-import { QueryError, notify } from '@/components/ui/Feedback'
+import { QueryError } from '@/components/ui/Feedback'
 const moods = [
   { label: 'Surprise me', ids: [] as number[] },
   { label: 'Something funny', ids: [35] },
@@ -45,9 +46,7 @@ export default function TonightClient() {
     request || { genreIds: [], minScore: 60, surprise: 0 },
     { enabled: !!request, retry: 1 }
   )
-  const dismiss = api.movie.setState.useMutation({
-    onError: () => notify('Could not remember that preference.', 'error'),
-  })
+  const library = useLibrary()
   const choose = () => {
     const excluded = [
       ...new Set([...exclude, ...(picks.data?.films.map((m) => m.id) || [])]),
@@ -203,12 +202,8 @@ export default function TonightClient() {
                       <button
                         className="mt-3 min-h-11 text-sm text-pink-300"
                         onClick={() => {
-                          dismiss.mutate({
-                            movieId: m.id,
-                            dismissed: true,
-                          })
+                          library.act(m.id, { type: 'dismiss' })
                           setExclude((old) => [...old, m.id])
-                          notify('We’ll leave this out of future picks')
                         }}
                       >
                         Not for me

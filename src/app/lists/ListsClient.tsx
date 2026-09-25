@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { signIn, useSession } from 'next-auth/react'
 import { api } from '@/utils/api'
-import { POSTER_PLACEHOLDER, filmImage, filmSummary } from '@/utils/film'
+import { POSTER_PLACEHOLDER, filmImage } from '@/utils/film'
 import Dialog from '@/components/ui/Dialog'
 import ComparisonSession from '@/components/ui/ComparisonSession'
 import MovieFinder from '@/components/ui/MovieFinder'
@@ -457,7 +457,7 @@ export default function ListsClient() {
             if (selected)
               add.mutate({
                 listId: selected.id,
-                movie: filmSummary(m),
+                filmId: m.id,
               })
           }}
         />

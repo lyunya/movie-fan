@@ -117,20 +117,20 @@ function StampCard({
 
 export default function PassportClient() {
   const { data: session, status } = useSession()
-  const library = api.user.query.useQuery(undefined, {
+  const library = api.library.entries.useQuery(undefined, {
     enabled: status === 'authenticated',
   })
   const isSample = status === 'unauthenticated'
   const movies: PassportMovie[] = isSample
     ? SAMPLE
-    : (library.data?.movies ?? []).map((m) => ({
-        movieId: m.movieId,
-        name: m.name,
+    : (library.data ?? []).map((m) => ({
+        movieId: m.filmId,
+        name: m.title,
         releaseDate: m.releaseDate,
         genres: m.genres,
-        durationMinutes: m.durationMinutes,
-        directedBy: m.directedBy,
-        userRating: m.userRating,
+        durationMinutes: m.runtime ?? 0,
+        directedBy: m.directedBy ?? '',
+        userRating: m.rating,
         watched: m.watched,
         favorite: m.favorite,
       }))

@@ -9,7 +9,7 @@ import MovieCard from '@/components/MovieCard/MovieCard'
 import ProfileStats from '@/components/ProfileStats/ProfileStats'
 import { toWatchlistCsv } from '@/utils/watchlistCsv'
 import { notify, QueryError } from '@/components/ui/Feedback'
-import { filmFromSnapshot, filmSummary } from '@/utils/film'
+import { filmFromEntry } from '@/utils/film'
 export default function LibraryClient() {
   const { status } = useSession(),
     utils = api.useUtils(),
@@ -18,7 +18,11 @@ export default function LibraryClient() {
   const [selected, setSelected] = useState<string[]>([]),
     [limit, setLimit] = useState(48)
   const [bulkList, setBulkList] = useState('')
-  const query = api.user.query.useQuery(undefined, {
+  const query = api.library.entries.useQuery(undefined, {
+    enabled: status === 'authenticated',
+  })
+  // Region and services for the "available" filter
+  const member = api.user.query.useQuery(undefined, {
     enabled: status === 'authenticated',
   })
   const streamingOnly = params.get('streaming') === 'yes'
@@ -59,10 +63,10 @@ export default function LibraryClient() {
   const lists = api.lists.all.useQuery(undefined, {
     enabled: status === 'authenticated' && selected.length > 0,
   })
-  const bulk = api.movie.bulk.useMutation({
-    onSuccess: (result) => {
-      utils.user.query.invalidate()
-      notify(`${result.count} films updated`)
+  const bulk = api.library.bulk.useMutation({
+    onSuccess: (changes) => {
+      void utils.library.invalidate()
+      notify(`${changes.length} films updated`)
       setSelected([])
     },
     onError: () => notify('Your collection could not be updated.', 'error'),
@@ -110,7 +114,7 @@ export default function LibraryClient() {
         </section>
       </main>
     )
-  const all = query.data?.movies || []
+  const all = query.data || []
   const rows = all
     .filter(
       (m) =>
@@ -119,22 +123,22 @@ export default function LibraryClient() {
           : tab === 'favorites'
             ? m.favorite
             : m.inWatchlist) &&
-        m.name.toLowerCase().includes(search.toLowerCase()) &&
-        (!streamingOnly || streamingIds.has(m.movieId)) &&
+        m.title.toLowerCase().includes(search.toLowerCase()) &&
+        (!streamingOnly || streamingIds.has(m.filmId)) &&
         (!genre || m.genres.includes(genre)) &&
         (!decade ||
           Math.floor(Number(m.releaseDate?.slice(0, 4)) / 10) * 10 ===
             Number(decade)) &&
-        (!runtime || (m.durationMinutes > 0 && m.durationMinutes <= runtime)) &&
-        (params.get('unrated') !== 'yes' || m.userRating == null)
+        (!runtime || (!!m.runtime && m.runtime <= runtime)) &&
+        (params.get('unrated') !== 'yes' || m.rating == null)
     )
     .sort((a, b) =>
       sort === 'title'
-        ? a.name.localeCompare(b.name)
+        ? a.title.localeCompare(b.title)
         : sort === 'rating'
-          ? (b.userRating || 0) - (a.userRating || 0)
+          ? (b.rating || 0) - (a.rating || 0)
           : sort === 'score'
-            ? (b.tomatoMeter || 0) - (a.tomatoMeter || 0)
+            ? (b.tmdbPercent || 0) - (a.tmdbPercent || 0)
             : sort === 'watched'
               ? (b.lastWatchedAt?.getTime() || 0) -
                 (a.lastWatchedAt?.getTime() || 0)
@@ -168,7 +172,7 @@ export default function LibraryClient() {
           <Link href="/diary" className="btn-ghost !px-4">
             Diary
           </Link>
-          <LibraryImport existingIds={all.map((m) => m.movieId)} />
+          <LibraryImport existingIds={all.map((m) => m.filmId)} />
           <button className="btn-ghost !px-4" onClick={exportCsv}>
             Export
           </button>
@@ -229,10 +233,10 @@ export default function LibraryClient() {
             checked={streamingOnly}
             onChange={(e) => update('streaming', e.target.checked ? 'yes' : '')}
           />
-          {query.data?.user?.preferredProviders.length
+          {member.data?.user?.preferredProviders.length
             ? 'Available on my services'
             : 'Available with a subscription'}{' '}
-          · {query.data?.user?.watchRegion || 'US'}
+          · {member.data?.user?.watchRegion || 'US'}
         </label>
         {streamingOnly && (
           <div className="mt-2 text-sm text-zinc-400" role="status">
@@ -351,7 +355,7 @@ export default function LibraryClient() {
                 disabled={bulk.isPending}
                 className="btn-ghost !px-3 !py-2 !text-sm"
                 onClick={() =>
-                  bulk.mutate({ movieIds: selected, action: 'watched' })
+                  bulk.mutate({ filmIds: selected, action: 'markWatched' })
                 }
               >
                 Mark watched
@@ -361,7 +365,7 @@ export default function LibraryClient() {
                 className="btn-ghost !px-3 !py-2 !text-sm"
                 onClick={() =>
                   bulk.mutate({
-                    movieIds: selected,
+                    filmIds: selected,
                     action: tab === 'watchlist' ? 'unsave' : 'save',
                   })
                 }
@@ -385,13 +389,13 @@ export default function LibraryClient() {
                 disabled={!bulkList || addToList.isPending}
                 className="btn-ghost !px-3 !py-2"
                 onClick={async () => {
-                  const films = all.filter((m) => selected.includes(m.movieId))
+                  const films = all.filter((m) => selected.includes(m.filmId))
                   let failed = 0
                   for (const m of films) {
                     try {
                       await addToList.mutateAsync({
                         listId: bulkList,
-                        movie: filmSummary(filmFromSnapshot(m)),
+                        filmId: m.filmId,
                       })
                     } catch {
                       failed++
@@ -426,7 +430,7 @@ export default function LibraryClient() {
           >
             {rows.slice(0, limit).map((m) => (
               <div
-                key={m.id}
+                key={m.filmId}
                 className={
                   view === 'grid'
                     ? 'relative'
@@ -442,37 +446,34 @@ export default function LibraryClient() {
                 >
                   <input
                     type="checkbox"
-                    aria-label={`Select ${m.name}`}
-                    checked={selected.includes(m.movieId)}
+                    aria-label={`Select ${m.title}`}
+                    checked={selected.includes(m.filmId)}
                     onChange={(e) =>
                       setSelected((old) =>
                         e.target.checked
-                          ? [...old, m.movieId].slice(0, 100)
-                          : old.filter((x) => x !== m.movieId)
+                          ? [...old, m.filmId].slice(0, 100)
+                          : old.filter((x) => x !== m.filmId)
                       )
                     }
                   />
                   {view === 'grid' ? 'Select' : null}
                 </label>
                 {view === 'grid' ? (
-                  <MovieCard
-                    film={filmFromSnapshot(m)}
-                    userRating={m.userRating}
-                  />
+                  <MovieCard film={filmFromEntry(m)} userRating={m.rating} />
                 ) : (
                   <>
                     <Link
                       prefetch={false}
                       className="flex-1 font-semibold"
-                      href={`/movie/${m.movieId}`}
+                      href={`/movie/${m.filmId}`}
                     >
-                      {m.name}
+                      {m.title}
                       <span className="ml-2 text-sm text-zinc-400">
                         {m.releaseDate?.slice(0, 4)}
                       </span>
                     </Link>
                     <span className="text-sm text-yellow-300">
-                      {m.userRating ? `${m.userRating}★` : 'Unrated'}
+                      {m.rating ? `${m.rating}★` : 'Unrated'}
                     </span>
                     <span className="hidden text-xs text-zinc-400 sm:block">
                       {m.watched ? 'Watched' : 'To watch'}

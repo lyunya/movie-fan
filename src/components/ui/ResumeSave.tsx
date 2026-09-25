@@ -2,14 +2,17 @@
 import { useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { api } from '@/utils/api'
+import { PENDING_SAVE_KEY } from '@/hooks/useLibrary'
 import { notify } from './Feedback'
+
+/** Finishes a save a Member started before signing in. */
 export default function ResumeSave() {
   const { status } = useSession(),
     handled = useRef(false),
     utils = api.useUtils()
-  const save = api.movie.quickAdd.useMutation({
+  const save = api.library.change.useMutation({
     onSuccess: () => {
-      utils.user.query.invalidate()
+      void utils.library.invalidate()
       notify('Film saved to your watchlist')
     },
     onError: () =>
@@ -20,10 +23,11 @@ export default function ResumeSave() {
     if (status !== 'authenticated' || handled.current) return
     handled.current = true
     try {
-      const id = sessionStorage.getItem('movie-fan-pending-save')
+      const id = sessionStorage.getItem(PENDING_SAVE_KEY)
       if (id) {
-        sessionStorage.removeItem('movie-fan-pending-save')
-        if (/^\d+$/.test(id)) mutate({ movieId: id })
+        sessionStorage.removeItem(PENDING_SAVE_KEY)
+        if (/^[1-9]\d*$/.test(id))
+          mutate({ filmId: id, action: { type: 'save' } })
       }
     } catch {}
   }, [status, mutate])

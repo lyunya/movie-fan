@@ -24,7 +24,7 @@ export default function LibraryImport({
   const [resolve, setResolve] = useState<number | null>(null)
   const cancelled = useRef(false)
   const utils = api.useUtils()
-  const save = api.movie.importMovie.useMutation()
+  const save = api.library.importFilm.useMutation()
   const duplicates = new Set<string>(existingIds)
   const eligible = rows.map((row) => {
     const duplicate = !!row.movieId && duplicates.has(row.movieId)
@@ -99,7 +99,7 @@ export default function LibraryImport({
       setProgress(`Importing ${row.title}…`)
       try {
         const result = await save.mutateAsync({
-          movieId: row.movieId,
+          filmId: row.movieId,
           rating: row.rating,
           watchedDate: row.watchedDate,
         })
@@ -119,7 +119,7 @@ export default function LibraryImport({
         failed++
       }
     }
-    await utils.user.query.invalidate()
+    await utils.library.invalidate()
     await utils.diary.invalidate()
     setProgress(
       `${added} imported · ${skipped} already in your library${failed ? ` · ${failed} failed; retry the remaining films` : ''}${cancelled.current ? ' · Stopped' : ''}`

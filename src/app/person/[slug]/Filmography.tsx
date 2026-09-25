@@ -5,20 +5,16 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { PersonCredit } from '@/server/catalog/types'
 import { POSTER_PLACEHOLDER, filmImage } from '@/utils/film'
-import { api } from '@/utils/api'
+import { useLibrary } from '@/hooks/useLibrary'
 export default function Filmography({ credits }: { credits: PersonCredit[] }) {
   const { status } = useSession()
-  const library = api.user.query.useQuery(undefined, {
-    enabled: status === 'authenticated',
-  })
+  const { entries } = useLibrary()
   const [role, setRole] = useState('All'),
     [watched, setWatched] = useState('all'),
     [year, setYear] = useState(''),
     [limit, setLimit] = useState(24),
     [sort, setSort] = useState('popular')
-  const seen = new Set(
-    library.data?.movies.filter((m) => m.watched).map((m) => m.movieId)
-  )
+  const seen = new Set(entries.filter((m) => m.watched).map((m) => m.filmId))
   const movies = credits
     .filter(
       (c) =>

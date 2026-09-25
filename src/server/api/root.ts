@@ -1,7 +1,7 @@
 import { socialRouter } from './routers/social'
 import { newsRouter } from './routers/news'
 import { UserRouter } from './routers/user'
-import { watchListItemRouter } from './routers/watchListItem'
+import { libraryRouter } from './routers/library'
 import { catalogRouter } from './routers/catalog'
 import { diaryRouter } from './routers/diary'
 import { listsRouter } from './routers/lists'
@@ -12,7 +12,7 @@ import { createTRPCRouter } from './trpc'
  * All routers added in /api/routers should be manually added here
  */
 export const appRouter = createTRPCRouter({
-  movie: watchListItemRouter,
+  library: libraryRouter,
   news: newsRouter,
   social: socialRouter,
   user: UserRouter,

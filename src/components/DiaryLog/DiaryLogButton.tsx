@@ -1,13 +1,13 @@
 'use client'
 import { useState } from 'react'
-import type { FilmDetail } from '@/server/catalog/types'
+import type { Film } from '@/server/catalog/types'
 import Dialog from '@/components/ui/Dialog'
 import WatchEditor from './WatchEditor'
 export default function DiaryLogButton({
   film,
   initialRating = 0,
 }: {
-  film: FilmDetail
+  film: Pick<Film, 'id' | 'title'>
   initialRating?: number
 }) {
   const [open, setOpen] = useState(false)

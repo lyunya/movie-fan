@@ -85,14 +85,22 @@ export const formatGross = (revenue: number | null | undefined) =>
       }).format(revenue)
     : null
 
-/**
- * The small snapshot stored on a List item or Viewing: enough to draw a card
- * without asking the Catalog again. The inverse of `filmFromSnapshot`.
- */
-export const filmSummary = (film: Film) => ({
-  movieId: film.id,
-  name: film.title,
-  posterImage: filmImage(film.posterPath, 'w500'),
-  releaseDate: film.releaseDate,
-  tomatoMeter: tmdbPercent(film),
+/** A Film from a full Library entry. */
+export const filmFromEntry = (entry: {
+  filmId: string
+  title: string
+  posterPath: string | null
+  releaseDate: string | null
+  tmdbPercent: number | null
+}): Film => ({
+  id: entry.filmId,
+  title: entry.title,
+  releaseDate: entry.releaseDate,
+  posterPath: entry.posterPath,
+  backdropPath: null,
+  genreIds: [],
+  tmdb: {
+    average: entry.tmdbPercent ? entry.tmdbPercent / 10 : null,
+    votes: null,
+  },
 })

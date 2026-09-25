@@ -1,9 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { WatchEvent } from '@prisma/client'
-import type { FilmDetail } from '@/server/catalog/types'
+import type { Film } from '@/server/catalog/types'
 import StarRating from '@/components/StarRating/StarRating'
-import { createMovieObj } from '@/utils/createMovieObj'
 import { api } from '@/utils/api'
 import { notify } from '@/components/ui/Feedback'
 const today = () => {
@@ -17,7 +16,7 @@ export default function WatchEditor({
   onSaved,
   onDirtyChange,
 }: {
-  film?: FilmDetail
+  film?: Pick<Film, 'id'>
   entry?: WatchEvent
   initialRating?: number
   onSaved: () => void
@@ -32,7 +31,6 @@ export default function WatchEditor({
     [tags, setTags] = useState(entry?.tags.join(', ') || ''),
     [isPublic, setPublic] = useState(entry?.isPublic || false),
     [spoiler, setSpoiler] = useState(entry?.spoiler || false),
-    [keep, setKeep] = useState(false),
     [updateRating, setUpdateRating] = useState(true)
   const dirty =
     date !== (entry?.watchedAt.toISOString().slice(0, 10) || today()) ||
@@ -41,29 +39,24 @@ export default function WatchEditor({
     tags !== (entry?.tags.join(', ') || '') ||
     isPublic !== (entry?.isPublic || false) ||
     spoiler !== (entry?.spoiler || false) ||
-    keep ||
     !updateRating
   useEffect(() => {
     onDirtyChange?.(dirty)
   }, [dirty, onDirtyChange])
   const onSuccess = async () => {
-    await Promise.all([
-      utils.diary.invalidate(),
-      utils.user.query.invalidate(),
-      utils.movie.query.invalidate(),
-    ])
+    await Promise.all([utils.diary.invalidate(), utils.library.invalidate()])
     notify(entry ? 'Diary entry updated' : 'Movie night remembered ✓')
     onSaved()
   }
-  const log = api.diary.log.useMutation({ onSuccess }),
-    edit = api.diary.update.useMutation({ onSuccess })
+  const log = api.library.logViewing.useMutation({ onSuccess }),
+    edit = api.library.editViewing.useMutation({ onSuccess })
   const pending = log.isPending || edit.isPending
   return (
     <form
       className="space-y-3 [@media(max-height:720px)]:space-y-2"
       onSubmit={(e) => {
         e.preventDefault()
-        const fields = {
+        const viewing = {
           watchedAt: new Date(`${date}T12:00:00Z`),
           rating: rating || null,
           review: review.trim() || null,
@@ -78,14 +71,9 @@ export default function WatchEditor({
           isPublic,
           spoiler,
         }
-        if (entry) edit.mutate({ id: entry.id, entry: fields })
+        if (entry) edit.mutate({ id: entry.id, viewing })
         else if (film)
-          log.mutate({
-            movieData: createMovieObj(film),
-            entry: fields,
-            keepOnWatchlist: keep,
-            updateRating,
-          })
+          log.mutate({ filmId: film.id, viewing, useRating: updateRating })
       }}
     >
       {/* Date and rating share a row so the whole form fits without scrolling */}
@@ -128,14 +116,6 @@ export default function WatchEditor({
       </label>
       {!entry && (
         <>
-          <label className="flex items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={keep}
-              onChange={(e) => setKeep(e.target.checked)}
-            />
-            Keep on my watchlist for another watch
-          </label>
           <label className="flex items-start gap-2 text-sm">
             <input
               type="checkbox"

@@ -3,7 +3,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { HiCheck, HiOutlineCollection } from 'react-icons/hi'
 import type { Film } from '@/server/catalog/types'
-import { filmSummary } from '@/utils/film'
 import { api } from '@/utils/api'
 import Dialog from '@/components/ui/Dialog'
 import { notify, QueryError } from '@/components/ui/Feedback'
@@ -29,7 +28,6 @@ export default function ListPicker({ film }: { film: Film }) {
       notify('Could not remove this film. Please try again.', 'error'),
   })
   const create = api.lists.createWithMovie.useMutation()
-  const summary = filmSummary(film)
   return (
     <>
       <button className="btn-ghost" onClick={() => setOpen(true)}>
@@ -54,7 +52,7 @@ export default function ListPicker({ film }: { film: Film }) {
                 onClick={() =>
                   included
                     ? remove.mutate({ listId: list.id, movieId: id })
-                    : add.mutate({ listId: list.id, movie: summary })
+                    : add.mutate({ listId: list.id, filmId: id })
                 }
                 className="flex w-full items-center justify-between rounded-xl border border-zinc-800 px-4 py-3 text-left hover:bg-zinc-900"
               >
@@ -80,7 +78,7 @@ export default function ListPicker({ film }: { film: Film }) {
               await create.mutateAsync({
                 name: name.trim(),
                 ranked,
-                movie: summary,
+                filmId: id,
               })
               setName('')
               await refresh()

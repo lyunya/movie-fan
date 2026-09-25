@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { HiBookmark, HiOutlineBookmark } from 'react-icons/hi'
 import type { FilmDetail } from '@/server/catalog/types'
 import { filmImage, filmScore, filmYear } from '@/utils/film'
-import { useWatchlist } from '@/hooks/useWatchlist'
+import { useLibrary } from '@/hooks/useLibrary'
 import TrailerButton from '@/components/ui/TrailerButton'
 
 const runtime = (m: number | null) =>
@@ -25,7 +25,7 @@ function Bulbs() {
  * facts that help you decide (runtime, genre, who made it) up front.
  */
 export default function FeatureMarquee({ film }: { film: FilmDetail }) {
-  const { has, toggle, pendingId } = useWatchlist()
+  const { has, toggleWatchlist: toggle, pendingId } = useLibrary()
   const saved = has(film.id)
   const director = film.directors.map((d) => d.name).join(', ')
   const meta = [

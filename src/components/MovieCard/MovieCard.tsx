@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { HiBookmark, HiOutlineBookmark } from 'react-icons/hi'
-import { useWatchlist } from '@/hooks/useWatchlist'
+import { useLibrary } from '@/hooks/useLibrary'
 import type { Film } from '@/server/catalog/types'
 import {
   POSTER_PLACEHOLDER as PLACEHOLDER,
@@ -24,7 +24,7 @@ export default function MovieCard({
   rank?: number
 }) {
   const { id, title: name } = film
-  const { has, toggle, pendingId } = useWatchlist()
+  const { has, toggleWatchlist: toggle, pendingId } = useLibrary()
   const saved = has(id)
   const [failedPoster, setFailedPoster] = useState<string | null>(null)
   // Cards render at <=176 CSS px, so w342 is sharp at 2x
