@@ -5,9 +5,10 @@ import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import type { HomeData } from '@/types/main'
-import type { MovieCardProps } from '@/components/MovieCard/types'
+import type { Film } from '@/server/catalog/types'
 import { api } from '@/utils/api'
 import { toSlug } from '@/utils/slug'
+import { PERSON_PLACEHOLDER, filmFromSnapshot, filmImage } from '@/utils/film'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import MovieRow from '@/components/MovieRow/MovieRow'
 import SearchResults from '@/components/SearchResults/SearchResults'
@@ -23,17 +24,17 @@ export default function HomeClient({ data }: { data: HomeData }) {
   const [value, setValue] = useState(query)
   const [kind, setKind] = useState<'movies' | 'people'>('movies')
   const [page, setPage] = useState(1)
-  const [extra, setExtra] = useState<MovieCardProps[]>([])
+  const [extra, setExtra] = useState<Film[]>([])
   const [moreError, setMoreError] = useState(false)
   const [busy, setBusy] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const { status } = useSession()
   const utils = api.useUtils()
-  const results = api.tmdb.search.useQuery(
+  const results = api.catalog.search.useQuery(
     { query, page: 1 },
     { enabled: !!query, retry: 1 }
   )
-  const forYou = api.tmdb.forYou.useQuery(undefined, {
+  const forYou = api.catalog.forYou.useQuery(undefined, {
     enabled: status === 'authenticated',
   })
   const saved = api.user.query.useQuery(undefined, {
@@ -44,10 +45,11 @@ export default function HomeClient({ data }: { data: HomeData }) {
     { enabled: status === 'authenticated' && !query, staleTime: 3600000 }
   )
   const streamingIds = new Set(available.data?.available.map((m) => m.movieId))
-  const availableShelf =
-    saved.data?.movies
-      .filter((m) => m.inWatchlist && !m.watched && streamingIds.has(m.movieId))
-      .slice(0, 6) || []
+  const watchlist = (saved.data?.movies || []).filter((m) => m.inWatchlist)
+  const availableShelf = watchlist
+    .filter((m) => !m.watched && streamingIds.has(m.movieId))
+    .slice(0, 6)
+    .map(filmFromSnapshot)
   useEffect(() => {
     setValue(query)
     setExtra([])
@@ -67,33 +69,30 @@ export default function HomeClient({ data }: { data: HomeData }) {
       350
     )
   }
-  const movies = [...(results.data?.movies || []), ...extra].filter(
-    (m, i, arr) => arr.findIndex((x) => x.emsVersionId === m.emsVersionId) === i
+  const films = [...(results.data?.films || []), ...extra].filter(
+    (m, i, arr) => arr.findIndex((x) => x.id === m.id) === i
   )
   const seen = new Set<string>([
     ...(data.feature ? [data.feature.id] : []),
-    ...(saved.data?.movies
-      .filter((m) => m.inWatchlist)
-      .slice(0, 6)
-      .map((m) => m.movieId) || []),
+    ...watchlist.slice(0, 6).map((m) => m.movieId),
   ])
-  const unique = (items: MovieCardProps[], count = 10) =>
+  const unique = (items: Film[], count = 10) =>
     items
-      .filter((m) => !seen.has(m.emsVersionId))
+      .filter((m) => !seen.has(m.id))
       .slice(0, count)
       .map((m) => {
-        seen.add(m.emsVersionId)
+        seen.add(m.id)
         return m
       })
-  const personalized = unique(forYou.data?.movies || [], 6)
+  const personalized = unique(forYou.data?.films || [], 6)
   const trending = unique(data.trending)
   const theaters = unique(data.opening)
   const upcoming = unique(data.upcoming)
   // A few stills for the Frame Game teaser, from films not featured above
   const frameStills = data.topRated
-    .filter((m) => m.backdropUrl)
+    .map((m) => filmImage(m.backdropPath, 'w780'))
+    .filter((url): url is string => !!url)
     .slice(0, 3)
-    .map((m) => m.backdropUrl as string)
   return (
     <main className="pb-12">
       <div className="page-shell !pb-6">
@@ -176,10 +175,10 @@ export default function HomeClient({ data }: { data: HomeData }) {
             </div>
           ) : kind === 'movies' ? (
             <>
-              {movies.length ? (
+              {films.length ? (
                 <SearchResults>
-                  {movies.map((m) => (
-                    <MovieCard key={m.emsVersionId} {...m} />
+                  {films.map((film) => (
+                    <MovieCard key={film.id} film={film} />
                   ))}
                 </SearchResults>
               ) : (
@@ -200,11 +199,11 @@ export default function HomeClient({ data }: { data: HomeData }) {
                     setBusy(true)
                     setMoreError(false)
                     try {
-                      const res = await utils.tmdb.search.fetch({
+                      const res = await utils.catalog.search.fetch({
                         query,
                         page: page + 1,
                       })
-                      setExtra((old) => [...old, ...res.movies])
+                      setExtra((old) => [...old, ...res.films])
                       setPage((p) => p + 1)
                     } catch {
                       setMoreError(true)
@@ -228,7 +227,10 @@ export default function HomeClient({ data }: { data: HomeData }) {
                     className="surface flex items-center gap-4 p-3"
                   >
                     <Image
-                      src={person.profileUrl || '/avatar.png'}
+                      src={
+                        filmImage(person.profilePath, 'w185') ||
+                        PERSON_PLACEHOLDER
+                      }
                       width={64}
                       height={64}
                       alt=""
@@ -248,7 +250,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
         </section>
       ) : (
         <>
-          {saved.data?.movies.some((m) => m.inWatchlist) && (
+          {watchlist.length > 0 && (
             <MovieRow
               title={
                 availableShelf.length
@@ -260,10 +262,10 @@ export default function HomeClient({ data }: { data: HomeData }) {
                   ? `Included with a subscription in ${available.data?.region || 'US'} · Open a film for service details`
                   : 'A few films you’ve been meaning to watch'
               }
-              movies={
+              films={
                 availableShelf.length
                   ? availableShelf
-                  : saved.data.movies.filter((m) => m.inWatchlist).slice(0, 6)
+                  : watchlist.slice(0, 6).map(filmFromSnapshot)
               }
             />
           )}
@@ -275,13 +277,13 @@ export default function HomeClient({ data }: { data: HomeData }) {
                 ? `Inspired by your interest in ${forYou.data.topGenre}`
                 : undefined
             }
-            movies={personalized}
+            films={personalized}
           />
-          {data.feature && <FeatureMarquee feature={data.feature} />}
+          {data.feature && <FeatureMarquee film={data.feature} />}
           <MovieRow
             eyebrow="Trending this week"
             title="In the conversation"
-            movies={trending}
+            films={trending}
           />
           <div className="shell-x grid gap-6 py-5 lg:grid-cols-[1.2fr_1fr]">
             <News newsStories={data.news.slice(0, 4)} />
@@ -290,12 +292,12 @@ export default function HomeClient({ data }: { data: HomeData }) {
           <MovieRow
             eyebrow="On the big screen"
             title="In theaters"
-            movies={theaters}
+            films={theaters}
           />
           <MovieRow
             eyebrow="Mark your calendar"
             title="Coming soon"
-            movies={upcoming}
+            films={upcoming}
           />
           <div className="shell-x grid gap-5 pb-8 pt-5 md:grid-cols-2">
             {[

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { createTRPCRouter, protectedProcedure } from './../trpc'
-import { fetchMovieAvailability } from '@/server/tmdb'
+import { catalog } from '@/server/catalog'
 
 export const UserRouter = createTRPCRouter({
   libraryAvailability: protectedProcedure
@@ -28,11 +28,11 @@ export const UserRouter = createTRPCRouter({
           while (index < batch.length) {
             const movie = batch[index++]!
             try {
-              const data = await fetchMovieAvailability(
+              const data = await catalog.whereToWatch(
                 movie.movieId,
                 user.watchRegion
               )
-              const providers = (data?.flatrate || []).filter(
+              const providers = (data?.subscription || []).filter(
                 (p) =>
                   !user.preferredProviders.length ||
                   user.preferredProviders.includes(p.id)

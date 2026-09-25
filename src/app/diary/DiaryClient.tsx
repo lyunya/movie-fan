@@ -4,8 +4,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { signIn, useSession } from 'next-auth/react'
 import type { WatchEvent } from '@prisma/client'
-import type { IMovieDetail } from '@/components/MovieDetails/types'
+import type { FilmDetail } from '@/server/catalog/types'
 import { api } from '@/utils/api'
+import { POSTER_PLACEHOLDER, filmImage } from '@/utils/film'
 import Dialog from '@/components/ui/Dialog'
 import MovieFinder from '@/components/ui/MovieFinder'
 import WatchEditor from '@/components/DiaryLog/WatchEditor'
@@ -18,7 +19,7 @@ export default function DiaryClient() {
     [filter, setFilter] = useState(''),
     [limit, setLimit] = useState(40),
     [finder, setFinder] = useState(false),
-    [movie, setMovie] = useState<IMovieDetail | null>(null),
+    [film, setFilm] = useState<FilmDetail | null>(null),
     [entry, setEntry] = useState<WatchEvent | null>(null),
     [loading, setLoading] = useState(false),
     [calendar, setCalendar] = useState(false)
@@ -162,7 +163,7 @@ export default function DiaryClient() {
                 href={`/movie/${e.movieId}`}
               >
                 <Image
-                  src={e.posterImage || '/placeholderposter.svg'}
+                  src={filmImage(e.posterImage, 'w185') || POSTER_PLACEHOLDER}
                   width={80}
                   height={120}
                   className="rounded-lg"
@@ -261,9 +262,9 @@ export default function DiaryClient() {
           onChoose={async (m) => {
             setLoading(true)
             try {
-              const res = await utils.tmdb.details.fetch({ id: m.emsVersionId })
-              if (res.movie) {
-                setMovie(res.movie)
+              const res = await utils.catalog.details.fetch({ id: m.id })
+              if (res.film) {
+                setFilm(res.film)
                 setFinder(false)
               }
             } catch {
@@ -275,27 +276,26 @@ export default function DiaryClient() {
         />
       </Dialog>
       <Dialog
-        open={!!movie || !!entry}
+        open={!!film || !!entry}
         onClose={() => {
           if (
             !dirty ||
             confirm('Close this draft? Unsaved changes will be lost.')
           ) {
-            setMovie(null)
+            setFilm(null)
             setEntry(null)
           }
         }}
-        title={entry ? `Edit ${entry.name}` : `Log ${movie?.name || 'a movie'}`}
+        title={entry ? `Edit ${entry.name}` : `Log ${film?.title || 'a movie'}`}
       >
-        {(movie || entry) && (
+        {(film || entry) && (
           <WatchEditor
             onDirtyChange={setDirty}
-            key={entry?.id || movie?.id}
-            movie={movie || undefined}
-            id={movie?.id}
+            key={entry?.id || film?.id}
+            film={film || undefined}
             entry={entry || undefined}
             onSaved={() => {
-              setMovie(null)
+              setFilm(null)
               setEntry(null)
             }}
           />

@@ -2,19 +2,17 @@
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import type { GenrePage } from '@/server/tmdb'
+import type { FilmPage } from '@/server/catalog/types'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import MovieGrid from '@/components/MovieGrid/MovieGrid'
 import { api } from '@/utils/api'
 import { QueryError } from '@/components/ui/Feedback'
 export default function GenreResults({
   genreId,
-  initialMovies,
-  totalPages,
+  initialPage,
 }: {
   genreId: number
-  initialMovies: GenrePage['movies']
-  totalPages: number
+  initialPage: FilmPage
 }) {
   const { status } = useSession()
   const user = api.user.query.useQuery(undefined, {
@@ -24,7 +22,7 @@ export default function GenreResults({
     [runtime, setRuntime] = useState(0),
     [decade, setDecade] = useState(0),
     [streaming, setStreaming] = useState(false)
-  const result = api.tmdb.discoverByGenre.useQuery(
+  const result = api.catalog.discoverByGenre.useQuery(
     {
       genreId,
       page,
@@ -37,7 +35,7 @@ export default function GenreResults({
     {
       initialData:
         page === 1 && !runtime && !decade && !streaming
-          ? { movies: initialMovies, totalPages, page: 1 }
+          ? initialPage
           : undefined,
       staleTime: 60000,
     }
@@ -108,11 +106,11 @@ export default function GenreResults({
       {result.data && (
         <>
           <MovieGrid
-            movieCards={result.data.movies.map((m) => (
-              <MovieCard key={m.emsVersionId} {...m} />
+            movieCards={result.data.films.map((film) => (
+              <MovieCard key={film.id} film={film} />
             ))}
           />
-          {!result.data.movies.length && (
+          {!result.data.films.length && (
             <p className="surface p-8">
               No films match. Try a wider decade or runtime.
             </p>

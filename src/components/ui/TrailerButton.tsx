@@ -2,17 +2,19 @@
 import { useState } from 'react'
 import { HiPlay } from 'react-icons/hi'
 import Dialog from './Dialog'
+import { trailerEmbedUrl } from '@/utils/film'
 
 /**
  * "Play trailer" that opens a cinema-width dialog. The YouTube iframe only
  * mounts while the dialog is open, so nothing third-party loads until asked.
  */
 export default function TrailerButton({
-  url,
+  trailerKey,
   title,
   className = 'btn-ghost',
 }: {
-  url: string
+  /** YouTube video key */
+  trailerKey: string
   title: string
   className?: string
 }) {
@@ -31,7 +33,7 @@ export default function TrailerButton({
       >
         {open && (
           <iframe
-            src={`${url}?autoplay=1&rel=0`}
+            src={`${trailerEmbedUrl(trailerKey)}?autoplay=1&rel=0`}
             title={`${title} trailer`}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen

@@ -7,7 +7,7 @@ import { HiOutlineSearch } from 'react-icons/hi'
 import Dialog from '@/components/ui/Dialog'
 import { api } from '@/utils/api'
 import { toSlug } from '@/utils/slug'
-import { tmdbImage } from '@/utils/tmdbImage'
+import { filmImage, filmYear } from '@/utils/film'
 
 type Suggestion = {
   key: string
@@ -58,7 +58,7 @@ export default function NavSearch() {
     return () => clearTimeout(t)
   }, [value])
 
-  const results = api.tmdb.search.useQuery(
+  const results = api.catalog.search.useQuery(
     { query: term, page: 1 },
     {
       enabled: open && term.length >= 2,
@@ -71,19 +71,19 @@ export default function NavSearch() {
   const suggestions: Suggestion[] =
     term.length >= 2 && results.data
       ? [
-          ...results.data.movies.slice(0, 6).map((m) => ({
-            key: `m-${m.emsVersionId}`,
-            href: `/movie/${m.emsVersionId}`,
-            title: m.name,
-            detail: m.releaseDate?.slice(0, 4) || 'Film',
-            image: tmdbImage(m.posterImage?.url || null, 'w92'),
+          ...results.data.films.slice(0, 6).map((m) => ({
+            key: `m-${m.id}`,
+            href: `/movie/${m.id}`,
+            title: m.title,
+            detail: filmYear(m) || 'Film',
+            image: filmImage(m.posterPath, 'w92'),
           })),
           ...results.data.people.slice(0, 3).map((p) => ({
             key: `p-${p.id}`,
             href: `/person/${toSlug(p.id, p.name)}`,
             title: p.name,
             detail: p.knownFor ? `Known for ${p.knownFor}` : 'Person',
-            image: tmdbImage(p.profileUrl, 'w92'),
+            image: filmImage(p.profilePath, 'w92'),
             round: true,
           })),
         ]

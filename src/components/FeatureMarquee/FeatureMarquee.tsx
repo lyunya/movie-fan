@@ -2,7 +2,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { HiBookmark, HiOutlineBookmark } from 'react-icons/hi'
-import type { HomeFeature } from '@/types/main'
+import type { FilmDetail } from '@/server/catalog/types'
+import { filmImage, filmScore, filmYear } from '@/utils/film'
 import { useWatchlist } from '@/hooks/useWatchlist'
 import TrailerButton from '@/components/ui/TrailerButton'
 
@@ -23,22 +24,26 @@ function Bulbs() {
  * The home page's one cinematic moment: a single film, told well, with the
  * facts that help you decide (runtime, genre, who made it) up front.
  */
-export default function FeatureMarquee({ feature }: { feature: HomeFeature }) {
+export default function FeatureMarquee({ film }: { film: FilmDetail }) {
   const { has, toggle, pendingId } = useWatchlist()
-  const saved = has(feature.id)
+  const saved = has(film.id)
+  const director = film.directors.map((d) => d.name).join(', ')
   const meta = [
-    feature.year,
-    runtime(feature.runtimeMinutes),
-    feature.certification,
-    feature.genres.join(', '),
-    feature.score,
+    filmYear(film),
+    runtime(film.runtime),
+    film.certification,
+    film.genres
+      .slice(0, 3)
+      .map((g) => g.name)
+      .join(', '),
+    filmScore(film).label,
   ].filter(Boolean)
   return (
     <section className="shell-x py-5" aria-labelledby="feature-title">
       <div className="relative isolate flex min-h-[32rem] overflow-hidden rounded-3xl border border-white/10 bg-ink-deep shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)] sm:min-h-[30rem]">
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <Image
-            src={feature.backdropUrl}
+            src={filmImage(film.backdropPath, 'w1280')!}
             fill
             priority
             sizes="(max-width: 1280px) 100vw, 1280px"
@@ -64,12 +69,13 @@ export default function FeatureMarquee({ feature }: { feature: HomeFeature }) {
             id="feature-title"
             className="font-display text-4xl font-semibold leading-[1.02] tracking-tight text-white sm:text-6xl"
           >
-            {feature.name}
+            {film.title}
           </h2>
           {meta.length > 0 && (
             <p className="flex flex-wrap gap-x-2 text-sm font-semibold text-zinc-300">
               {meta.map((m, i) => (
-                <span key={i} className="flex gap-2">
+                // The score label depends on "now"; an ISR page may be hours old
+                <span key={i} className="flex gap-2" suppressHydrationWarning>
                   {i > 0 && (
                     <span aria-hidden className="text-zinc-500">
                       ·
@@ -80,44 +86,42 @@ export default function FeatureMarquee({ feature }: { feature: HomeFeature }) {
               ))}
             </p>
           )}
-          {feature.tagline && (
+          {film.tagline && (
             <p className="hidden font-display text-lg italic text-pink-100/90 sm:block sm:text-xl">
-              “{feature.tagline}”
+              “{film.tagline}”
             </p>
           )}
-          {feature.synopsis && (
+          {film.overview && (
             <p className="line-clamp-2 max-w-xl leading-relaxed text-zinc-300 sm:line-clamp-3">
-              {feature.synopsis}
+              {film.overview}
             </p>
           )}
-          {feature.director && (
+          {director && (
             <p className="text-sm text-zinc-400">
               Directed by{' '}
-              <span className="font-semibold text-zinc-200">
-                {feature.director}
-              </span>
+              <span className="font-semibold text-zinc-200">{director}</span>
             </p>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <Link
               prefetch={false}
-              href={`/movie/${feature.id}`}
+              href={`/movie/${film.id}`}
               className="btn-brand max-sm:!px-4"
             >
               Explore the film
             </Link>
-            {feature.trailerUrl && (
+            {film.trailerKey && (
               <TrailerButton
-                url={feature.trailerUrl}
-                title={feature.name}
+                trailerKey={film.trailerKey}
+                title={film.title}
                 className="btn-ghost max-sm:!px-4"
               />
             )}
             <button
               className="btn-quiet"
               aria-pressed={saved}
-              disabled={pendingId === feature.id}
-              onClick={() => toggle(feature.id)}
+              disabled={pendingId === film.id}
+              onClick={() => toggle(film.id)}
             >
               {saved ? (
                 <HiBookmark className="h-5 w-5 text-pink-300" aria-hidden />

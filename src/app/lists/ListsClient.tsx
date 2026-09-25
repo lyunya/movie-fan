@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { signIn, useSession } from 'next-auth/react'
 import { api } from '@/utils/api'
+import { POSTER_PLACEHOLDER, filmImage, filmSummary } from '@/utils/film'
 import Dialog from '@/components/ui/Dialog'
 import ComparisonSession from '@/components/ui/ComparisonSession'
 import MovieFinder from '@/components/ui/MovieFinder'
@@ -252,7 +253,10 @@ export default function ListsClient() {
                         href={`/movie/${item.movieId}`}
                       >
                         <Image
-                          src={item.posterImage || '/placeholderposter.svg'}
+                          src={
+                            filmImage(item.posterImage, 'w185') ||
+                            POSTER_PLACEHOLDER
+                          }
                           width={64}
                           height={96}
                           className="rounded"
@@ -453,16 +457,7 @@ export default function ListsClient() {
             if (selected)
               add.mutate({
                 listId: selected.id,
-                movie: {
-                  movieId: m.emsVersionId,
-                  name: m.name,
-                  posterImage:
-                    (typeof m.posterImage === 'string'
-                      ? m.posterImage
-                      : m.posterImage?.url) || null,
-                  releaseDate: m.releaseDate || null,
-                  tomatoMeter: m.tomatoMeter ?? null,
-                },
+                movie: filmSummary(m),
               })
           }}
         />

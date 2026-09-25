@@ -10,6 +10,7 @@ import { HiOutlineShare, HiOutlineSparkles } from 'react-icons/hi'
 import RecapImage from '@/components/ui/RecapImage'
 import { QueryError } from '@/components/ui/Feedback'
 import { api } from '@/utils/api'
+import { POSTER_PLACEHOLDER, filmImage } from '@/utils/film'
 
 const currentYear = new Date().getFullYear()
 
@@ -172,7 +173,10 @@ export default function YearRecapClient() {
                   className="relative aspect-[2/3] w-28 shrink-0 overflow-hidden rounded-xl"
                 >
                   <Image
-                    src={stats.favorite.posterImage || '/placeholderposter.svg'}
+                    src={
+                      filmImage(stats.favorite.posterImage, 'w342') ||
+                      POSTER_PLACEHOLDER
+                    }
                     fill
                     sizes="112px"
                     alt=""

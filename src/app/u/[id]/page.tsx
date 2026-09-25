@@ -8,6 +8,7 @@ import ProfileActions from '@/components/ui/ProfileActions'
 import { getPublicProfile } from '@/server/publicProfile'
 import MovieGrid from '@/components/MovieGrid/MovieGrid'
 import MovieCard from '@/components/MovieCard/MovieCard'
+import { filmFromSnapshot } from '@/utils/film'
 
 // Public pages read live opt-in state — don't cache across users
 export const dynamic = 'force-dynamic'
@@ -120,11 +121,7 @@ export default async function PublicWatchlistPage({ params }: PageProps) {
           movieCards={movies.map((movie) => (
             <MovieCard
               key={movie.id}
-              name={movie.name}
-              emsVersionId={movie.emsVersionId}
-              posterImage={movie.posterImage}
-              releaseDate={movie.releaseDate}
-              tomatoMeter={movie.tomatoMeter}
+              film={filmFromSnapshot(movie)}
               userRating={movie.userRating}
             />
           ))}

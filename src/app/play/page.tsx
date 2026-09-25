@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { fetchPopular, fetchTopRated, fetchTrending } from '@/server/tmdb'
+import { catalog } from '@/server/catalog'
+import { filmImage, filmYear } from '@/utils/film'
 import type { FrameFilm } from '@/utils/frameGame'
 import FrameGame from '@/components/FrameGame/FrameGame'
 
@@ -19,19 +20,19 @@ export const metadata: Metadata = {
 
 export default async function PlayPage() {
   const lists = await Promise.allSettled([
-    fetchTopRated(),
-    fetchPopular(),
-    fetchTrending('week'),
+    catalog.films('topRated'),
+    catalog.films('popular'),
+    catalog.films('trendingWeek'),
   ])
   const pool: FrameFilm[] = lists
     .flatMap((r) => (r.status === 'fulfilled' ? r.value : []))
-    .filter((m) => m.backdropUrl && m.name)
+    .filter((m) => m.backdropPath && m.title)
     .map((m) => ({
-      id: m.emsVersionId,
-      name: m.name,
-      year: m.releaseDate?.slice(0, 4) || null,
-      backdropUrl: m.backdropUrl as string,
-      genreIds: m.genreIds || [],
+      id: m.id,
+      name: m.title,
+      year: filmYear(m),
+      backdropUrl: filmImage(m.backdropPath, 'w780')!,
+      genreIds: m.genreIds,
     }))
   return <FrameGame pool={pool} />
 }

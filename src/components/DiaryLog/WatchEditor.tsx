@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { WatchEvent } from '@prisma/client'
-import type { IMovieDetail } from '@/components/MovieDetails/types'
+import type { FilmDetail } from '@/server/catalog/types'
 import StarRating from '@/components/StarRating/StarRating'
 import { createMovieObj } from '@/utils/createMovieObj'
 import { api } from '@/utils/api'
@@ -11,15 +11,13 @@ const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 export default function WatchEditor({
-  movie,
-  id,
+  film,
   entry,
   initialRating = 0,
   onSaved,
   onDirtyChange,
 }: {
-  movie?: IMovieDetail
-  id?: string
+  film?: FilmDetail
   entry?: WatchEvent
   initialRating?: number
   onSaved: () => void
@@ -81,13 +79,9 @@ export default function WatchEditor({
           spoiler,
         }
         if (entry) edit.mutate({ id: entry.id, entry: fields })
-        else if (movie && id)
+        else if (film)
           log.mutate({
-            movieData: createMovieObj(
-              movie,
-              id,
-              movie.genres.map((g) => g.name)
-            ),
+            movieData: createMovieObj(film),
             entry: fields,
             keepOnWatchlist: keep,
             updateRating,

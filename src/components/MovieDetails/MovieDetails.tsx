@@ -13,7 +13,7 @@ import {
 
 import { api } from '@/utils/api'
 import { createMovieObj } from '@/utils/createMovieObj'
-import type { IMovieDetail } from './types'
+import type { FilmDetail } from '@/server/catalog/types'
 import StarRating from '@/components/StarRating/StarRating'
 import CastGrid from '../CastGrid/CastGrid'
 import Lightbox from '@/components/Lightbox/Lightbox'
@@ -25,7 +25,14 @@ import Availability from './Availability'
 import { notify } from '@/components/ui/Feedback'
 import ListPicker from '@/components/ListPicker/ListPicker'
 import TrailerButton from '@/components/ui/TrailerButton'
-import { describeScore } from '@/utils/score'
+import {
+  POSTER_PLACEHOLDER,
+  filmImage,
+  filmScore,
+  filmYear,
+  formatGross,
+  tmdbPercent,
+} from '@/utils/film'
 
 const formatRuntime = (minutes?: number | null) => {
   if (!minutes) return null
@@ -45,14 +52,8 @@ const formatFullDate = (dateString?: string | null) => {
   })
 }
 
-const ScoreBadge = ({ movie }: { movie: IMovieDetail }) => {
-  const score = describeScore({
-    tmdbScore: movie.tomatoMeter,
-    tmdbVotes: movie.voteCount,
-    imdbRating: movie.imdbRating,
-    imdbVotes: movie.imdbVoteCount,
-    releaseDate: movie.releaseDate,
-  })
+const ScoreBadge = ({ film }: { film: FilmDetail }) => {
+  const score = filmScore(film)
   if (score.kind === 'none')
     return (
       <p
@@ -63,19 +64,19 @@ const ScoreBadge = ({ movie }: { movie: IMovieDetail }) => {
       </p>
     )
   const usingImdb = score.kind === 'imdb'
+  const imdb = film.imdb?.rating.toFixed(1)
+  const tmdb = tmdbPercent(film)
   return (
     <div className="flex items-center gap-3">
       <span
         className="grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-black/40 font-display text-lg font-bold text-white"
         aria-hidden
       >
-        {usingImdb ? movie.imdbRating!.toFixed(1) : movie.tomatoMeter}
+        {usingImdb ? imdb : tmdb}
       </span>
       <div className="leading-tight">
         <p className="font-semibold text-white">
-          {usingImdb
-            ? `${movie.imdbRating!.toFixed(1)} / 10 on IMDb`
-            : `${movie.tomatoMeter}% on TMDB`}
+          {usingImdb ? `${imdb} / 10 on IMDb` : `${tmdb}% on TMDB`}
         </p>
         {score.count ? (
           <p className="text-xs text-zinc-400">
@@ -109,7 +110,8 @@ const ShareButton = ({
   </button>
 )
 
-const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
+const MovieDetails = ({ film }: { film: FilmDetail }) => {
+  const id = film.id
   const { data: session } = useSession()
   const utils = api.useUtils()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -141,14 +143,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
       notify(
         'Removed from watchlist. Your rating and history are kept.',
         'success',
-        () =>
-          addMovie.mutate({
-            movieData: createMovieObj(
-              movie,
-              id,
-              movie.genres.map((g) => g.name)
-            ),
-          })
+        () => addMovie.mutate({ movieData: createMovieObj(film) })
       )
     },
     onError: () =>
@@ -168,36 +163,33 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
     { movieId: id },
     { enabled: !!session }
   )
-  const genres: string[] = (movie.genres || []).map((genre) => genre.name)
-  const poster = movie.posterImage?.url || '/placeholderposter.svg'
-  const backdrop = movie.backgroundImage?.url || poster
-  const year = movie.releaseDate ? String(movie.releaseDate).slice(0, 4) : null
-  const fullReleaseDate = formatFullDate(movie.releaseDate)
-  const runtime = formatRuntime(movie.durationMinutes)
-  const gallery = (movie.images || []).filter((img) => img?.url)
-  // Link directors to their pages when the crew list carries their TMDB id
-  const directors = (movie.directedBy || '')
-    .split(',')
-    .map((name) => name.trim())
-    .filter(Boolean)
-    .map((name) => ({
-      name,
-      id: movie.crew?.find((c) => c.role === 'Director' && c.name === name)?.id,
-    }))
+  const poster = filmImage(film.posterPath, 'w500') || POSTER_PLACEHOLDER
+  const backdrop = filmImage(film.backdropPath, 'w1280') || poster
+  const year = filmYear(film)
+  const fullReleaseDate = formatFullDate(film.releaseDate)
+  const runtime = formatRuntime(film.runtime)
+  // Row thumbnails render ~360px wide; the lightbox shows the larger cut
+  const stills = film.stills.map((path) => ({
+    thumb: filmImage(path, 'w780')!,
+    url: filmImage(path, 'w1280')!,
+  }))
 
   const facts: { label: string; value: string | null }[] = [
     { label: 'Release date', value: fullReleaseDate },
     { label: 'Runtime', value: runtime },
-    { label: 'Director', value: movie.directedBy || null },
-    { label: 'Box office', value: movie.totalGross || null },
-    { label: 'Rated', value: movie.motionPictureRating?.code || null },
+    {
+      label: 'Director',
+      value: film.directors.map((d) => d.name).join(', ') || null,
+    },
+    { label: 'Box office', value: formatGross(film.revenue) },
+    { label: 'Rated', value: film.certification },
   ].filter((fact) => fact.value)
 
   const handleShare = async () => {
     const url = window.location.href
     try {
       if (navigator.share) {
-        await navigator.share({ title: movie.name, url })
+        await navigator.share({ title: film.title, url })
         return
       }
       await navigator.clipboard.writeText(url)
@@ -209,7 +201,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
   }
 
   const handleAddMovie = () => {
-    addMovie.mutate({ movieData: createMovieObj(movie, id, genres) })
+    addMovie.mutate({ movieData: createMovieObj(film) })
   }
   const handleRemoveMovie = () => removeMovie.mutate({ movieId: id })
   // The server upserts on [userId, movieId], so rating a movie is a single
@@ -250,7 +242,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
               fill
               priority
               sizes="(max-width: 640px) 45vw, 256px"
-              alt={`${movie.name} poster`}
+              alt={`${film.title} poster`}
               className="object-cover"
             />
           </div>
@@ -258,11 +250,11 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
           {/* Meta */}
           <div className="min-w-0 flex-1">
             <h1 className="text-4xl font-semibold leading-[1.05] sm:text-6xl">
-              <Balancer>{movie.name}</Balancer>
+              <Balancer>{film.title}</Balancer>
             </h1>
-            {movie.consensus && (
+            {film.tagline && (
               <p className="mt-3 font-display text-lg italic text-pink-100/85 sm:text-xl">
-                “{movie.consensus}”
+                “{film.tagline}”
               </p>
             )}
 
@@ -270,71 +262,58 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
             <div className="mt-5 flex flex-wrap items-center gap-2">
               {year && <span className="chip">{year}</span>}
               {runtime && <span className="chip">{runtime}</span>}
-              {movie.motionPictureRating?.code && (
-                <span className="chip">{movie.motionPictureRating.code}</span>
+              {film.certification && (
+                <span className="chip">{film.certification}</span>
               )}
-              {movie.genres.map((genre) =>
-                genre.id ? (
-                  <Link
-                    prefetch={false}
-                    key={genre.name}
-                    href={`/genre/${toSlug(genre.id, genre.name)}`}
-                    className="chip min-h-11 border-transparent bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white sm:min-h-0"
-                  >
-                    {genre.name}
-                  </Link>
-                ) : (
-                  <span
-                    key={genre.name}
-                    className="chip border-transparent bg-white/5 text-zinc-300"
-                  >
-                    {genre.name}
-                  </span>
-                )
-              )}
+              {film.genres.map((genre) => (
+                <Link
+                  prefetch={false}
+                  key={genre.id}
+                  href={`/genre/${toSlug(genre.id, genre.name)}`}
+                  className="chip min-h-11 border-transparent bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white sm:min-h-0"
+                >
+                  {genre.name}
+                </Link>
+              ))}
             </div>
 
             {/* Score + trailer */}
             <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4">
-              <ScoreBadge movie={movie} />
-              {movie.trailer?.url && (
+              <ScoreBadge film={film} />
+              {film.trailerKey && (
                 <TrailerButton
-                  url={movie.trailer.url}
-                  title={movie.name}
+                  trailerKey={film.trailerKey}
+                  title={film.title}
                   className="btn-ghost !rounded-full !py-2.5"
                 />
               )}
             </div>
 
-            {directors.length > 0 && (
+            {film.directors.length > 0 && (
               <p className="mt-6 text-zinc-300">
                 <span className="text-zinc-400">Directed by</span>{' '}
-                {directors.map((d, i) => (
-                  <span key={d.name}>
+                {film.directors.map((d, i) => (
+                  <span key={d.personId}>
                     {i > 0 && ', '}
-                    {d.id ? (
-                      <Link
-                        prefetch={false}
-                        href={`/person/${toSlug(d.id, d.name)}`}
-                        className="font-semibold text-white underline decoration-pink-400/60 underline-offset-4 hover:text-pink-200"
-                      >
-                        {d.name}
-                      </Link>
-                    ) : (
-                      <span className="font-semibold text-white">{d.name}</span>
-                    )}
+                    <Link
+                      prefetch={false}
+                      href={`/person/${toSlug(d.personId, d.name)}`}
+                      className="font-semibold text-white underline decoration-pink-400/60 underline-offset-4 hover:text-pink-200"
+                    >
+                      {d.name}
+                    </Link>
                   </span>
                 ))}
               </p>
             )}
 
-            {movie.synopsis && (
+            {film.overview && (
               <p className="mt-3 max-w-2xl leading-relaxed text-zinc-200">
-                {movie.synopsis}
+                {film.overview}
               </p>
             )}
 
-            <Availability key={id} id={id} initial={movie.watchProviders} />
+            <Availability key={id} id={id} initial={film.whereToWatch} />
 
             {/* Your panel: primary actions first, the rest quieter */}
             <div className="mt-6">
@@ -386,8 +365,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
                       {item?.watched ? '✓ Watched' : 'Mark watched'}
                     </button>
                     <DiaryLogButton
-                      id={id}
-                      movie={movie}
+                      film={film}
                       initialRating={currentUserRating}
                     />
                   </div>
@@ -411,8 +389,8 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
                       </span>
                       {item?.favorite ? 'Favorite' : 'Add to favorites'}
                     </button>
-                    <ListPicker id={id} movie={movie} />
-                    <FollowNews subject={movie.name} />
+                    <ListPicker film={film} />
+                    <FollowNews subject={film.title} />
                     <ShareButton copied={copied} onShare={handleShare} />
                   </div>
                 </div>
@@ -441,27 +419,27 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
           </section>
         )}
         {/* Photo gallery — click any still to open the lightbox */}
-        {gallery.length > 0 && (
+        {stills.length > 0 && (
           <section className="my-10">
             <h3 className="section-heading mb-4">
               Photos{' '}
               <span className="text-base font-normal text-zinc-500">
-                ({gallery.length})
+                ({stills.length})
               </span>
             </h3>
             <div className="hide-scrollbar edge-fade-x flex gap-4 overflow-x-auto pb-2">
-              {gallery.map((img, idx) => (
+              {stills.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setLightboxIndex(idx)}
-                  aria-label={`View photo ${idx + 1} of ${gallery.length}`}
+                  aria-label={`View photo ${idx + 1} of ${stills.length}`}
                   className="group relative aspect-video h-40 shrink-0 overflow-hidden rounded-lg border border-zinc-800 transition hover:border-zinc-500 sm:h-52"
                 >
                   <Image
-                    src={img.url}
+                    src={img.thumb}
                     fill
                     sizes="360px"
-                    alt={`${movie.name} still ${idx + 1}`}
+                    alt={`${film.title} still ${idx + 1}`}
                     className="object-cover transition duration-300 group-hover:scale-105"
                   />
                 </button>
@@ -472,29 +450,29 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
 
         {lightboxIndex != null && (
           <Lightbox
-            images={gallery}
+            images={stills}
             startIndex={lightboxIndex}
-            altBase={movie.name}
+            altBase={film.title}
             onClose={() => setLightboxIndex(null)}
           />
         )}
 
         {/* Cast & crew */}
-        {movie.cast?.length > 0 && (
-          <CastGrid cast={movie.cast.slice(0, 6)} title="Cast" />
+        {film.cast.length > 0 && (
+          <CastGrid cast={film.cast.slice(0, 6)} title="Cast" />
         )}
-        {movie.cast?.length > 6 && (
+        {film.cast.length > 6 && (
           <details className="my-5">
             <summary className="text-pink-300">
-              Full cast ({movie.cast.length})
+              Full cast ({film.cast.length})
             </summary>
-            <CastGrid cast={movie.cast.slice(6)} title="More cast" />
+            <CastGrid cast={film.cast.slice(6)} title="More cast" />
           </details>
         )}
-        {movie.crew?.length > 0 && (
+        {film.crew.length > 0 && (
           <details className="my-5">
             <summary className="text-pink-300">Explore the crew</summary>
-            <CastGrid cast={movie.crew} title="Crew" />
+            <CastGrid cast={film.crew} title="Crew" />
           </details>
         )}
 
@@ -517,9 +495,9 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
       </div>
 
       {/* More like this — full-bleed carousel outside the padded container */}
-      {movie.similar?.length > 0 && (
+      {film.similar.length > 0 && (
         <div className="mt-2">
-          <MovieRow title="More like this" movies={movie.similar} />
+          <MovieRow title="More like this" films={film.similar} />
         </div>
       )}
 
@@ -540,11 +518,7 @@ const MovieDetails = ({ id, movie }: { id: string; movie: IMovieDetail }) => {
             >
               {onWatchlist ? '✓ Saved' : '+ Watchlist'}
             </button>
-            <DiaryLogButton
-              id={id}
-              movie={movie}
-              initialRating={currentUserRating}
-            />
+            <DiaryLogButton film={film} initialRating={currentUserRating} />
           </div>
         )}
       </div>

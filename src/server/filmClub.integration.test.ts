@@ -19,19 +19,40 @@ vi.mock('@/env/server.mjs', () => ({
   },
 }))
 vi.mock('@/server/auth', () => ({ auth: async () => null }))
-vi.mock('@/server/tmdb', () => ({
-  fetchMovieDetails: async (id: string) => ({
-    id,
-    emsVersionId: id,
-    name: `Film ${id}`,
-    genres: [],
-    posterImage: { url: '' },
-    releaseDate: '2020-01-01',
-    durationMinutes: 100,
-  }),
-  fetchTonightChoices: async () => [],
-  fetchSearch: async () => ({ movies: [] }),
-  fetchWatchProviders: async () => [],
+vi.mock('@/server/catalog', () => ({
+  catalog: {
+    filmDetail: async (id: string) => ({
+      id,
+      title: `Film ${id}`,
+      releaseDate: '2020-01-01',
+      posterPath: null,
+      backdropPath: null,
+      genreIds: [],
+      tmdb: { average: null, votes: 0 },
+      tagline: null,
+      overview: null,
+      runtime: 100,
+      genres: [],
+      certification: null,
+      directors: [],
+      revenue: null,
+      trailerKey: null,
+      stills: [],
+      cast: [],
+      crew: [],
+      whereToWatch: null,
+      similar: [],
+    }),
+    discover: async () => ({
+      films: [],
+      page: 1,
+      totalPages: 1,
+      totalResults: 0,
+    }),
+    search: async () => ({ films: [], people: [] }),
+    providers: async () => [],
+    genres: async () => [],
+  },
 }))
 import { appRouter } from './api/root'
 const enabled = process.env.RUN_INTEGRATION === '1'

@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import type { FC } from 'react'
+import type { FC, ReactNode } from 'react'
 import { HiChevronLeft, HiChevronRight } from 'react-icons/hi'
-import type { CarouselProps } from './types'
 
 /**
  * Full-bleed horizontal shelf. The first card lines up with the page column
  * (see .bleed-x) and cards run off the right edge of the screen, which reads
  * as "there's more" without a mask chopping the first poster.
  */
-const Carousel: FC<CarouselProps> = ({ movieCards }) => {
+const Carousel: FC<{ movieCards: ReactNode[] }> = ({ movieCards }) => {
   const scroller = useRef<HTMLDivElement>(null)
   const [atStart, setAtStart] = useState(true)
   const [atEnd, setAtEnd] = useState(false)

@@ -2,13 +2,14 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { api } from '@/utils/api'
-import type { MovieCardProps } from '@/components/MovieCard/types'
+import type { Film } from '@/server/catalog/types'
+import { POSTER_PLACEHOLDER, filmImage, filmYear } from '@/utils/film'
 export default function MovieFinder({
   onChoose,
   busy = false,
   initialQuery = '',
 }: {
-  onChoose: (movie: MovieCardProps) => void
+  onChoose: (film: Film) => void
   busy?: boolean
   initialQuery?: string
 }) {
@@ -18,7 +19,7 @@ export default function MovieFinder({
     const t = setTimeout(() => setQuery(value.trim()), 300)
     return () => clearTimeout(t)
   }, [value])
-  const search = api.tmdb.search.useQuery(
+  const search = api.catalog.search.useQuery(
     { query, page: 1 },
     { enabled: query.length > 1 }
   )
@@ -46,33 +47,27 @@ export default function MovieFinder({
             </button>
           </p>
         )}
-        {search.data?.movies.slice(0, 8).map((m) => (
+        {search.data?.films.slice(0, 8).map((m) => (
           <button
-            key={m.emsVersionId}
+            key={m.id}
             disabled={busy}
             className="flex w-full items-center gap-3 rounded-lg bg-zinc-900 p-2 text-left hover:bg-zinc-800"
             onClick={() => onChoose(m)}
           >
             <Image
-              src={
-                (typeof m.posterImage === 'string'
-                  ? m.posterImage
-                  : m.posterImage?.url) || '/placeholderposter.svg'
-              }
+              src={filmImage(m.posterPath, 'w92') || POSTER_PLACEHOLDER}
               width={36}
               height={54}
               alt=""
               className="rounded"
             />
             <span>
-              {m.name}
-              <span className="ml-2 text-sm text-zinc-400">
-                {m.releaseDate?.slice(0, 4)}
-              </span>
+              {m.title}
+              <span className="ml-2 text-sm text-zinc-400">{filmYear(m)}</span>
             </span>
           </button>
         ))}
-        {query.length > 1 && search.isSuccess && !search.data.movies.length && (
+        {query.length > 1 && search.isSuccess && !search.data.films.length && (
           <p>No matching films. Try another title.</p>
         )}
       </div>

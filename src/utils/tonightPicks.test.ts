@@ -1,15 +1,20 @@
 import { describe, it, expect } from 'vitest'
 import { selectTonightPicks } from './tonightPicks'
+const film = (id: string, percent: number, genreIds: number[]) => ({
+  id,
+  tmdb: { average: percent / 10, votes: 500 },
+  genreIds,
+})
 const pool = [
-  { emsVersionId: 'a', tomatoMeter: 80, genreIds: [18] },
-  { emsVersionId: 'b', tomatoMeter: 75, genreIds: [18] },
-  { emsVersionId: 'c', tomatoMeter: 70, genreIds: [35] },
-  { emsVersionId: 'd', tomatoMeter: 95, genreIds: [18] },
+  film('a', 80, [18]),
+  film('b', 75, [18]),
+  film('c', 70, [35]),
+  film('d', 95, [18]),
 ]
 describe('Tonight roles', () => {
   it('selects taste-based, familiar and exploratory candidates without duplicates', () => {
     const picks = selectTonightPicks(pool, [18])
-    expect(picks.map((p) => p.movie.emsVersionId)).toEqual(['d', 'a', 'c'])
+    expect(picks.map((p) => p.movie.id)).toEqual(['d', 'a', 'c'])
     expect(picks.map((p) => p.role)).toEqual([
       'Best fit',
       'Familiar territory',

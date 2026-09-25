@@ -2,18 +2,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { HiCheck, HiOutlineCollection } from 'react-icons/hi'
-import type { IMovieDetail } from '@/components/MovieDetails/types'
+import type { Film } from '@/server/catalog/types'
+import { filmSummary } from '@/utils/film'
 import { api } from '@/utils/api'
 import Dialog from '@/components/ui/Dialog'
 import { notify, QueryError } from '@/components/ui/Feedback'
 
-export default function ListPicker({
-  id,
-  movie,
-}: {
-  id: string
-  movie: IMovieDetail
-}) {
+export default function ListPicker({ film }: { film: Film }) {
+  const id = film.id
   const utils = api.useUtils()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
@@ -33,13 +29,7 @@ export default function ListPicker({
       notify('Could not remove this film. Please try again.', 'error'),
   })
   const create = api.lists.createWithMovie.useMutation()
-  const summary = {
-    movieId: id,
-    name: movie.name,
-    posterImage: movie.posterImage?.url ?? null,
-    releaseDate: movie.releaseDate ?? null,
-    tomatoMeter: movie.tomatoMeter ?? null,
-  }
+  const summary = filmSummary(film)
   return (
     <>
       <button className="btn-ghost" onClick={() => setOpen(true)}>
@@ -49,7 +39,7 @@ export default function ListPicker({
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
-        title={`Save ${movie.name}`}
+        title={`Save ${film.title}`}
       >
         {lists.isLoading && <p role="status">Loading your lists…</p>}
         {lists.isError && <QueryError retry={() => lists.refetch()} />}

@@ -4,6 +4,11 @@ import { api } from '@/utils/api'
 import { parseLibraryCsv, type ImportRow } from '@/utils/importCsv'
 import Dialog from './Dialog'
 import MovieFinder from './MovieFinder'
+import type { Film } from '@/server/catalog/types'
+import { filmYear } from '@/utils/film'
+
+const matchLabel = (film: Film) =>
+  `${film.title} (${filmYear(film) || 'year unknown'})`
 
 type Row = ImportRow & { match?: string; skip?: boolean; result?: string }
 export default function LibraryImport({
@@ -44,29 +49,28 @@ export default function LibraryImport({
         setProgress(`Matching film ${i + 1} of ${parsed.length}…`)
         if (row.movieId) {
           try {
-            const { movie } = await utils.tmdb.details.fetch({
+            const { film } = await utils.catalog.details.fetch({
               id: row.movieId,
             })
-            if (!movie) row.movieId = ''
-            else
-              row.match = `${movie.name} (${movie.releaseDate?.slice(0, 4) || 'year unknown'})`
+            if (!film) row.movieId = ''
+            else row.match = matchLabel(film)
           } catch {
             row.movieId = ''
           }
         } else {
           try {
-            const results = await utils.tmdb.search.fetch({
+            const results = await utils.catalog.search.fetch({
               query: row.title,
               page: 1,
             })
-            const matches = results.movies.filter(
+            const matches = results.films.filter(
               (m) =>
-                m.name.toLowerCase() === row.title.toLowerCase() &&
-                (!row.year || m.releaseDate?.slice(0, 4) === row.year)
+                m.title.toLowerCase() === row.title.toLowerCase() &&
+                (!row.year || filmYear(m) === row.year)
             )
             if (matches.length === 1) {
-              row.movieId = matches[0]!.emsVersionId
-              row.match = `${matches[0]!.name} (${matches[0]!.releaseDate?.slice(0, 4) || 'year unknown'})`
+              row.movieId = matches[0]!.id
+              row.match = matchLabel(matches[0]!)
             }
           } catch {
             /* Leave failed lookups available for manual resolution. */
@@ -245,8 +249,8 @@ export default function LibraryImport({
                             j === i
                               ? {
                                   ...v,
-                                  movieId: m.emsVersionId,
-                                  match: `${m.name} (${m.releaseDate?.slice(0, 4) || 'year unknown'})`,
+                                  movieId: m.id,
+                                  match: matchLabel(m),
                                 }
                               : v
                           )

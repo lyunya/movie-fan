@@ -5,6 +5,7 @@ import Dialog from './Dialog'
 import { api } from '@/utils/api'
 import { notify } from './Feedback'
 import { comparePair } from '@/utils/comparison'
+import { POSTER_PLACEHOLDER, filmImage } from '@/utils/film'
 
 type Film = { id: string; name: string; posterImage: string | null }
 export default function ComparisonSession({
@@ -94,7 +95,9 @@ export default function ComparisonSession({
                   onClick={() => choose(choice)}
                 >
                   <Image
-                    src={film.posterImage || '/placeholderposter.svg'}
+                    src={
+                      filmImage(film.posterImage, 'w342') || POSTER_PLACEHOLDER
+                    }
                     width={140}
                     height={210}
                     alt=""

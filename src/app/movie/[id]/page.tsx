@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { fetchMovieDetails } from '@/server/tmdb'
+import { catalog } from '@/server/catalog'
 import MovieDetails from '@/components/MovieDetails/MovieDetails'
-import { describeScore } from '@/utils/score'
+import { filmImage, filmScore } from '@/utils/film'
 
 // Movie facts are effectively static — regenerate at most daily
 export const revalidate = 86400
@@ -22,16 +22,16 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { id } = await params
-  const movie = await fetchMovieDetails(id).catch(() => null)
-  if (!movie) return { title: 'Movie not found' }
+  const film = await catalog.filmDetail(id).catch(() => null)
+  if (!film) return { title: 'Movie not found' }
 
-  const image = movie.posterImage?.url
+  const image = filmImage(film.posterPath, 'w500')
   return {
-    title: movie.name,
-    description: movie.synopsis ?? undefined,
+    title: film.title,
+    description: film.overview ?? undefined,
     openGraph: {
-      title: movie.name,
-      description: movie.synopsis ?? undefined,
+      title: film.title,
+      description: film.overview ?? undefined,
       images: image ? [image] : undefined,
     },
   }
@@ -39,32 +39,28 @@ export async function generateMetadata({
 
 export default async function MoviePage({ params }: PageProps) {
   const { id } = await params
-  const movie = await fetchMovieDetails(id)
-  if (!movie) notFound()
+  const film = await catalog.filmDetail(id)
+  if (!film) notFound()
 
-  const score = describeScore({
-    tmdbScore: movie.tomatoMeter,
-    tmdbVotes: movie.voteCount,
-    imdbRating: movie.imdbRating,
-    imdbVotes: movie.imdbVoteCount,
-    releaseDate: movie.releaseDate,
-  })
+  const score = filmScore(film)
+  const image = filmImage(film.posterPath, 'w500')
   // Schema.org Movie markup so search engines can render a rich result
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Movie',
-    name: movie.name,
-    ...(movie.posterImage?.url ? { image: movie.posterImage.url } : {}),
-    ...(movie.synopsis ? { description: movie.synopsis } : {}),
-    ...(movie.releaseDate ? { datePublished: movie.releaseDate } : {}),
-    ...(movie.genres.length
-      ? { genre: movie.genres.map((genre) => genre.name) }
+    name: film.title,
+    ...(image ? { image } : {}),
+    ...(film.overview ? { description: film.overview } : {}),
+    ...(film.releaseDate ? { datePublished: film.releaseDate } : {}),
+    ...(film.genres.length
+      ? { genre: film.genres.map((genre) => genre.name) }
       : {}),
-    ...(movie.directedBy
+    ...(film.directors.length
       ? {
-          director: movie.directedBy
-            .split(',')
-            .map((name) => ({ '@type': 'Person', name: name.trim() })),
+          director: film.directors.map((d) => ({
+            '@type': 'Person',
+            name: d.name,
+          })),
         }
       : {}),
     // Only advertise a rating people actually gave (never a placeholder 0%)
@@ -74,8 +70,8 @@ export default async function MoviePage({ params }: PageProps) {
             '@type': 'AggregateRating',
             ratingValue:
               score.kind === 'imdb'
-                ? movie.imdbRating
-                : (movie.tomatoMeter! / 10).toFixed(1),
+                ? film.imdb?.rating
+                : film.tmdb.average?.toFixed(1),
             bestRating: 10,
             worstRating: 0,
             ratingCount: score.count,
@@ -92,7 +88,7 @@ export default async function MoviePage({ params }: PageProps) {
           __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
         }}
       />
-      <MovieDetails id={id} movie={movie} />
+      <MovieDetails film={film} />
     </>
   )
 }

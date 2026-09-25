@@ -1,19 +1,11 @@
 import { Suspense } from 'react'
-import type { HomeData, HomeFeature } from '@/types/main'
-import {
-  fetchPopular,
-  fetchNowPlaying,
-  fetchUpcoming,
-  fetchTrending,
-  fetchTopRated,
-  fetchMovieDetails,
-} from '@/server/tmdb'
+import type { HomeData } from '@/types/main'
+import { catalog, type Film, type FilmDetail } from '@/server/catalog'
 import { fetchNews } from '@/server/news'
 import HomeClient from './HomeClient'
-import { describeScore } from '@/utils/score'
 
-// ISR: rebuild the home data periodically. The per-fetch cache windows in
-// src/server/tmdb.ts govern the finer-grained freshness of each section.
+// ISR: rebuild the home data periodically. The Catalog's per-request cache
+// windows govern the finer-grained freshness of each section.
 export const revalidate = 21600
 
 export default async function Page() {
@@ -26,11 +18,11 @@ export default async function Page() {
     topRatedRes,
     newsRes,
   ] = await Promise.allSettled([
-    fetchPopular(),
-    fetchNowPlaying(),
-    fetchUpcoming(),
-    fetchTrending('week'),
-    fetchTopRated(),
+    catalog.films('popular'),
+    catalog.films('nowPlaying'),
+    catalog.films('upcoming'),
+    catalog.films('trendingWeek'),
+    catalog.films('topRated'),
     fetchNews(),
   ])
 
@@ -65,38 +57,15 @@ export default async function Page() {
 }
 
 /**
- * The marquee film: the most popular title that has artwork and a synopsis.
- * One extra (cached, ISR-bound) details call buys a tagline, runtime,
- * director, and trailer so the feature can say something real about it.
+ * The marquee film: the most popular title that has artwork. One extra
+ * (cached, ISR-bound) detail lookup buys a tagline, runtime, director, and
+ * trailer so the feature can say something real about it.
  */
-async function pickFeature(
-  popular: Awaited<ReturnType<typeof fetchPopular>>
-): Promise<HomeFeature | null> {
-  const candidate = popular.find((m) => m.backdropUrl && m.posterImage?.url)
+async function pickFeature(popular: Film[]): Promise<FilmDetail | null> {
+  const candidate = popular.find((m) => m.backdropPath && m.posterPath)
   if (!candidate) return null
-  const movie = await fetchMovieDetails(candidate.emsVersionId).catch(
-    () => null
-  )
-  if (!movie?.backgroundImage.url) return null
-  return {
-    id: movie.id,
-    name: movie.name,
-    tagline: movie.consensus,
-    synopsis: movie.synopsis,
-    backdropUrl: movie.backgroundImage.url,
-    posterUrl: movie.posterImage.url,
-    year: movie.releaseDate?.slice(0, 4) || null,
-    runtimeMinutes: movie.durationMinutes || null,
-    genres: movie.genres.map((g) => g.name).slice(0, 3),
-    director: movie.directedBy || null,
-    certification: movie.motionPictureRating.code,
-    trailerUrl: movie.trailer.url,
-    score: describeScore({
-      tmdbScore: movie.tomatoMeter,
-      tmdbVotes: movie.voteCount,
-      imdbRating: movie.imdbRating,
-      imdbVotes: movie.imdbVoteCount,
-      releaseDate: movie.releaseDate,
-    }).label,
-  }
+  const film = await catalog.filmDetail(candidate.id).catch(() => null)
+  if (!film?.backdropPath) return null
+  // The marquee shows none of these; keep them out of the page payload
+  return { ...film, cast: [], crew: [], stills: [], similar: [] }
 }
