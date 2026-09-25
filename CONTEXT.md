@@ -23,11 +23,11 @@ One Member's relationship with one Film.
 _Avoid_: Watchlist item, row
 
 **Watchlist**:
-The Films a Member has saved to see and has not watched yet.
+The Films a Member has saved to watch next. Watching a Film takes it off; saving a Watched Film again puts it back for a rewatch.
 _Avoid_: Queue, saved list
 
 **Watched**:
-The Member has seen the Film at least once. Rating a Film or logging a Viewing makes it Watched, and a Watched Film leaves the Watchlist.
+The Member has seen the Film at least once. Rating a Film or logging a Viewing makes it Watched and takes it off the Watchlist.
 _Avoid_: Seen, logged
 
 **Rating**:
