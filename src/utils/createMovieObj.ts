@@ -1,24 +1,27 @@
-import type { IMovieDetail } from "@/components/MovieDetails/types"
-import type { MovieType } from "@/types/MovieSchema"
+import type { FilmDetail } from '@/server/catalog/types'
+import type { MovieType } from '@/types/MovieSchema'
+import { filmImage, formatGross } from './film'
 
-export const createMovieObj = (movie: IMovieDetail, id: string, genres: string[], userRating:number | null = null) => {
-   const movieData: MovieType = {
-      movieId: id,
-      name: movie.name,
-      synopsis: movie.synopsis ?? null,
-      consensus: movie.consensus ?? null,
-      // Defensive fallbacks: quickAdd builds this object server-side from a raw
-      // API payload, where any of these fields can be absent
-      durationMinutes: movie.durationMinutes ?? 0,
-      releaseDate: movie.releaseDate ?? '',
-      directedBy: movie.directedBy ?? '',
-      genres: genres,
-      emsVersionId: movie.emsVersionId || id,
-      posterImage: movie.posterImage?.url ?? '',
-      tomatoMeter: movie.tomatoMeter ?? null,
-      totalGross: movie.totalGross ?? null,
-      motionPictureRating: movie.motionPictureRating?.code || 'Not Rated',
-      userRating: userRating,
-    }
-    return movieData
-}
+/** The snapshot of a Film stored on a Library entry. */
+export const createMovieObj = (
+  film: FilmDetail,
+  userRating: number | null = null
+): MovieType => ({
+  movieId: film.id,
+  emsVersionId: film.id,
+  name: film.title,
+  synopsis: film.overview,
+  consensus: film.tagline,
+  durationMinutes: film.runtime ?? 0,
+  releaseDate: film.releaseDate ?? '',
+  directedBy: film.directors.map((d) => d.name).join(', '),
+  genres: film.genres.map((g) => g.name),
+  // Existing rows and readers expect a full URL; paths arrive with the
+  // server-built snapshots.
+  posterImage: filmImage(film.posterPath, 'w500') ?? '',
+  tomatoMeter:
+    film.tmdb.average != null ? Math.round(film.tmdb.average * 10) : null,
+  totalGross: formatGross(film.revenue),
+  motionPictureRating: film.certification || 'Not Rated',
+  userRating,
+})

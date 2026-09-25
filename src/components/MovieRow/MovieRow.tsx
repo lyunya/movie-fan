@@ -1,12 +1,12 @@
 import type { FC, ReactNode } from 'react'
 import Link from 'next/link'
-import type { MovieCardProps } from '@/components/MovieCard/types'
+import type { Film } from '@/server/catalog/types'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import Carousel from '@/components/Carousel/Carousel'
 
 interface MovieRowProps {
   title: string
-  movies: MovieCardProps[]
+  films: Film[]
   /** Optional line under the heading (e.g. "Because you save Horror movies") */
   subtitle?: ReactNode
   /** Small label above the heading */
@@ -24,13 +24,13 @@ interface MovieRowProps {
  */
 const MovieRow: FC<MovieRowProps> = ({
   title,
-  movies,
+  films,
   subtitle,
   eyebrow,
   href,
   ranked = false,
 }) => {
-  if (!movies?.length) return null
+  if (!films?.length) return null
   return (
     <section className="py-5">
       <div className="shell-x flex items-end justify-between gap-4 pb-4">
@@ -49,10 +49,10 @@ const MovieRow: FC<MovieRowProps> = ({
         )}
       </div>
       <Carousel
-        movieCards={movies.map((movie, idx) => (
+        movieCards={films.map((film, idx) => (
           <MovieCard
-            key={movie.emsVersionId}
-            {...movie}
+            key={film.id}
+            film={film}
             rank={ranked && idx < 10 ? idx + 1 : undefined}
           />
         ))}

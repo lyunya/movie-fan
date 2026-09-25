@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { fetchGenre, fetchGenreName, isTmdbConfigured } from '@/server/tmdb'
+import { catalog, isCatalogConfigured } from '@/server/catalog'
 import { parseIdFromSlug } from '@/utils/slug'
 import GenreResults from './GenreResults'
 
@@ -18,12 +18,16 @@ export async function generateStaticParams() {
 
 type PageProps = { params: Promise<{ slug: string }> }
 
+const genreName = async (id: number) =>
+  (await catalog.genres().catch(() => [])).find((g) => g.id === id)?.name ??
+  null
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const genreId = parseIdFromSlug(slug)
-  const name = genreId ? await fetchGenreName(genreId).catch(() => null) : null
+  const name = genreId ? await genreName(genreId) : null
   if (!name) return { title: 'Genre' }
   return {
     title: `${name} movies`,
@@ -34,14 +38,15 @@ export async function generateMetadata({
 export default async function GenrePage({ params }: PageProps) {
   const { slug } = await params
   const genreId = parseIdFromSlug(slug)
-  if (!genreId || !isTmdbConfigured()) notFound()
+  if (!genreId || !isCatalogConfigured()) notFound()
 
   const [name, firstPage] = await Promise.all([
-    fetchGenreName(genreId).catch(() => null),
-    fetchGenre(genreId, 1).catch(() => ({
-      movies: [],
+    genreName(genreId),
+    catalog.discover({ genreIds: [genreId] }).catch(() => ({
+      films: [],
       page: 1,
       totalPages: 1,
+      totalResults: 0,
     })),
   ])
 
@@ -52,11 +57,7 @@ export default async function GenrePage({ params }: PageProps) {
       <h1 className="section-heading mb-8">
         <span className="gradient-text">{name}</span> movies
       </h1>
-      <GenreResults
-        genreId={genreId}
-        initialMovies={firstPage.movies}
-        totalPages={firstPage.totalPages}
-      />
+      <GenreResults genreId={genreId} initialPage={firstPage} />
     </main>
   )
 }

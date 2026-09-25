@@ -27,7 +27,9 @@ vi.mock('@/server/db', () => ({
     $transaction: mocks.transaction,
   },
 }))
-vi.mock('@/server/tmdb', () => ({ fetchMovieAvailability: mocks.providers }))
+vi.mock('@/server/catalog', () => ({
+  catalog: { whereToWatch: mocks.providers },
+}))
 vi.mock('nodemailer', () => ({
   default: { createTransport: () => ({ sendMail: mocks.send }) },
 }))
@@ -59,7 +61,9 @@ beforeEach(() => {
   mocks.items.mockResolvedValue([
     { id: 'i', movieId: '1', name: '<Film>', hasStreaming: false },
   ])
-  mocks.providers.mockResolvedValue({ flatrate: [{ id: 8, name: 'Netflix' }] })
+  mocks.providers.mockResolvedValue({
+    subscription: [{ id: 8, name: 'Netflix' }],
+  })
   mocks.claim.mockResolvedValue({ count: 1 })
 })
 describe('streaming alert delivery', () => {
@@ -81,7 +85,7 @@ describe('streaming alert delivery', () => {
     )
   })
   it('does not send for a provider outside the selected services', async () => {
-    mocks.providers.mockResolvedValue({ flatrate: [{ id: 9 }] })
+    mocks.providers.mockResolvedValue({ subscription: [{ id: 9 }] })
     await GET(request())
     expect(mocks.send).not.toHaveBeenCalled()
   })

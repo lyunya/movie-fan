@@ -5,6 +5,7 @@ import Link from 'next/link'
 
 import MovieCard from '@/components/MovieCard/MovieCard'
 import { api } from '@/utils/api'
+import { filmFromSnapshot, filmImage } from '@/utils/film'
 
 export default function SharedListClient({ id }: { id: string }) {
   const list = api.lists.publicById.useQuery({ id }, { retry: false })
@@ -24,17 +25,17 @@ export default function SharedListClient({ id }: { id: string }) {
     )
   }
 
+  const cover = filmImage(
+    list.data.items.find((i) => i.movieId === list.data?.coverMovieId)
+      ?.posterImage,
+    'w342'
+  )
   return (
     <main className="mx-auto w-11/12 max-w-screen-xl pb-16 pt-10">
       <header className="flex flex-col items-center text-center">
-        {list.data.items.find((i) => i.movieId === list.data?.coverMovieId)
-          ?.posterImage && (
+        {cover && (
           <Image
-            src={
-              list.data.items.find(
-                (i) => i.movieId === list.data?.coverMovieId
-              )!.posterImage!
-            }
+            src={cover}
             width={120}
             height={180}
             alt={`${list.data.name} cover`}
@@ -72,12 +73,7 @@ export default function SharedListClient({ id }: { id: string }) {
           <div key={item.id}>
             <MovieCard
               rank={list.data.ranked ? index + 1 : undefined}
-              key={item.id}
-              name={item.name}
-              emsVersionId={item.movieId}
-              posterImage={item.posterImage}
-              releaseDate={item.releaseDate}
-              tomatoMeter={item.tomatoMeter}
+              film={filmFromSnapshot(item)}
             />
             {item.note && (
               <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-300">

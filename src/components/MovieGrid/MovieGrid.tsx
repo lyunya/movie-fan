@@ -1,12 +1,9 @@
-import type { FC } from 'react'
-import type { MovieGridProps } from './types'
+import type { ReactNode } from 'react'
 
-const MovieGrid: FC<MovieGridProps> = ({ movieCards }) => {
+export default function MovieGrid({ movieCards }: { movieCards: ReactNode[] }) {
   return (
     <div className="mx-auto flex w-full max-w-screen-xl flex-wrap justify-center gap-x-4 gap-y-8">
       {movieCards}
     </div>
   )
 }
-
-export default MovieGrid

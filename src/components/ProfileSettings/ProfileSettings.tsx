@@ -67,13 +67,13 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
   const [copied, setCopied] = useState(false)
   const [region, setRegion] = useState(watchRegion)
   const [providers, setProviders] = useState(preferredProviders)
-  const providerOptions = api.tmdb.providers.useQuery({ region })
+  const providerOptions = api.catalog.providers.useQuery({ region })
   const savePreferences = api.user.setStreamingPreferences.useMutation({
     onSuccess: async () => {
       await Promise.all([
         invalidate(),
         utils.user.libraryAvailability.invalidate(),
-        utils.tmdb.tonight.invalidate(),
+        utils.catalog.tonight.invalidate(),
       ])
       notify('Streaming preferences saved')
     },

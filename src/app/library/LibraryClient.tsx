@@ -9,6 +9,7 @@ import MovieCard from '@/components/MovieCard/MovieCard'
 import ProfileStats from '@/components/ProfileStats/ProfileStats'
 import { toWatchlistCsv } from '@/utils/watchlistCsv'
 import { notify, QueryError } from '@/components/ui/Feedback'
+import { filmFromSnapshot, filmSummary } from '@/utils/film'
 export default function LibraryClient() {
   const { status } = useSession(),
     utils = api.useUtils(),
@@ -390,13 +391,7 @@ export default function LibraryClient() {
                     try {
                       await addToList.mutateAsync({
                         listId: bulkList,
-                        movie: {
-                          movieId: m.movieId,
-                          name: m.name,
-                          posterImage: m.posterImage,
-                          releaseDate: m.releaseDate,
-                          tomatoMeter: m.tomatoMeter,
-                        },
+                        movie: filmSummary(filmFromSnapshot(m)),
                       })
                     } catch {
                       failed++
@@ -460,7 +455,10 @@ export default function LibraryClient() {
                   {view === 'grid' ? 'Select' : null}
                 </label>
                 {view === 'grid' ? (
-                  <MovieCard {...m} />
+                  <MovieCard
+                    film={filmFromSnapshot(m)}
+                    userRating={m.userRating}
+                  />
                 ) : (
                   <>
                     <Link

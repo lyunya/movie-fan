@@ -4,48 +4,39 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { HiBookmark, HiOutlineBookmark } from 'react-icons/hi'
 import { useWatchlist } from '@/hooks/useWatchlist'
-import { tmdbImage } from '@/utils/tmdbImage'
-import { describeScore } from '@/utils/score'
-import type { MovieCardProps } from './types'
-
-const PLACEHOLDER = '/placeholderposter.svg'
+import type { Film } from '@/server/catalog/types'
+import {
+  POSTER_PLACEHOLDER as PLACEHOLDER,
+  filmImage,
+  filmScore,
+  filmYear,
+} from '@/utils/film'
 
 export default function MovieCard({
-  name,
-  posterImage,
-  emsVersionId,
-  releaseDate,
-  tomatoMeter,
-  imdbRating,
-  imdbVoteCount,
-  voteCount,
+  film,
   userRating,
   rank,
-}: MovieCardProps) {
+}: {
+  film: Film
+  /** The signed-in Member's own star rating, when it's in their Library */
+  userRating?: number | null
+  /** Renders a rank numeral on the poster */
+  rank?: number
+}) {
+  const { id, title: name } = film
   const { has, toggle, pendingId } = useWatchlist()
-  const saved = has(emsVersionId)
+  const saved = has(id)
   const [failedPoster, setFailedPoster] = useState<string | null>(null)
-  // Cards render at <=176 CSS px, so w342 is sharp at 2x and roughly half the
-  // bytes of the w500 URLs stored on library rows.
-  const poster =
-    tmdbImage(
-      typeof posterImage === 'string' ? posterImage : posterImage?.url,
-      'w342'
-    ) || PLACEHOLDER
-  const year = releaseDate?.slice(0, 4)
-  const score = describeScore({
-    tmdbScore: tomatoMeter,
-    tmdbVotes: voteCount,
-    imdbRating,
-    imdbVotes: imdbVoteCount,
-    releaseDate,
-  })
+  // Cards render at <=176 CSS px, so w342 is sharp at 2x
+  const poster = filmImage(film.posterPath, 'w342') || PLACEHOLDER
+  const year = filmYear(film)
+  const score = filmScore(film)
   return (
     <article className="group relative w-[8.5rem] shrink-0 snap-start sm:w-44">
       <div className="relative overflow-hidden rounded-lg bg-ink-raised shadow-[0_18px_36px_-20px_rgba(0,0,0,0.9)] ring-1 ring-white/[0.06] transition duration-300 group-hover:-translate-y-1 group-hover:ring-pink-400/60 motion-reduce:transform-none">
         <Link
           prefetch={false}
-          href={`/movie/${emsVersionId}`}
+          href={`/movie/${id}`}
           className="relative block aspect-[2/3]"
           aria-label={`${name}${year ? ` (${year})` : ''}`}
         >
@@ -74,8 +65,8 @@ export default function MovieCard({
           className="absolute bottom-1.5 right-1.5 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/80"
           aria-label={`${saved ? 'Remove' : 'Save'} ${name} ${saved ? 'from' : 'to'} watchlist`}
           aria-pressed={saved}
-          disabled={pendingId === emsVersionId}
-          onClick={() => toggle(emsVersionId)}
+          disabled={pendingId === id}
+          onClick={() => toggle(id)}
         >
           {saved ? (
             <HiBookmark className="h-5 w-5 text-pink-300" />
@@ -84,11 +75,7 @@ export default function MovieCard({
           )}
         </button>
       </div>
-      <Link
-        prefetch={false}
-        href={`/movie/${emsVersionId}`}
-        className="mt-2.5 block"
-      >
+      <Link prefetch={false} href={`/movie/${id}`} className="mt-2.5 block">
         <h3 className="line-clamp-2 text-sm font-semibold leading-5 text-zinc-100 transition group-hover:text-pink-200">
           {name}
         </h3>

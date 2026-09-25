@@ -4,32 +4,20 @@ import {
   publicProcedure,
   protectedProcedure,
 } from './../trpc'
-import {
-  fetchSearch,
-  fetchMovieDetails,
-  fetchGenre,
-  fetchGenreList,
-  fetchDiscoverByGenres,
-  fetchTrending,
-  fetchTonightChoices,
-  fetchWatchProviders,
-  fetchMovieAvailability,
-} from '../../tmdb'
-
-const FOR_YOU_LIMIT = 20
+import { catalog } from '@/server/catalog'
 import { selectTonightPicks } from '@/utils/tonightPicks'
 
-export const tmdbRouter = createTRPCRouter({
+const FOR_YOU_LIMIT = 20
+const region = z.string().regex(/^[A-Z]{2}$/)
+
+export const catalogRouter = createTRPCRouter({
   availability: publicProcedure
-    .input(
-      z.object({ movieId: z.string(), region: z.string().regex(/^[A-Z]{2}$/) })
-    )
-    .query(async ({ input }) => {
-      return fetchMovieAvailability(input.movieId, input.region)
-    }),
+    .input(z.object({ movieId: z.string().regex(/^\d+$/), region }))
+    .query(({ input }) => catalog.whereToWatch(input.movieId, input.region)),
+
   providers: publicProcedure
     .input(z.object({ region: z.string().trim().length(2).default('US') }))
-    .query(({ input }) => fetchWatchProviders(input.region.toUpperCase())),
+    .query(({ input }) => catalog.providers(input.region.toUpperCase())),
 
   tonight: publicProcedure
     .input(
@@ -38,10 +26,7 @@ export const tmdbRouter = createTRPCRouter({
         maxRuntime: z.number().int().min(60).max(300).optional(),
         minScore: z.number().int().min(0).max(100).default(60),
         surprise: z.number().int().min(0).max(19).default(0),
-        region: z
-          .string()
-          .regex(/^[A-Z]{2}$/)
-          .optional(),
+        region: region.optional(),
         providerIds: z.array(z.number().int().positive()).max(20).optional(),
         excludeIds: z.array(z.string()).max(200).default([]),
       })
@@ -67,14 +52,16 @@ export const tmdbRouter = createTRPCRouter({
             }),
           ])
         : [null, []]
-      const region = input.region || user?.watchRegion || 'US',
+      const watchRegion = input.region || user?.watchRegion || 'US',
         providerIds = input.providerIds || user?.preferredProviders || []
-      const movies = await fetchTonightChoices({
-        region,
-        providerIds,
+      const { films } = await catalog.discover({
+        region: watchRegion,
+        streamingOn: providerIds.length ? providerIds : undefined,
         genreIds: input.genreIds,
         maxRuntime: input.maxRuntime,
         minScore: input.minScore,
+        minVotes: 100,
+        releasedBy: new Date().toISOString().slice(0, 10),
         page: 1 + input.surprise,
       })
       const excluded = new Set([
@@ -83,7 +70,7 @@ export const tmdbRouter = createTRPCRouter({
           .map((m) => m.movieId),
         ...input.excludeIds,
       ])
-      const eligible = movies.filter((m) => !excluded.has(m.emsVersionId))
+      const eligible = films.filter((m) => !excluded.has(m.id))
       const lovedGenres = new Set(
         watched
           .filter(
@@ -92,17 +79,16 @@ export const tmdbRouter = createTRPCRouter({
           .flatMap((m) => m.genres)
       )
       const genres = lovedGenres.size
-        ? await fetchGenreList().catch(() => [])
+        ? await catalog.genres().catch(() => [])
         : []
       const picks = selectTonightPicks(
         eligible,
         genres.filter((g) => lovedGenres.has(g.name)).map((g) => g.id)
       )
-      const chosen = picks.map((p) => p.movie)
       return {
-        movies: chosen,
+        films: picks.map((p) => p.movie),
         usingProviders: providerIds.length > 0,
-        region,
+        region: watchRegion,
         roles: picks.map((p) => p.role),
         reasons: picks.map(
           (p) =>
@@ -118,14 +104,12 @@ export const tmdbRouter = createTRPCRouter({
         page: z.number().int().min(1).max(500).default(1),
       })
     )
-    .query(async ({ input }) => {
-      return fetchSearch(input.query, input.page)
-    }),
+    .query(({ input }) => catalog.search(input.query, input.page)),
+
   details: publicProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .query(async ({ input }) => {
-      return { movie: await fetchMovieDetails(input.id) }
-    }),
+    .query(async ({ input }) => ({ film: await catalog.filmDetail(input.id) })),
+
   discoverByGenre: publicProcedure
     .input(
       z.object({
@@ -133,25 +117,25 @@ export const tmdbRouter = createTRPCRouter({
         page: z.number().int().min(1).max(500).default(1),
         maxRuntime: z.number().int().min(1).max(300).optional(),
         decade: z.number().int().min(1900).max(2200).optional(),
-        region: z
-          .string()
-          .regex(/^[A-Z]{2}$/)
-          .optional(),
+        region: region.optional(),
         providerIds: z.array(z.number().int().positive()).max(20).optional(),
         streaming: z.boolean().optional(),
       })
     )
-    .query(async ({ input }) => {
-      return fetchGenre(input.genreId, input.page, input)
-    }),
-  trending: publicProcedure
-    .input(z.object({ window: z.enum(['day', 'week']) }))
-    .query(async ({ input }) => {
-      return { movies: await fetchTrending(input.window) }
-    }),
+    .query(({ input }) =>
+      catalog.discover({
+        genreIds: [input.genreId],
+        page: input.page,
+        maxRuntime: input.maxRuntime,
+        decade: input.decade,
+        region: input.region,
+        streamingOn: input.streaming ? (input.providerIds ?? []) : undefined,
+      })
+    ),
+
   /**
    * Personalized row: pick the user's two most-saved genres and return
-   * popular movies in them that aren't already on their watchlist.
+   * popular films in them that aren't already in their Library.
    */
   forYou: protectedProcedure.query(async ({ ctx }) => {
     const rows = await ctx.prisma.watchListItem.findMany({
@@ -164,7 +148,8 @@ export const tmdbRouter = createTRPCRouter({
         dismissed: true,
       },
     })
-    if (rows.length === 0) return { movies: [], topGenre: null }
+    const empty = { films: [], topGenre: null }
+    if (rows.length === 0) return empty
 
     const counts = new Map<string, number>()
     for (const row of rows.filter(
@@ -179,9 +164,9 @@ export const tmdbRouter = createTRPCRouter({
     const rankedNames = [...counts.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => name)
-    if (rankedNames.length === 0) return { movies: [], topGenre: null }
+    if (rankedNames.length === 0) return empty
 
-    const genreList = await fetchGenreList().catch(() => [])
+    const genreList = await catalog.genres().catch(() => [])
     const nameToId = new Map(
       genreList.map((genre) => [genre.name.toLowerCase(), genre.id])
     )
@@ -192,14 +177,15 @@ export const tmdbRouter = createTRPCRouter({
       .slice(0, 2)
       .map((name) => nameToId.get(name.toLowerCase()))
       .filter((id): id is number => typeof id === 'number')
-    if (topIds.length === 0) return { movies: [], topGenre: null }
+    if (topIds.length === 0) return empty
 
     const owned = new Set(rows.map((row) => row.movieId))
-    const discovered = await fetchDiscoverByGenres(topIds).catch(() => [])
-    const movies = discovered
-      .filter((movie) => !owned.has(movie.emsVersionId))
-      .slice(0, FOR_YOU_LIMIT)
-
-    return { movies, topGenre: topNames[0] ?? null }
+    const { films } = await catalog
+      .discover({ genreIds: topIds, minVotes: 200 })
+      .catch(() => ({ films: [] }))
+    return {
+      films: films.filter((f) => !owned.has(f.id)).slice(0, FOR_YOU_LIMIT),
+      topGenre: topNames[0] ?? null,
+    }
   }),
 })

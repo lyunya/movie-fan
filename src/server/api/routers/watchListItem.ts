@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { MovieSchema } from '@/types/MovieSchema'
 import { createTRPCRouter, protectedProcedure } from '../trpc'
-import { fetchMovieDetails } from '@/server/tmdb'
+import { catalog } from '@/server/catalog'
 import { createMovieObj } from '@/utils/createMovieObj'
 
 export const watchListItemRouter = createTRPCRouter({
@@ -36,18 +36,13 @@ export const watchListItemRouter = createTRPCRouter({
         })
       )
         return { added: false }
-      const movie = await fetchMovieDetails(input.movieId)
+      const movie = await catalog.filmDetail(input.movieId)
       if (!movie)
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Movie unavailable. Choose another match or skip this row.',
         })
-      const data = createMovieObj(
-        movie,
-        input.movieId,
-        movie.genres.map((g) => g.name),
-        input.rating
-      )
+      const data = createMovieObj(movie, input.rating)
       return ctx.prisma.$transaction(async (tx) => {
         const watched = !!watchedAt || input.rating !== null
         const result = await tx.watchListItem.createMany({
@@ -93,17 +88,13 @@ export const watchListItemRouter = createTRPCRouter({
           where: { id: existing.id },
           data: { inWatchlist: true, savedAt: new Date() },
         })
-      const movie = await fetchMovieDetails(input.movieId)
+      const movie = await catalog.filmDetail(input.movieId)
       if (!movie)
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Could not load this movie. Please try again.',
         })
-      const movieData = createMovieObj(
-        movie,
-        input.movieId,
-        movie.genres.map((g) => g.name)
-      )
+      const movieData = createMovieObj(movie)
       return ctx.prisma.watchListItem.upsert({
         where: { userId_movieId: { userId, movieId: input.movieId } },
         update: { inWatchlist: true, savedAt: new Date() },
@@ -178,15 +169,11 @@ export const watchListItemRouter = createTRPCRouter({
           where: { id: existing.id },
           data,
         })
-      const movie = await fetchMovieDetails(movieId)
+      const movie = await catalog.filmDetail(movieId)
       if (!movie) throw new TRPCError({ code: 'NOT_FOUND' })
       return ctx.prisma.watchListItem.create({
         data: {
-          ...createMovieObj(
-            movie,
-            movieId,
-            movie.genres.map((g) => g.name)
-          ),
+          ...createMovieObj(movie),
           userId,
           inWatchlist: false,
           ...data,

@@ -27,7 +27,11 @@ export const serverSchema = z.object({
   // Powers all movie/person data (search, details, cast, people pages).
   // A v3 api key or v4 read access token from
   // https://www.themoviedb.org/settings/api
-  TMDB_API_KEY: z.string().min(1),
+  // Not needed when TMDB_FIXTURES=1 serves the offline film fixtures.
+  TMDB_API_KEY:
+    process.env.TMDB_FIXTURES === '1'
+      ? z.string().optional()
+      : z.string().min(1),
   // Optional IMDb ratings enrichment through OMDb. Server-only: never expose
   // this key through NEXT_PUBLIC_* or serialize it to a client component.
   OMDB_API_KEY: z.string().min(1).optional(),

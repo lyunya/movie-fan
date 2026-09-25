@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer'
 import { createHash } from 'node:crypto'
 import { env } from '@/env/server.mjs'
 import { prisma } from '@/server/db'
-import { fetchMovieAvailability } from '@/server/tmdb'
+import { catalog } from '@/server/catalog'
 import { getSiteUrl } from '@/server/siteUrl'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -48,14 +48,14 @@ export async function GET(req: Request) {
         items.slice(offset, offset + 5).map(async (item) => {
           let providers
           try {
-            providers = await fetchMovieAvailability(
+            providers = await catalog.whereToWatch(
               item.movieId,
               user.watchRegion
             )
           } catch {
             return null
           } // A failed lookup must never erase known availability.
-          const streaming = (providers?.flatrate || []).some(
+          const streaming = (providers?.subscription || []).some(
             (p) =>
               !user.preferredProviders.length ||
               user.preferredProviders.includes(p.id)

@@ -2,14 +2,15 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Image from 'next/image'
-import type { IWatchProviders } from './types'
+import type { WhereToWatch } from '@/server/catalog/types'
+import { filmImage } from '@/utils/film'
 import { api } from '@/utils/api'
 export default function Availability({
   id,
   initial,
 }: {
   id: string
-  initial: IWatchProviders | null
+  initial: WhereToWatch | null
 }) {
   const { status } = useSession()
   const user = api.user.query.useQuery(undefined, {
@@ -19,7 +20,7 @@ export default function Availability({
   useEffect(() => {
     if (user.data?.user?.watchRegion) setRegion(user.data.user.watchRegion)
   }, [user.data?.user?.watchRegion])
-  const data = api.tmdb.availability.useQuery(
+  const data = api.catalog.availability.useQuery(
     { movieId: id, region },
     { initialData: region === 'US' ? initial : undefined, staleTime: 60_000 }
   )
@@ -60,11 +61,12 @@ export default function Availability({
       ) : data.isLoading ? (
         <p className="mt-3 text-sm text-zinc-400">Checking services…</p>
       ) : data.data &&
-        [...data.data.flatrate, ...data.data.rent, ...data.data.buy].length ? (
+        [...data.data.subscription, ...data.data.rent, ...data.data.buy]
+          .length ? (
         <div className="mt-3 space-y-3">
           {(
             [
-              ['Included', data.data.flatrate],
+              ['Included', data.data.subscription],
               ['Rent', data.data.rent],
               ['Buy', data.data.buy],
             ] as const
@@ -78,13 +80,15 @@ export default function Availability({
                       key={p.name}
                       className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-2 py-1 text-xs"
                     >
-                      <Image
-                        src={p.logoUrl}
-                        width={24}
-                        height={24}
-                        alt=""
-                        className="rounded"
-                      />
+                      {p.logoPath && (
+                        <Image
+                          src={filmImage(p.logoPath, 'w92')!}
+                          width={24}
+                          height={24}
+                          alt=""
+                          className="rounded"
+                        />
+                      )}
                       {p.name}
                     </span>
                   ))}

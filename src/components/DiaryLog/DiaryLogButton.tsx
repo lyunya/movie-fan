@@ -1,15 +1,13 @@
 'use client'
 import { useState } from 'react'
-import type { IMovieDetail } from '@/components/MovieDetails/types'
+import type { FilmDetail } from '@/server/catalog/types'
 import Dialog from '@/components/ui/Dialog'
 import WatchEditor from './WatchEditor'
 export default function DiaryLogButton({
-  id,
-  movie,
+  film,
   initialRating = 0,
 }: {
-  id: string
-  movie: IMovieDetail
+  film: FilmDetail
   initialRating?: number
 }) {
   const [open, setOpen] = useState(false)
@@ -28,12 +26,11 @@ export default function DiaryLogButton({
           )
             setOpen(false)
         }}
-        title={`Log ${movie.name}`}
+        title={`Log ${film.title}`}
       >
         {open && (
           <WatchEditor
-            movie={movie}
-            id={id}
+            film={film}
             initialRating={initialRating}
             onDirtyChange={setDirty}
             onSaved={() => setOpen(false)}

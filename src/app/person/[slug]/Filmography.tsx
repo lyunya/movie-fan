@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
-import type { PersonCredit } from '@/server/tmdb'
+import type { PersonCredit } from '@/server/catalog/types'
+import { POSTER_PLACEHOLDER, filmImage } from '@/utils/film'
 import { api } from '@/utils/api'
 export default function Filmography({ credits }: { credits: PersonCredit[] }) {
   const { status } = useSession()
@@ -23,8 +24,7 @@ export default function Filmography({ credits }: { credits: PersonCredit[] }) {
       (c) =>
         (role === 'All' || role === c.role) &&
         (!year || c.year === year) &&
-        (watched === 'all' ||
-          (watched === 'yes') === seen.has(String(c.tmdbId)))
+        (watched === 'all' || (watched === 'yes') === seen.has(c.filmId))
     )
     .sort((a, b) =>
       sort === 'year'
@@ -96,13 +96,13 @@ export default function Filmography({ credits }: { credits: PersonCredit[] }) {
         {movies.slice(0, limit).map((c) => (
           <Link
             prefetch={false}
-            key={`${c.tmdbId}-${c.role}`}
-            href={`/movie/${c.tmdbId}`}
+            key={`${c.filmId}-${c.role}`}
+            href={`/movie/${c.filmId}`}
             className="group"
           >
             <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-900">
               <Image
-                src={c.posterUrl || '/placeholderposter.svg'}
+                src={filmImage(c.posterPath, 'w342') || POSTER_PLACEHOLDER}
                 alt={`${c.title} poster`}
                 fill
                 sizes="(max-width: 640px) 45vw, 180px"
@@ -114,7 +114,7 @@ export default function Filmography({ credits }: { credits: PersonCredit[] }) {
             </h3>
             <p className="text-sm text-zinc-400">
               {c.year} · {c.role}
-              {seen.has(String(c.tmdbId)) ? ' · Watched' : ''}
+              {seen.has(c.filmId) ? ' · Watched' : ''}
             </p>
           </Link>
         ))}

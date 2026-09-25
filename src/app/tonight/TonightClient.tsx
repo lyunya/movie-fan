@@ -40,8 +40,8 @@ export default function TonightClient() {
     if (savedRegion) setRegion(savedRegion)
     if (savedProviders) setProviders(savedProviders)
   }, [savedRegion, savedProviders])
-  const providerOptions = api.tmdb.providers.useQuery({ region })
-  const picks = api.tmdb.tonight.useQuery(
+  const providerOptions = api.catalog.providers.useQuery({ region })
+  const picks = api.catalog.tonight.useQuery(
     request || { genreIds: [], minScore: 60, surprise: 0 },
     { enabled: !!request, retry: 1 }
   )
@@ -50,10 +50,7 @@ export default function TonightClient() {
   })
   const choose = () => {
     const excluded = [
-      ...new Set([
-        ...exclude,
-        ...(picks.data?.movies.map((m) => m.emsVersionId) || []),
-      ]),
+      ...new Set([...exclude, ...(picks.data?.films.map((m) => m.id) || [])]),
     ].slice(-200)
     setExclude(excluded)
     setRequest({
@@ -189,16 +186,16 @@ export default function TonightClient() {
             <QueryError retry={() => picks.refetch()} />
           ) : picks.isLoading ? (
             <div className="surface h-64 animate-pulse" />
-          ) : picks.data?.movies.length ? (
+          ) : picks.data?.films.length ? (
             <>
               <h2 className="mb-6 text-2xl font-semibold">
                 A few good possibilities
               </h2>
               <div className="flex flex-wrap justify-center gap-6 sm:gap-10">
-                {picks.data.movies.map((m, i) => (
-                  <div key={m.emsVersionId} className="w-[8.5rem] sm:w-44">
+                {picks.data.films.map((m, i) => (
+                  <div key={m.id} className="w-[8.5rem] sm:w-44">
                     <p className="eyebrow mb-3">{picks.data.roles[i]}</p>
-                    <MovieCard {...m} />
+                    <MovieCard film={m} />
                     <p className="mt-3 text-xs leading-relaxed text-zinc-400">
                       {picks.data.reasons[i]}
                     </p>
@@ -207,10 +204,10 @@ export default function TonightClient() {
                         className="mt-3 min-h-11 text-sm text-pink-300"
                         onClick={() => {
                           dismiss.mutate({
-                            movieId: m.emsVersionId,
+                            movieId: m.id,
                             dismissed: true,
                           })
-                          setExclude((old) => [...old, m.emsVersionId])
+                          setExclude((old) => [...old, m.id])
                           notify('We’ll leave this out of future picks')
                         }}
                       >

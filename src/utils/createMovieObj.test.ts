@@ -1,58 +1,55 @@
 import { describe, it, expect } from 'vitest'
-import type { IMovieDetail } from '@/components/MovieDetails/types'
+import type { FilmDetail } from '@/server/catalog/types'
 import { createMovieObj } from './createMovieObj'
 
-const movie = (over: Partial<IMovieDetail> = {}): IMovieDetail => ({
-  emsVersionId: '10',
+const film = (over: Partial<FilmDetail> = {}): FilmDetail => ({
   id: '10',
-  name: 'Movie',
-  synopsis: 'A synopsis',
-  genres: [{ name: 'Action' }],
-  posterImage: { url: 'http://x/p.png' },
-  backgroundImage: { url: null },
+  title: 'Movie',
   releaseDate: '2020-01-01',
-  durationMinutes: 100,
-  directedBy: 'Dir',
-  totalGross: null,
-  motionPictureRating: { code: 'PG-13' },
-  tomatoMeter: 75,
-  voteCount: 10,
-  imdbRating: null,
-  imdbVoteCount: null,
-  consensus: null,
-  trailer: { url: null },
-  images: [],
+  posterPath: '/p.jpg',
+  backdropPath: null,
+  genreIds: [28],
+  tmdb: { average: 7.5, votes: 10 },
+  imdb: null,
+  tagline: null,
+  overview: 'A synopsis',
+  runtime: 100,
+  genres: [{ id: 28, name: 'Action' }],
+  certification: 'PG-13',
+  directors: [{ personId: 1, name: 'Dir' }],
+  revenue: 1_234_567,
+  trailerKey: null,
+  stills: [],
   cast: [],
   crew: [],
-  watchProviders: null,
+  whereToWatch: null,
   similar: [],
   ...over,
 })
 
 describe('createMovieObj', () => {
-  it('maps movie details into a watchlist row', () => {
-    const obj = createMovieObj(movie(), '10', ['Action'], 4)
-    expect(obj.movieId).toBe('10')
-    expect(obj.posterImage).toBe('http://x/p.png')
-    expect(obj.userRating).toBe(4)
-    expect(obj.genres).toEqual(['Action'])
-    expect(obj.motionPictureRating).toBe('PG-13')
+  it('maps a film into a Library snapshot', () => {
+    const obj = createMovieObj(film(), 4)
+    expect(obj).toMatchObject({
+      movieId: '10',
+      name: 'Movie',
+      posterImage: 'https://image.tmdb.org/t/p/w500/p.jpg',
+      userRating: 4,
+      genres: ['Action'],
+      directedBy: 'Dir',
+      tomatoMeter: 75,
+      totalGross: '$1,234,567',
+      motionPictureRating: 'PG-13',
+    })
   })
 
   it('defaults rating to null and rating code to "Not Rated"', () => {
-    const obj = createMovieObj(
-      movie({ motionPictureRating: { code: null } }),
-      '10',
-      []
-    )
+    const obj = createMovieObj(film({ certification: null }))
     expect(obj.userRating).toBeNull()
     expect(obj.motionPictureRating).toBe('Not Rated')
   })
 
-  it('falls back to empty poster when missing', () => {
-    const obj = createMovieObj(movie({ posterImage: { url: null } }), '10', [
-      'Action',
-    ])
-    expect(obj.posterImage).toBe('')
+  it('falls back to an empty poster when missing', () => {
+    expect(createMovieObj(film({ posterPath: null })).posterImage).toBe('')
   })
 })

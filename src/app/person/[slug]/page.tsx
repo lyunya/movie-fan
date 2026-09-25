@@ -2,11 +2,8 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 
-import {
-  fetchPersonById,
-  fetchPersonByName,
-  isTmdbConfigured,
-} from '@/server/tmdb'
+import { catalog, isCatalogConfigured } from '@/server/catalog'
+import { PERSON_PLACEHOLDER, filmImage } from '@/utils/film'
 import { parseIdFromSlug } from '@/utils/slug'
 
 // People data barely changes — rebuild at most daily
@@ -33,8 +30,8 @@ const rtSearchUrl = (name: string) =>
 const resolvePerson = (slug: string) => {
   const id = parseIdFromSlug(slug)
   return id != null
-    ? fetchPersonById(id)
-    : fetchPersonByName(decodeURIComponent(slug))
+    ? catalog.person(id)
+    : catalog.personByName(decodeURIComponent(slug))
 }
 
 // A readable name for metadata / the fallback UI before TMDB data loads:
@@ -62,7 +59,7 @@ export default async function PersonPage({ params }: PageProps) {
   const { slug } = await params
   const decoded = displayNameFromSlug(slug)
 
-  const person = isTmdbConfigured()
+  const person = isCatalogConfigured()
     ? await resolvePerson(slug).catch(() => null)
     : null
 
@@ -108,7 +105,7 @@ export default async function PersonPage({ params }: PageProps) {
       <div className="flex flex-col items-center gap-6 py-10 sm:flex-row sm:items-start sm:gap-10">
         <div className="relative aspect-[2/3] w-40 shrink-0 overflow-hidden rounded-xl border border-zinc-700 shadow-2xl sm:w-52">
           <Image
-            src={person.profileUrl || '/avatar.svg'}
+            src={filmImage(person.profilePath, 'w500') || PERSON_PLACEHOLDER}
             fill
             priority
             sizes="(max-width: 640px) 45vw, 210px"

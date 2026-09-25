@@ -2,7 +2,7 @@ import { socialRouter } from './routers/social'
 import { newsRouter } from './routers/news'
 import { UserRouter } from './routers/user'
 import { watchListItemRouter } from './routers/watchListItem'
-import { tmdbRouter } from './routers/tmdb'
+import { catalogRouter } from './routers/catalog'
 import { diaryRouter } from './routers/diary'
 import { listsRouter } from './routers/lists'
 import { createTRPCRouter } from './trpc'
@@ -16,7 +16,7 @@ export const appRouter = createTRPCRouter({
   news: newsRouter,
   social: socialRouter,
   user: UserRouter,
-  tmdb: tmdbRouter,
+  catalog: catalogRouter,
   diary: diaryRouter,
   lists: listsRouter,
 })
