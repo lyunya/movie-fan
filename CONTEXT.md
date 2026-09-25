@@ -27,7 +27,7 @@ The Films a Member has saved to watch next. Watching a Film takes it off; saving
 _Avoid_: Queue, saved list
 
 **Watched**:
-The Member has seen the Film at least once. Rating a Film or logging a Viewing makes it Watched and takes it off the Watchlist.
+The Member has seen the Film at least once. Rating, favoriting, or logging a Viewing makes a Film Watched and takes it off the Watchlist.
 _Avoid_: Seen, logged
 
 **Rating**:
@@ -35,14 +35,14 @@ A Member's one-to-five-star opinion of a Film.
 _Avoid_: Score (reserved for outside scores like IMDb and TMDB)
 
 **Favorite**:
-A Film the Member has explicitly marked as a favorite.
+A Watched Film the Member has explicitly marked as a favorite.
 
 **Loved**:
 A Film the Member has favorited or rated four or five stars.
 _Avoid_: Liked
 
 **Dismissed**:
-A Film the Member asked not to be suggested again.
+A Film the Member asked not to be suggested again. Dismissing affects suggestions only; it does not change the Watchlist.
 _Avoid_: Hidden, not interested
 
 ## Diary and Lists
