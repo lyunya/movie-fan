@@ -61,6 +61,36 @@
   summary {
     cursor: pointer;
   }
+  /* One consistent single-value dropdown: the native arrow hugs the right
+     edge, so draw our own chevron with breathing room and reserve space for
+     it. */
+  select:not([multiple]):not([size]) {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23a1a1aa' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 7.5 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.1rem;
+    padding-right: 2.75rem !important;
+  }
+  select:not([multiple]):not([size]):focus-visible {
+    border-color: rgb(236 72 153 / 0.7);
+    outline: 2px solid #f9a8d4;
+    outline-offset: 4px;
+    box-shadow: 0 0 0 3px rgb(236 72 153 / 0.18);
+  }
+  @media (forced-colors: active) {
+    select:not([multiple]):not([size]) {
+      appearance: auto;
+      -webkit-appearance: menulist;
+      background-image: none;
+      padding-right: 0.75rem !important;
+    }
+    select:not([multiple]):not([size]):focus-visible {
+      outline: 2px solid CanvasText;
+      box-shadow: none;
+    }
+  }
   ::selection {
     @apply bg-pink-500/40 text-white;
   }

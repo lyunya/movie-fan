@@ -1,5 +1,23 @@
 import { beforeAll, afterAll, describe, it, expect, vi } from 'vitest'
 import { PrismaClient } from '@prisma/client'
+vi.mock('@/env/server.mjs', () => ({
+  env: {
+    NODE_ENV: 'test',
+    NEXTAUTH_URL: 'https://example.test',
+    GOOGLE_CLIENT_ID: 'test',
+    GOOGLE_CLIENT_SECRET: 'test',
+    GITHUB_ID: 'test',
+    GITHUB_SECRET: 'test',
+    EMAIL_SERVER_HOST: 'localhost',
+    EMAIL_SERVER_PORT: '25',
+    EMAIL_SERVER_USER: 'test',
+    EMAIL_SERVER_PASSWORD: 'test',
+    EMAIL_FROM: 'test@example.test',
+    FACEBOOK_CLIENT_ID: 'test',
+    FACEBOOK_CLIENT_SECRET: 'test',
+    TMDB_API_KEY: 'test',
+  },
+}))
 vi.mock('@/server/auth', () => ({ auth: async () => null }))
 vi.mock('@/server/tmdb', () => ({
   fetchMovieDetails: async (id: string) => ({
