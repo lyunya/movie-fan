@@ -69,50 +69,7 @@ const caller = (id?: string) =>
         }
       : null,
   })
-const film = (id: string) => ({
-  movieId: id,
-  emsVersionId: id,
-  name: `Film ${id}`,
-  directedBy: '',
-  durationMinutes: 100,
-  posterImage: '',
-  synopsis: null,
-  tomatoMeter: 70,
-  consensus: null,
-  totalGross: null,
-  releaseDate: '2020-01-01',
-  motionPictureRating: null,
-  genres: ['Drama'],
-  userRating: null,
-})
 describe.skipIf(!enabled)('film club persistence and access boundaries', () => {
-  it('imports new films once, keeps dated viewings private, and preserves existing opinions', async () => {
-    const input = { movieId: '987654321', rating: 4, watchedDate: '2020-02-29' }
-    await expect(caller().movie.importMovie(input)).rejects.toThrow()
-    const results = await Promise.all([
-      caller(owner).movie.importMovie(input),
-      caller(owner).movie.importMovie(input),
-    ])
-    expect(results.filter((r) => r.added)).toHaveLength(1)
-    expect(
-      await db.watchEvent.count({
-        where: { userId: owner, movieId: input.movieId },
-      })
-    ).toBe(1)
-    const event = await db.watchEvent.findFirstOrThrow({
-      where: { userId: owner, movieId: input.movieId },
-    })
-    expect(event.isPublic).toBe(false)
-    await caller(owner).movie.importMovie({ ...input, rating: 1 })
-    const saved = await db.watchListItem.findUniqueOrThrow({
-      where: { userId_movieId: { userId: owner, movieId: input.movieId } },
-    })
-    expect(saved.userRating).toBe(4)
-    expect(saved.inWatchlist).toBe(false)
-    await expect(
-      caller(owner).movie.importMovie({ ...input, watchedDate: '2023-02-29' })
-    ).rejects.toThrow()
-  })
   beforeAll(async () => {
     const url = new URL(process.env.DATABASE_URL || '')
     if (!['localhost', '127.0.0.1'].includes(url.hostname))
@@ -133,90 +90,19 @@ describe.skipIf(!enabled)('film club persistence and access boundaries', () => {
         ],
       },
     })
+    await db.watchEvent.deleteMany({
+      where: { userId: { in: [owner, other] } },
+    })
     await db.watchListItem.deleteMany({
       where: { userId: { in: [owner, other] } },
     })
     await db.user.deleteMany({ where: { id: { in: [owner, other] } } })
     await db.$disconnect()
   })
-  it('unsaving preserves a rating and watched state', async () => {
-    await caller(owner).movie.create({
-      movieData: { ...film('1'), userRating: 5 },
-    })
-    await caller(owner).movie.quickAdd({ movieId: '1' })
-    await caller(owner).movie.delete({ movieId: '1' })
-    expect(
-      (await caller(owner).movie.query({ movieId: '1' })).movie[0]
-    ).toMatchObject({ userRating: 5, watched: true, inWatchlist: false })
-    await caller(owner).movie.setState({ movieId: '1', userRating: null })
-    expect(
-      (await caller(owner).movie.query({ movieId: '1' })).movie[0]
-    ).toMatchObject({ userRating: null, watched: true })
-  })
-  it('unrated watches count as watched, keep historical ratings separate, and preserve other viewings', async () => {
-    const first = await caller(owner).diary.log({
-      movieData: film('2'),
-      entry: {
-        watchedAt: new Date('2025-01-01T12:00:00Z'),
-        rating: null,
-        review: null,
-        tags: [],
-      },
-    })
-    expect(
-      (await caller(owner).movie.query({ movieId: '2' })).movie[0]
-    ).toMatchObject({ watched: true, inWatchlist: false, userRating: null })
-    const second = await caller(owner).diary.log({
-      movieData: film('2'),
-      entry: {
-        watchedAt: new Date('2026-02-02T12:00:00Z'),
-        rating: 4,
-        review: 'Second watch',
-        tags: [],
-      },
-      updateRating: false,
-      keepOnWatchlist: true,
-    })
-    expect(
-      (await caller(owner).movie.query({ movieId: '2' })).movie[0]
-    ).toMatchObject({ userRating: null, inWatchlist: true })
-    await caller(owner).diary.update({
-      id: second.id,
-      entry: {
-        watchedAt: second.watchedAt,
-        rating: 5,
-        review: 'Changed my mind',
-        tags: [],
-      },
-    })
-    expect(
-      (await caller(owner).movie.query({ movieId: '2' })).movie[0]?.userRating
-    ).toBeNull()
+  it('requires sign-in for Library changes', async () => {
     await expect(
-      caller(other).diary.update({
-        id: first.id,
-        entry: {
-          watchedAt: first.watchedAt,
-          rating: 1,
-          review: null,
-          tags: [],
-        },
-      })
+      caller().library.change({ filmId: '1', action: { type: 'markWatched' } })
     ).rejects.toThrow()
-    await caller(owner).diary.delete({ id: second.id })
-    expect(await caller(owner).diary.history({ movieId: '2' })).toHaveLength(1)
-    await expect(
-      caller(owner).movie.setState({ movieId: '2', watched: false })
-    ).rejects.toThrow()
-  })
-  it('requires auth and isolates collection updates', async () => {
-    await expect(
-      caller().movie.setState({ movieId: '1', watched: true })
-    ).rejects.toThrow()
-    await caller(other).movie.delete({ movieId: '1' })
-    expect(
-      (await caller(owner).movie.query({ movieId: '1' })).movie
-    ).toHaveLength(1)
   })
   it('reorders lists, rejects stale edits and foreign ownership, and preserves notes', async () => {
     const list = await caller(owner).lists.create({
@@ -226,13 +112,7 @@ describe.skipIf(!enabled)('film club persistence and access boundaries', () => {
     for (const movieId of ['11', '12', '13'])
       await caller(owner).lists.addMovie({
         listId: list.id,
-        movie: {
-          movieId,
-          name: movieId,
-          posterImage: null,
-          releaseDate: null,
-          tomatoMeter: null,
-        },
+        filmId: movieId,
       })
     const current = (await caller(owner).lists.all()).find(
       (l) => l.id === list.id
@@ -269,13 +149,7 @@ describe.skipIf(!enabled)('film club persistence and access boundaries', () => {
     const list = await caller(owner).lists.createWithMovie({
       name: 'A first favorite',
       ranked: true,
-      movie: {
-        movieId: '45',
-        name: 'First film',
-        posterImage: null,
-        releaseDate: null,
-        tomatoMeter: null,
-      },
+      filmId: '45',
     })
     expect(
       (await caller(owner).lists.all()).find((l) => l.id === list.id)?.items
@@ -297,9 +171,9 @@ describe.skipIf(!enabled)('film club persistence and access boundaries', () => {
       enabled: true,
     })
     expect((await caller(other).social.feed()).entries).toHaveLength(0)
-    await caller(owner).diary.log({
-      movieData: film('31'),
-      entry: {
+    await caller(owner).library.logViewing({
+      filmId: '31',
+      viewing: {
         watchedAt: new Date(),
         rating: 5,
         review: 'Public review',

@@ -18,6 +18,10 @@ export default function NewsClient({
   const user = api.user.query.useQuery(undefined, {
     enabled: status === 'authenticated',
   })
+  // Titles on the Watchlist or among favorites personalize "For you"
+  const library = api.library.entries.useQuery(undefined, {
+    enabled: status === 'authenticated' && tab === 'For you',
+  })
   const bookmarks = api.news.bookmarks.useQuery(undefined, {
     enabled: status === 'authenticated',
   })
@@ -42,9 +46,9 @@ export default function NewsClient({
         (tab === 'For you' &&
           [
             ...followed,
-            ...(user.data?.movies
-              .filter((m) => m.inWatchlist || m.favorite)
-              .map((m) => m.name) || []),
+            ...(library.data
+              ?.filter((m) => m.inWatchlist || m.favorite)
+              .map((m) => m.title) || []),
           ].some((t) => s.title.toLowerCase().includes(t.toLowerCase()))))
   )
   return (

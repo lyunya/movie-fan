@@ -1,4 +1,4 @@
-import type { WatchListItem } from '@prisma/client'
+import type { LibraryEntry } from '@/server/library/types'
 
 /**
  * Pure aggregation behind the profile "Your taste" dashboard. Kept out of the
@@ -25,10 +25,10 @@ export interface TasteStats {
   maxDecadeCount: number
 }
 
-export const computeTasteStats = (movies: WatchListItem[]): TasteStats => {
-  const rated = movies.filter((movie) => movie.userRating)
+export const computeTasteStats = (movies: LibraryEntry[]): TasteStats => {
+  const rated = movies.filter((movie) => movie.rating)
   const watched = movies.filter(
-    (movie) => movie.watched || movie.userRating != null
+    (movie) => movie.watched || movie.rating != null
   )
 
   // Favorite genres across everything saved
@@ -47,16 +47,16 @@ export const computeTasteStats = (movies: WatchListItem[]): TasteStats => {
 
   // Hours watched: runtimes of everything rated as seen
   const minutesWatched = watched.reduce(
-    (sum, movie) => sum + (movie.durationMinutes || 0),
+    (sum, movie) => sum + (movie.runtime || 0),
     0
   )
 
   // You vs the critics — both on a 0–100 scale (stars are 1–5)
-  const comparable = rated.filter((movie) => movie.tomatoMeter != null)
+  const comparable = rated.filter((movie) => movie.tmdbPercent != null)
   const yourAvg =
     comparable.length > 0
       ? Math.round(
-          (comparable.reduce((sum, movie) => sum + (movie.userRating || 0), 0) /
+          (comparable.reduce((sum, movie) => sum + (movie.rating || 0), 0) /
             comparable.length) *
             20
         )
@@ -64,7 +64,7 @@ export const computeTasteStats = (movies: WatchListItem[]): TasteStats => {
   const criticsAvg =
     comparable.length > 0
       ? Math.round(
-          comparable.reduce((sum, movie) => sum + (movie.tomatoMeter || 0), 0) /
+          comparable.reduce((sum, movie) => sum + (movie.tmdbPercent || 0), 0) /
             comparable.length
         )
       : null
@@ -84,7 +84,7 @@ export const computeTasteStats = (movies: WatchListItem[]): TasteStats => {
 
   // Star-rating distribution (1–5) across rated movies
   const ratingCounts = [1, 2, 3, 4, 5].map(
-    (star) => rated.filter((movie) => movie.userRating === star).length
+    (star) => rated.filter((movie) => movie.rating === star).length
   )
   const maxRatingCount = Math.max(...ratingCounts, 0)
 

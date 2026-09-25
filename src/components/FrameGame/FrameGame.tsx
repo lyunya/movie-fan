@@ -16,7 +16,7 @@ import {
   shareText,
   type FrameFilm,
 } from '@/utils/frameGame'
-import { useWatchlist } from '@/hooks/useWatchlist'
+import { useLibrary } from '@/hooks/useLibrary'
 
 type Mode = 'daily' | 'practice'
 
@@ -87,7 +87,7 @@ export default function FrameGame({ pool }: { pool: FrameFilm[] }) {
   const [points, setPoints] = useState<number[]>([])
   const [best, setBest] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
-  const { has, toggle } = useWatchlist()
+  const { has, toggleWatchlist: toggle } = useLibrary()
   const scoreCard = useRef<HTMLElement>(null)
 
   // Dates and randomness are client-only so the static HTML never mismatches.

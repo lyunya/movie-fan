@@ -27,7 +27,7 @@ The Films a Member has saved to watch next. Watching a Film takes it off; saving
 _Avoid_: Queue, saved list
 
 **Watched**:
-The Member has seen the Film at least once. Rating, favoriting, or logging a Viewing makes a Film Watched and takes it off the Watchlist.
+The Member has seen the Film at least once. Rating, favoriting, or logging a Viewing makes a Film Watched and takes it off the Watchlist. A Film with Viewings stays Watched; un-watching any other Film also clears its Rating and Favorite.
 _Avoid_: Seen, logged
 
 **Rating**:

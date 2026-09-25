@@ -8,14 +8,14 @@
  *   identity never rides on color alone).
  */
 import type { FC } from 'react'
-import type { WatchListItem } from '@prisma/client'
+import type { LibraryEntry } from '@/server/library/types'
 import { computeTasteStats } from '@/utils/profileStats'
 
 const YOU_COLOR = '#ec4899'
 const CRITICS_COLOR = '#0284c7'
 
 interface ProfileStatsProps {
-  movies: WatchListItem[]
+  movies: LibraryEntry[]
 }
 
 const formatHours = (minutes: number) => {
@@ -155,7 +155,11 @@ const ProfileStats: FC<ProfileStatsProps> = ({ movies }) => {
             <ul className="mt-3 flex flex-col gap-3">
               {[
                 { label: 'You', value: yourAvg, color: YOU_COLOR },
-                { label: 'TMDB users', value: criticsAvg, color: CRITICS_COLOR },
+                {
+                  label: 'TMDB users',
+                  value: criticsAvg,
+                  color: CRITICS_COLOR,
+                },
               ].map((row) => (
                 <li key={row.label}>
                   <div className="mb-1 flex items-center justify-between text-sm">

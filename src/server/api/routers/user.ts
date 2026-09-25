@@ -65,13 +65,8 @@ export const UserRouter = createTRPCRouter({
         id: userIdNum,
       },
     })
-    const movies = await prisma.watchListItem.findMany({
-      where: {
-        userId: userIdNum,
-      },
-    })
-
-    return { user, movies }
+    // Library data comes from the library router (index, entries)
+    return { user }
   }),
 
   updateProfile: protectedProcedure

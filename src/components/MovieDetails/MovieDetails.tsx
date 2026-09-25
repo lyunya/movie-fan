@@ -12,7 +12,7 @@ import {
 } from 'react-icons/hi'
 
 import { api } from '@/utils/api'
-import { createMovieObj } from '@/utils/createMovieObj'
+import { useLibraryEntry } from '@/hooks/useLibrary'
 import type { FilmDetail } from '@/server/catalog/types'
 import StarRating from '@/components/StarRating/StarRating'
 import CastGrid from '../CastGrid/CastGrid'
@@ -22,7 +22,6 @@ import MovieRow from '@/components/MovieRow/MovieRow'
 import { toSlug } from '@/utils/slug'
 import DiaryLogButton from '@/components/DiaryLog/DiaryLogButton'
 import Availability from './Availability'
-import { notify } from '@/components/ui/Feedback'
 import ListPicker from '@/components/ListPicker/ListPicker'
 import TrailerButton from '@/components/ui/TrailerButton'
 import {
@@ -113,7 +112,6 @@ const ShareButton = ({
 const MovieDetails = ({ film }: { film: FilmDetail }) => {
   const id = film.id
   const { data: session } = useSession()
-  const utils = api.useUtils()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -124,41 +122,7 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
     window.scrollTo(0, 0)
   }, [id])
 
-  const invalidateWatchlist = () => {
-    utils.movie.query.invalidate({ movieId: id })
-    utils.user.query.invalidate()
-  }
-
-  const addMovie = api.movie.create.useMutation({
-    onSuccess: () => {
-      invalidateWatchlist()
-      notify('Collection updated')
-    },
-    onError: () =>
-      notify('Could not save your change. Please try again.', 'error'),
-  })
-  const removeMovie = api.movie.delete.useMutation({
-    onSuccess: () => {
-      invalidateWatchlist()
-      notify(
-        'Removed from watchlist. Your rating and history are kept.',
-        'success',
-        () => addMovie.mutate({ movieData: createMovieObj(film) })
-      )
-    },
-    onError: () =>
-      notify('Could not save your change. Please try again.', 'error'),
-  })
-  // The query is a protected procedure, so only run it when signed in
-  const watchlistItem = api.movie.query.useQuery(
-    { movieId: id },
-    { enabled: !!session }
-  )
-
-  const setState = api.movie.setState.useMutation({
-    onSuccess: invalidateWatchlist,
-    onError: (e) => notify(e.message, 'error'),
-  })
+  const { entry: item, act, pending } = useLibraryEntry(id)
   const history = api.diary.history.useQuery(
     { movieId: id },
     { enabled: !!session }
@@ -200,21 +164,11 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
     }
   }
 
-  const handleAddMovie = () => {
-    addMovie.mutate({ movieData: createMovieObj(film) })
-  }
-  const handleRemoveMovie = () => removeMovie.mutate({ movieId: id })
-  // The server upserts on [userId, movieId], so rating a movie is a single
-  // mutation whether or not it is already on the watchlist
-  const handleSeenMovie = (userRating: number) =>
-    setState.mutate({
-      movieId: id,
-      userRating: userRating || null,
-      ...(userRating ? { watched: true } : {}),
-    })
-  const item = watchlistItem.data?.movie[0]
   const onWatchlist = !!item?.inWatchlist
-  const currentUserRating = item?.userRating || 0
+  const currentUserRating = item?.rating || 0
+  const toggleWatchlist = () => act({ type: onWatchlist ? 'unsave' : 'save' })
+  const rate = (stars: number) =>
+    act(stars ? { type: 'rate', rating: stars } : { type: 'clearRating' })
 
   return (
     <article className="pb-32 text-white sm:pb-24">
@@ -329,17 +283,17 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm text-zinc-400">Your rating</span>
                     <StarRating
-                      disabled={setState.isPending}
+                      disabled={pending}
                       value={currentUserRating}
-                      onChange={handleSeenMovie}
+                      onChange={rate}
                     />
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <button
-                      disabled={removeMovie.isPending || addMovie.isPending}
+                      disabled={pending}
                       className={onWatchlist ? 'btn-ghost' : 'btn-brand'}
                       aria-pressed={onWatchlist}
-                      onClick={onWatchlist ? handleRemoveMovie : handleAddMovie}
+                      onClick={toggleWatchlist}
                     >
                       {onWatchlist ? (
                         <HiBookmark
@@ -354,11 +308,10 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
                     <button
                       className="btn-ghost"
                       aria-pressed={!!item?.watched}
-                      disabled={setState.isPending}
+                      disabled={pending}
                       onClick={() =>
-                        setState.mutate({
-                          movieId: id,
-                          watched: !item?.watched,
+                        act({
+                          type: item?.watched ? 'markUnwatched' : 'markWatched',
                         })
                       }
                     >
@@ -373,11 +326,10 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
                     <button
                       className="btn-quiet"
                       aria-pressed={!!item?.favorite}
-                      disabled={setState.isPending}
+                      disabled={pending}
                       onClick={() =>
-                        setState.mutate({
-                          movieId: id,
-                          favorite: !item?.favorite,
+                        act({
+                          type: item?.favorite ? 'unfavorite' : 'favorite',
                         })
                       }
                     >
@@ -514,7 +466,8 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
             </Link>
             <button
               className="btn-ghost flex-1 !px-3 !py-2 !text-sm"
-              onClick={onWatchlist ? handleRemoveMovie : handleAddMovie}
+              disabled={pending}
+              onClick={toggleWatchlist}
             >
               {onWatchlist ? '✓ Saved' : '+ Watchlist'}
             </button>

@@ -8,7 +8,7 @@ import type { HomeData } from '@/types/main'
 import type { Film } from '@/server/catalog/types'
 import { api } from '@/utils/api'
 import { toSlug } from '@/utils/slug'
-import { PERSON_PLACEHOLDER, filmFromSnapshot, filmImage } from '@/utils/film'
+import { PERSON_PLACEHOLDER, filmFromEntry, filmImage } from '@/utils/film'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import MovieRow from '@/components/MovieRow/MovieRow'
 import SearchResults from '@/components/SearchResults/SearchResults'
@@ -37,19 +37,21 @@ export default function HomeClient({ data }: { data: HomeData }) {
   const forYou = api.catalog.forYou.useQuery(undefined, {
     enabled: status === 'authenticated',
   })
-  const saved = api.user.query.useQuery(undefined, {
-    enabled: status === 'authenticated',
-  })
+  const upNext = api.library.upNext.useQuery(
+    // Enough to find a few that are streaming tonight
+    { limit: 50 },
+    { enabled: status === 'authenticated' }
+  )
   const available = api.user.libraryAvailability.useQuery(
     {},
     { enabled: status === 'authenticated' && !query, staleTime: 3600000 }
   )
   const streamingIds = new Set(available.data?.available.map((m) => m.movieId))
-  const watchlist = (saved.data?.movies || []).filter((m) => m.inWatchlist)
+  const watchlist = upNext.data || []
   const availableShelf = watchlist
-    .filter((m) => !m.watched && streamingIds.has(m.movieId))
+    .filter((m) => streamingIds.has(m.filmId))
     .slice(0, 6)
-    .map(filmFromSnapshot)
+    .map(filmFromEntry)
   useEffect(() => {
     setValue(query)
     setExtra([])
@@ -74,7 +76,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
   )
   const seen = new Set<string>([
     ...(data.feature ? [data.feature.id] : []),
-    ...watchlist.slice(0, 6).map((m) => m.movieId),
+    ...watchlist.slice(0, 6).map((m) => m.filmId),
   ])
   const unique = (items: Film[], count = 10) =>
     items
@@ -265,7 +267,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
               films={
                 availableShelf.length
                   ? availableShelf
-                  : watchlist.slice(0, 6).map(filmFromSnapshot)
+                  : watchlist.slice(0, 6).map(filmFromEntry)
               }
             />
           )}
