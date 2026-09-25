@@ -1,22 +1,14 @@
-import type { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc'
 import { availability, REGION_CODES } from '@/server/availability'
 import { library } from '@/server/library'
+import { members } from '@/server/member'
 
 const PAGE = 50
 const SHELF = 6
 
-const prefsFor = async (ctx: {
-  prisma: PrismaClient
-  session: { user: { id: string } }
-}) => {
-  const member = await ctx.prisma.user.findUniqueOrThrow({
-    where: { id: ctx.session.user.id },
-    select: { watchRegion: true, preferredProviders: true },
-  })
-  return { region: member.watchRegion, services: member.preferredProviders }
-}
+const prefsFor = (ctx: { session: { user: { id: string } } }) =>
+  members.forMember(ctx.session.user.id).preferences()
 
 export const availabilityRouter = createTRPCRouter({
   /** Every way to watch one Film in a Region. */

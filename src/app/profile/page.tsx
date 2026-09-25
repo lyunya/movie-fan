@@ -16,9 +16,9 @@ function Identity({
 }) {
   const [values, setValues] = useState({ name, handle, bio }),
     utils = api.useUtils()
-  const save = api.user.updateProfile.useMutation({
+  const save = api.member.updateProfile.useMutation({
     onSuccess: () => {
-      utils.user.query.invalidate()
+      void utils.member.profile.invalidate()
       notify('Profile saved')
     },
     onError: () =>
@@ -73,7 +73,10 @@ function Identity({
 }
 export default function Profile() {
   const { status } = useSession(),
-    query = api.user.query.useQuery(undefined, {
+    query = api.member.profile.useQuery(undefined, {
+      enabled: status === 'authenticated',
+    }),
+    prefs = api.member.preferences.useQuery(undefined, {
       enabled: status === 'authenticated',
     })
   if (status === 'unauthenticated')
@@ -85,7 +88,7 @@ export default function Profile() {
         </button>
       </main>
     )
-  const user = query.data?.user
+  const user = query.data
   return (
     <main className="page-shell max-w-3xl">
       <p className="eyebrow">Your corner of the club</p>
@@ -95,7 +98,7 @@ export default function Profile() {
       </Link>
       {query.isError ? (
         <QueryError retry={() => query.refetch()} />
-      ) : user ? (
+      ) : user && prefs.data ? (
         <>
           <Identity
             name={user.name || ''}
@@ -104,12 +107,12 @@ export default function Profile() {
           />
           <ProfileSettings
             userId={user.id}
-            isPublic={user.publicWatchlist}
+            isPublic={user.isPublic}
             alertsEnabled={user.streamAlerts}
-            watchRegion={user.watchRegion}
-            preferredProviders={user.preferredProviders}
+            watchRegion={prefs.data.region}
+            preferredProviders={prefs.data.services}
           />
-          {user.publicWatchlist && (
+          {user.isPublic && (
             <Link
               prefetch={false}
               className="btn-ghost"

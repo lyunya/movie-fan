@@ -5,29 +5,31 @@ import { notify } from './Feedback'
 export default function FollowNews({ subject }: { subject: string }) {
   const { data: session } = useSession(),
     utils = api.useUtils()
-  const user = api.user.query.useQuery(undefined, { enabled: !!session })
-  const save = api.news.preferences.useMutation({
+  const prefs = api.member.preferences.useQuery(undefined, {
+    enabled: !!session,
+  })
+  const save = api.member.setNewsTopics.useMutation({
     onSuccess: () => {
-      utils.user.query.invalidate()
+      void utils.member.preferences.invalidate()
       notify('Your news follows are updated')
     },
     onError: (e) => notify(e.message, 'error'),
   })
-  const topics = user.data?.user?.newsTopics || []
+  const topics = prefs.data?.newsTopics || []
   const following = topics.includes(subject)
   if (subject.length < 2 || subject.length > 80) return null
   return (
     <button
       className="btn-ghost !text-sm"
       aria-pressed={following}
-      disabled={save.isPending || (!!session && user.isLoading)}
+      disabled={save.isPending || (!!session && prefs.isLoading)}
       onClick={() =>
         session
           ? save.mutate({
               newsTopics: following
                 ? topics.filter((t) => t !== subject)
                 : [...new Set([...topics, subject])],
-              mutedNewsTopics: user.data?.user?.mutedNewsTopics || [],
+              mutedNewsTopics: prefs.data?.mutedNewsTopics || [],
             })
           : signIn()
       }

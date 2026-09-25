@@ -1,6 +1,6 @@
 import { socialRouter } from './routers/social'
 import { newsRouter } from './routers/news'
-import { UserRouter } from './routers/user'
+import { memberRouter } from './routers/member'
 import { libraryRouter } from './routers/library'
 import { availabilityRouter } from './routers/availability'
 import { catalogRouter } from './routers/catalog'
@@ -17,7 +17,7 @@ export const appRouter = createTRPCRouter({
   availability: availabilityRouter,
   news: newsRouter,
   social: socialRouter,
-  user: UserRouter,
+  member: memberRouter,
   catalog: catalogRouter,
   diary: diaryRouter,
   lists: listsRouter,

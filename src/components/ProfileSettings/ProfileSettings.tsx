@@ -59,14 +59,14 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
   preferredProviders,
 }) => {
   const utils = api.useUtils()
-  const invalidate = () => utils.user.query.invalidate()
+  const invalidate = () => utils.member.invalidate()
   const onError = () =>
     notify('Your settings could not be saved. Please try again.', 'error')
-  const setPublic = api.user.setPublic.useMutation({
+  const setPublic = api.member.setPublic.useMutation({
     onSuccess: invalidate,
     onError,
   })
-  const setAlerts = api.user.setStreamAlerts.useMutation({
+  const setAlerts = api.member.setStreamAlerts.useMutation({
     onSuccess: invalidate,
     onError,
   })
@@ -75,7 +75,7 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
   const [region, setRegion] = useState<RegionCode>(saved)
   const [providers, setProviders] = useState(preferredProviders)
   const providerOptions = api.catalog.providers.useQuery({ region })
-  const savePreferences = api.user.setStreamingPreferences.useMutation({
+  const savePreferences = api.member.setStreaming.useMutation({
     onSuccess: async () => {
       await Promise.all([
         invalidate(),
@@ -219,8 +219,8 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
             disabled={savePreferences.isPending}
             onClick={() =>
               savePreferences.mutate({
-                watchRegion: region,
-                preferredProviders: providers,
+                region,
+                services: providers,
               })
             }
             className="btn-brand mt-4 !px-5 !py-2 !text-sm"

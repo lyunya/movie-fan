@@ -34,17 +34,4 @@ export const newsRouter = createTRPCRouter({
             where: { userId: ctx.session.user.id, url: input.url },
           })
     ),
-  preferences: protectedProcedure
-    .input(
-      z.object({
-        newsTopics: z.array(z.string().trim().min(2).max(80)).max(30),
-        mutedNewsTopics: z.array(z.string().max(80)).max(20),
-      })
-    )
-    .mutation(({ ctx, input }) =>
-      ctx.prisma.user.update({
-        where: { id: ctx.session.user.id },
-        data: input,
-      })
-    ),
 })

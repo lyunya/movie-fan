@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, useSession } from 'next-auth/react'
 import { api } from '@/utils/api'
+import { useRegion } from '@/hooks/useRegion'
 import LibraryImport from '@/components/ui/LibraryImport'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import ProfileStats from '@/components/ProfileStats/ProfileStats'
@@ -22,9 +23,7 @@ export default function LibraryClient() {
     enabled: status === 'authenticated',
   })
   // Region and services for the "available" filter
-  const member = api.user.query.useQuery(undefined, {
-    enabled: status === 'authenticated',
-  })
+  const { region, services } = useRegion()
   const streamingOnly = params.get('streaming') === 'yes'
   const availability = api.availability.library.useInfiniteQuery(
     {},
@@ -232,10 +231,10 @@ export default function LibraryClient() {
             checked={streamingOnly}
             onChange={(e) => update('streaming', e.target.checked ? 'yes' : '')}
           />
-          {member.data?.user?.preferredProviders.length
+          {services.length
             ? 'On my services or free'
             : 'Streaming with a subscription or free'}{' '}
-          · {member.data?.user?.watchRegion || 'US'}
+          · {region}
         </label>
         {streamingOnly && (
           <div className="mt-2 text-sm text-zinc-400" role="status">
