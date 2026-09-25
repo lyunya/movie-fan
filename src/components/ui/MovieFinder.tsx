@@ -34,7 +34,7 @@ export default function MovieFinder({
           placeholder="Search by title…"
         />
       </label>
-      <div className="mt-3 max-h-80 space-y-2 overflow-auto">
+      <div className="mt-3 max-h-[min(20rem,calc(100dvh-15rem))] space-y-2 overflow-y-auto overscroll-contain">
         {search.isFetching && (
           <p className="text-sm text-zinc-400">Searching…</p>
         )}

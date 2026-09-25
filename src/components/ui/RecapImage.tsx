@@ -101,7 +101,7 @@ export default function RecapImage({
               />
               Include watch counts and hours
             </label>
-            <div className="max-h-64 space-y-2 overflow-auto">
+            <div className="max-h-[min(16rem,calc(100dvh-20rem))] space-y-1 overflow-y-auto overscroll-contain">
               {titles.map((title) => (
                 <label
                   className="flex min-h-11 items-center gap-3 text-sm"
@@ -140,7 +140,7 @@ export default function RecapImage({
               height={675}
               unoptimized
               alt={`Preview of your ${year} movie recap`}
-              className="w-full rounded-lg"
+              className="mx-auto h-auto max-h-[calc(100dvh-17rem)] w-auto max-w-full rounded-lg"
             />
             <a
               className="btn-brand mt-5"

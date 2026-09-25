@@ -66,7 +66,7 @@ export default function ListPicker({
                     ? remove.mutate({ listId: list.id, movieId: id })
                     : add.mutate({ listId: list.id, movie: summary })
                 }
-                className="flex w-full items-center justify-between rounded-xl border border-zinc-800 p-4 text-left hover:bg-zinc-900"
+                className="flex w-full items-center justify-between rounded-xl border border-zinc-800 px-4 py-3 text-left hover:bg-zinc-900"
               >
                 <span>
                   <strong className="block">{list.name}</strong>
@@ -81,7 +81,7 @@ export default function ListPicker({
           })}
         </div>
         <form
-          className="mt-6 border-t border-zinc-800 pt-5"
+          className="mt-5 border-t border-zinc-800 pt-4"
           onSubmit={async (e) => {
             e.preventDefault()
             setCreating(true)
@@ -134,7 +134,7 @@ export default function ListPicker({
             {creating ? 'Creating…' : 'Create list & add film'}
           </button>
         </form>
-        <Link href="/lists" className="mt-5 block text-sm text-pink-300">
+        <Link href="/lists" className="mt-4 block text-sm text-pink-300">
           Manage your lists →
         </Link>
       </Dialog>

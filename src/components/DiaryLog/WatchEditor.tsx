@@ -62,7 +62,7 @@ export default function WatchEditor({
   const pending = log.isPending || edit.isPending
   return (
     <form
-      className="space-y-4"
+      className="space-y-3 [@media(max-height:720px)]:space-y-2"
       onSubmit={(e) => {
         e.preventDefault()
         const fields = {
@@ -94,26 +94,29 @@ export default function WatchEditor({
           })
       }}
     >
-      <label className="field-label">
-        Watched on
-        <input
-          required
-          className="field"
-          type="date"
-          value={date}
-          max={today()}
-          onChange={(e) => setDate(e.target.value)}
-        />
-      </label>
-      <div>
-        <p className="field-label">Rating for this viewing · optional</p>
-        <StarRating value={rating} onChange={setRating} disabled={pending} />
+      {/* Date and rating share a row so the whole form fits without scrolling */}
+      <div className="grid gap-3 sm:grid-cols-2 sm:items-start">
+        <label className="field-label">
+          Watched on
+          <input
+            required
+            className="field"
+            type="date"
+            value={date}
+            max={today()}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </label>
+        <div>
+          <p className="field-label mb-2">Your rating · optional</p>
+          <StarRating value={rating} onChange={setRating} disabled={pending} />
+        </div>
       </div>
       <label className="field-label">
         What stayed with you?
         <textarea
-          className="field"
-          rows={4}
+          className="field [@media(max-height:720px)]:h-16"
+          rows={3}
           maxLength={4000}
           value={review}
           onChange={(e) => setReview(e.target.value)}

@@ -35,7 +35,13 @@ export default function TrailerButton({
             title={`${title} trailer`}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
-            className="aspect-video w-full rounded-xl border border-zinc-800 bg-black"
+            // Scale the 16:9 player to whichever runs out first — screen width
+            // or screen height — so the dialog never needs to scroll.
+            style={{
+              width:
+                'min(60rem, calc(100vw - 5.75rem), calc((100dvh - 9rem) * 16 / 9))',
+            }}
+            className="mx-auto block aspect-video rounded-xl border border-zinc-800 bg-black"
           />
         )}
       </Dialog>
