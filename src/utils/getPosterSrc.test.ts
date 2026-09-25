@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getPosterSrc } from './getPosterSrc'
 
-const PLACEHOLDER = '/placeholderposter.png'
+const PLACEHOLDER = '/placeholderposter.svg'
 
 describe('getPosterSrc', () => {
   it('returns a string url as-is', () => {

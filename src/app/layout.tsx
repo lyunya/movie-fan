@@ -1,23 +1,37 @@
-import type { Metadata } from 'next'
-import { Krona_One, Overpass } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import localFont from 'next/font/local'
 
 import '@/styles/globals.css'
 import Providers from '@/trpc/Providers'
 import Nav from '@/components/Nav/Nav'
+import ResumeSave from '@/components/ui/ResumeSave'
+import Feedback from '@/components/ui/Feedback'
 import Footer from '@/components/Footer/Footer'
 import { getSiteUrl } from '@/server/siteUrl'
 
-const kronaOne = Krona_One({
-  subsets: ['latin'],
-  variable: '--font-kronaOne',
-  weight: '400',
-})
-
-const overpass = Overpass({
-  subsets: ['latin'],
+// Self-hosted variable fonts (from npm, so builds never depend on reaching
+// Google Fonts). Overpass carries the UI; Fraunces is the editorial display
+// face for page titles and section headings.
+const overpass = localFont({
+  src: '../../node_modules/@fontsource-variable/overpass/files/overpass-latin-wght-normal.woff2',
   variable: '--font-overPass',
   display: 'swap',
-  weight: ['400', '500', '700', '800'],
+  weight: '100 900',
+})
+const fraunces = localFont({
+  src: [
+    {
+      path: '../../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2',
+      style: 'normal',
+    },
+    {
+      path: '../../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-wght-italic.woff2',
+      style: 'italic',
+    },
+  ],
+  variable: '--font-display',
+  display: 'swap',
+  weight: '100 900',
 })
 
 const siteUrl = getSiteUrl()
@@ -29,16 +43,20 @@ export const metadata: Metadata = {
     template: '%s · Movie Fan',
   },
   description:
-    'Discover popular, upcoming, and now-playing movies. Build your watchlist and rate what you have seen.',
+    'Find your next favorite. Remember every movie night. Build a library, rank your favorites, and choose what to watch with friends.',
   openGraph: {
     title: 'Movie Fan',
     description:
-      'Discover popular, upcoming, and now-playing movies. Build your watchlist and rate what you have seen.',
+      'Your own little film club: discover movies, rank your favorites, and remember every movie night.',
     type: 'website',
-    images: ['/movie-ticket.png'],
   },
   twitter: { card: 'summary_large_image' },
   icons: { icon: '/favicon.ico' },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#111013',
+  colorScheme: 'dark',
 }
 
 export default function RootLayout({
@@ -47,15 +65,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html
-      lang="en"
-      className={`${kronaOne.variable} ${overpass.variable}`}
-    >
-      <body className="font-sans">
+    <html lang="en" className={`${overpass.variable} ${fraunces.variable}`}>
+      <body className="font-heading">
         <Providers>
-          <div className="flex min-h-screen min-w-full flex-col bg-gradient-to-b from-[#000000] to-[#1e1e1e]">
+          <div className="flex min-h-screen min-w-full flex-col bg-ink pb-20 lg:pb-0">
             <Nav />
-            {children}
+            <div id="main-content" tabIndex={-1} className="flex-1">
+              {children}
+            </div>
+            <Feedback />
+            <ResumeSave />
             <Footer />
           </div>
         </Providers>

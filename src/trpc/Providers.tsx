@@ -10,7 +10,20 @@ import superjson from 'superjson'
 import { api } from '@/utils/api'
 
 export default function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient())
+  // Every refetch is a serverless invocation, so be deliberate: data stays
+  // fresh for a minute and tabbing back to the site doesn't refetch every
+  // active query (react-query's default). Mutations still invalidate.
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60_000,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  )
   const [trpcClient] = useState(() =>
     api.createClient({
       links: [
@@ -28,11 +41,13 @@ export default function Providers({ children }: { children: ReactNode }) {
   )
 
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus={false}>
       <api.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           {children}
-          <ReactQueryDevtools initialIsOpen={false} />
+          {process.env.NODE_ENV === 'development' && (
+            <ReactQueryDevtools initialIsOpen={false} />
+          )}
         </QueryClientProvider>
       </api.Provider>
     </SessionProvider>

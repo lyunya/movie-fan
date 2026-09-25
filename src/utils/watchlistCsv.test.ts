@@ -20,6 +20,13 @@ const row = (over: Partial<WatchListItem>): WatchListItem => ({
   motionPictureRating: null,
   userRating: null,
   hasStreaming: false,
+  inWatchlist: true,
+  watched: false,
+  favorite: false,
+  dismissed: false,
+  savedAt: null,
+  lastWatchedAt: null,
+  updatedAt: new Date(),
   ...over,
 })
 
@@ -30,7 +37,12 @@ describe('toWatchlistCsv', () => {
 
   it('doubles the star rating onto the 0–10 scale', () => {
     const csv = toWatchlistCsv([
-      row({ name: 'Heat', releaseDate: '1995-12-15', userRating: 4, movieId: '949' }),
+      row({
+        name: 'Heat',
+        releaseDate: '1995-12-15',
+        userRating: 4,
+        movieId: '949',
+      }),
     ])
     expect(csv.split('\n')[1]).toBe('Heat,1995,8,,949')
   })

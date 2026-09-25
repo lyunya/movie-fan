@@ -3,9 +3,18 @@ import { notFound } from 'next/navigation'
 
 import { fetchMovieDetails } from '@/server/tmdb'
 import MovieDetails from '@/components/MovieDetails/MovieDetails'
+import { describeScore } from '@/utils/score'
 
 // Movie facts are effectively static — regenerate at most daily
 export const revalidate = 86400
+
+// An empty list opts every path into on-demand ISR: the first visit renders
+// and caches the page, later visits (and crawlers) are served from the cache
+// until `revalidate` elapses. Without this, Next treats the route as fully
+// dynamic and every view is a fresh serverless render.
+export async function generateStaticParams() {
+  return []
+}
 
 type PageProps = { params: Promise<{ id: string }> }
 
@@ -30,9 +39,16 @@ export async function generateMetadata({
 
 export default async function MoviePage({ params }: PageProps) {
   const { id } = await params
-  const movie = await fetchMovieDetails(id).catch(() => null)
+  const movie = await fetchMovieDetails(id)
   if (!movie) notFound()
 
+  const score = describeScore({
+    tmdbScore: movie.tomatoMeter,
+    tmdbVotes: movie.voteCount,
+    imdbRating: movie.imdbRating,
+    imdbVotes: movie.imdbVoteCount,
+    releaseDate: movie.releaseDate,
+  })
   // Schema.org Movie markup so search engines can render a rich result
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -51,16 +67,18 @@ export default async function MoviePage({ params }: PageProps) {
             .map((name) => ({ '@type': 'Person', name: name.trim() })),
         }
       : {}),
-    ...((movie.imdbRating != null && movie.imdbVoteCount) ||
-    (movie.tomatoMeter != null && movie.voteCount)
+    // Only advertise a rating people actually gave (never a placeholder 0%)
+    ...(score.kind !== 'none' && score.count
       ? {
           aggregateRating: {
             '@type': 'AggregateRating',
             ratingValue:
-              movie.imdbRating ?? (movie.tomatoMeter! / 10).toFixed(1),
+              score.kind === 'imdb'
+                ? movie.imdbRating
+                : (movie.tomatoMeter! / 10).toFixed(1),
             bestRating: 10,
             worstRating: 0,
-            ratingCount: movie.imdbVoteCount ?? movie.voteCount,
+            ratingCount: score.count,
           },
         }
       : {}),
@@ -70,7 +88,9 @@ export default async function MoviePage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+        }}
       />
       <MovieDetails id={id} movie={movie} />
     </>

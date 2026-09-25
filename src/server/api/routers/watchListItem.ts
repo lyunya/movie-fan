@@ -1,133 +1,230 @@
-import { TRPCError } from '@trpc/server';
-import { MovieSchema } from '@/types/MovieSchema';
-import { z } from 'zod';
-import { createTRPCRouter, protectedProcedure } from './../trpc';
-import { fetchMovieDetails } from '@/server/tmdb';
-import { createMovieObj } from '@/utils/createMovieObj';
-import type { IMovieDetail } from '@/components/MovieDetails/types';
+import { TRPCError } from '@trpc/server'
+import { z } from 'zod'
+import { MovieSchema } from '@/types/MovieSchema'
+import { createTRPCRouter, protectedProcedure } from '../trpc'
+import { fetchMovieDetails } from '@/server/tmdb'
+import { createMovieObj } from '@/utils/createMovieObj'
 
 export const watchListItemRouter = createTRPCRouter({
-  /**
-   * One-click add from a movie card: the client only knows the emsVersionId,
-   * so the server fetches full details itself and upserts the row. On update
-   * the user's existing star rating is preserved (quick-add never clears it).
-   */
+  importMovie: protectedProcedure
+    .input(
+      z.object({
+        movieId: z.string().regex(/^[1-9]\d*$/),
+        rating: z.number().int().min(1).max(5).nullable(),
+        watchedDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id
+      const watchedAt = input.watchedDate ? new Date(input.watchedDate) : null
+      if (
+        watchedAt &&
+        (!Number.isFinite(watchedAt.getTime()) ||
+          watchedAt.toISOString().slice(0, 10) !== input.watchedDate ||
+          watchedAt > new Date())
+      )
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Invalid watched date.',
+        })
+      if (
+        await ctx.prisma.watchListItem.findUnique({
+          where: { userId_movieId: { userId, movieId: input.movieId } },
+        })
+      )
+        return { added: false }
+      const movie = await fetchMovieDetails(input.movieId)
+      if (!movie)
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Movie unavailable. Choose another match or skip this row.',
+        })
+      const data = createMovieObj(
+        movie,
+        input.movieId,
+        movie.genres.map((g) => g.name),
+        input.rating
+      )
+      return ctx.prisma.$transaction(async (tx) => {
+        const watched = !!watchedAt || input.rating !== null
+        const result = await tx.watchListItem.createMany({
+          data: [
+            {
+              ...data,
+              userId,
+              watched,
+              inWatchlist: !watched,
+              savedAt: watched ? null : new Date(),
+              lastWatchedAt: watchedAt,
+            },
+          ],
+          skipDuplicates: true,
+        })
+        if (result.count && watchedAt)
+          await tx.watchEvent.create({
+            data: {
+              userId,
+              movieId: input.movieId,
+              name: data.name,
+              posterImage: data.posterImage,
+              releaseDate: data.releaseDate,
+              durationMinutes: data.durationMinutes,
+              genres: data.genres,
+              rating: input.rating,
+              watchedAt,
+              isPublic: false,
+            },
+          })
+        return { added: result.count === 1 }
+      })
+    }),
   quickAdd: protectedProcedure
     .input(z.object({ movieId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const { prisma, session } = ctx;
-      const userId = session.user.id;
-
-      const movie = (await fetchMovieDetails(input.movieId).catch(
-        () => null
-      )) as IMovieDetail | null;
-      if (!movie) {
+      const userId = ctx.session.user.id
+      const existing = await ctx.prisma.watchListItem.findUnique({
+        where: { userId_movieId: { userId, movieId: input.movieId } },
+      })
+      if (existing)
+        return ctx.prisma.watchListItem.update({
+          where: { id: existing.id },
+          data: { inWatchlist: true, savedAt: new Date() },
+        })
+      const movie = await fetchMovieDetails(input.movieId)
+      if (!movie)
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'Could not load movie details',
-        });
-      }
-
-      const genres = (movie.genres || []).map((genre) => genre.name);
-      const movieData = createMovieObj(movie, input.movieId, genres);
-      // Don't touch userRating on update — quick-add is not a rating action,
-      // so an existing star rating must survive
-      const updateFields: Partial<typeof movieData> = { ...movieData };
-      delete updateFields.userRating;
-
-      try {
-        return await prisma.watchListItem.upsert({
-          where: {
-            userId_movieId: { userId, movieId: input.movieId },
-          },
-          update: updateFields,
-          create: {
-            ...movieData,
-            user: { connect: { id: userId } },
-          },
-        });
-      } catch {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to save movie to watchlist',
-        });
-      }
-    }),
-  create: protectedProcedure.input(z.object({
-    movieData: MovieSchema
-  }))
-    .mutation(async ({ ctx, input }) => {
-      const { prisma, session } = ctx;
-      const userId = session.user.id;
-      const { movieData } = input;
-
-      const movieFields = {
-        movieId: movieData.movieId,
-        directedBy: movieData.directedBy,
-        durationMinutes: movieData.durationMinutes,
-        name: movieData.name,
-        posterImage: movieData.posterImage,
-        synopsis: movieData.synopsis,
-        tomatoMeter: movieData.tomatoMeter,
-        consensus: movieData.consensus,
-        totalGross: movieData.totalGross,
-        releaseDate: movieData.releaseDate,
-        emsVersionId: movieData.emsVersionId,
-        motionPictureRating: movieData.motionPictureRating,
-        userRating: movieData.userRating,
-        genres: [...movieData.genres],
-      }
-
-      try {
-        return await prisma.watchListItem.upsert({
-          where: {
-            userId_movieId: {
-              userId,
-              movieId: movieData.movieId,
-            },
-          },
-          update: movieFields,
-          create: {
-            ...movieFields,
-            user: {
-              connect: {
-                id: userId,
-              },
-            },
-          },
+          message: 'Could not load this movie. Please try again.',
         })
-      } catch {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to save movie to watchlist' })
-      }
+      const movieData = createMovieObj(
+        movie,
+        input.movieId,
+        movie.genres.map((g) => g.name)
+      )
+      return ctx.prisma.watchListItem.upsert({
+        where: { userId_movieId: { userId, movieId: input.movieId } },
+        update: { inWatchlist: true, savedAt: new Date() },
+        create: {
+          ...movieData,
+          userId,
+          inWatchlist: true,
+          savedAt: new Date(),
+        },
+      })
     }),
-  delete: protectedProcedure.input(z.object({
-    movieId: z.string()
-  })).mutation(async ({ ctx, input }) => {
-    const { prisma, session } = ctx;
-    const userId = session.user.id;
-    const { movieId } = input;
-
-    return prisma.watchListItem.deleteMany({
-      where: {
-        movieId: movieId,
-        userId: userId
+  create: protectedProcedure
+    .input(z.object({ movieData: MovieSchema }))
+    .mutation(({ ctx, input }) => {
+      const { userRating, ...fields } = input.movieData
+      return ctx.prisma.watchListItem.upsert({
+        where: {
+          userId_movieId: {
+            userId: ctx.session.user.id,
+            movieId: fields.movieId,
+          },
+        },
+        update: {
+          ...fields,
+          ...(userRating != null
+            ? { userRating, watched: true }
+            : { inWatchlist: true, savedAt: new Date() }),
+        },
+        create: {
+          ...fields,
+          userId: ctx.session.user.id,
+          userRating,
+          watched: userRating != null,
+          inWatchlist: userRating == null,
+          savedAt: userRating == null ? new Date() : null,
+        },
+      })
+    }),
+  setState: protectedProcedure
+    .input(
+      z.object({
+        movieId: z.string().min(1),
+        inWatchlist: z.boolean().optional(),
+        watched: z.boolean().optional(),
+        favorite: z.boolean().optional(),
+        userRating: z.number().int().min(1).max(5).nullable().optional(),
+        dismissed: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { movieId, ...changes } = input
+      const userId = ctx.session.user.id
+      const existing = await ctx.prisma.watchListItem.findUnique({
+        where: { userId_movieId: { userId, movieId } },
+      })
+      if (
+        changes.watched === false &&
+        (await ctx.prisma.watchEvent.count({ where: { userId, movieId } }))
+      ) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message:
+            'This movie has diary entries. Edit those viewings before marking it unwatched.',
+        })
       }
-    })
-  }),
-  query: protectedProcedure.input(z.object({
-    movieId: z.string()
-  })).query(async ({ ctx, input }) => {
-    const { prisma, session } = ctx;
-    const userId = session.user.id;
-    const { movieId } = input;
-
-    const movie = await prisma.watchListItem.findMany({
-      where: {
-        userId: userId,
-        movieId: movieId
+      const data = {
+        ...changes,
+        ...(changes.inWatchlist === true ? { savedAt: new Date() } : {}),
       }
-    })
-    return { movie }
-  }),
-
+      if (existing)
+        return ctx.prisma.watchListItem.update({
+          where: { id: existing.id },
+          data,
+        })
+      const movie = await fetchMovieDetails(movieId)
+      if (!movie) throw new TRPCError({ code: 'NOT_FOUND' })
+      return ctx.prisma.watchListItem.create({
+        data: {
+          ...createMovieObj(
+            movie,
+            movieId,
+            movie.genres.map((g) => g.name)
+          ),
+          userId,
+          inWatchlist: false,
+          ...data,
+        },
+      })
+    }),
+  delete: protectedProcedure
+    .input(z.object({ movieId: z.string() }))
+    .mutation(({ ctx, input }) =>
+      ctx.prisma.watchListItem.updateMany({
+        where: { userId: ctx.session.user.id, movieId: input.movieId },
+        data: { inWatchlist: false },
+      })
+    ),
+  bulk: protectedProcedure
+    .input(
+      z.object({
+        movieIds: z.array(z.string()).min(1).max(100),
+        action: z.enum(['save', 'unsave', 'watched']),
+      })
+    )
+    .mutation(({ ctx, input }) =>
+      ctx.prisma.watchListItem.updateMany({
+        where: { userId: ctx.session.user.id, movieId: { in: input.movieIds } },
+        data:
+          input.action === 'watched'
+            ? { watched: true }
+            : {
+                inWatchlist: input.action === 'save',
+                ...(input.action === 'save' ? { savedAt: new Date() } : {}),
+              },
+      })
+    ),
+  query: protectedProcedure
+    .input(z.object({ movieId: z.string() }))
+    .query(async ({ ctx, input }) => ({
+      movie: await ctx.prisma.watchListItem.findMany({
+        where: { userId: ctx.session.user.id, movieId: input.movieId },
+      }),
+    })),
 })

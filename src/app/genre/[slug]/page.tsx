@@ -8,6 +8,14 @@ import GenreResults from './GenreResults'
 // Genre listings shift slowly — rebuild at most every 6h
 export const revalidate = 21600
 
+// An empty list opts every path into on-demand ISR: the first visit renders
+// and caches the page, later visits (and crawlers) are served from the cache
+// until `revalidate` elapses. Without this, Next treats the route as fully
+// dynamic and every view is a fresh serverless render.
+export async function generateStaticParams() {
+  return []
+}
+
 type PageProps = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({
@@ -30,7 +38,11 @@ export default async function GenrePage({ params }: PageProps) {
 
   const [name, firstPage] = await Promise.all([
     fetchGenreName(genreId).catch(() => null),
-    fetchGenre(genreId, 1).catch(() => ({ movies: [], page: 1, totalPages: 1 })),
+    fetchGenre(genreId, 1).catch(() => ({
+      movies: [],
+      page: 1,
+      totalPages: 1,
+    })),
   ])
 
   if (!name) notFound()

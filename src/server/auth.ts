@@ -13,12 +13,7 @@ import { prisma } from './db'
  * `auth()` helper used in Server Components, route handlers, and the tRPC
  * context.
  */
-export const {
-  handlers,
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
+export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   // Required behind Vercel's proxy / preview URLs
   trustHost: true,
@@ -53,10 +48,15 @@ export const {
   callbacks: {
     // Surface the user id on the session (database strategy provides `user`)
     session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id
+      return {
+        expires: session.expires,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        },
       }
-      return session
     },
   },
 })

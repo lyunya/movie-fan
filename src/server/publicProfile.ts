@@ -1,20 +1,51 @@
 import { prisma } from './db'
-
-/**
- * Read-only public view of a user's watchlist, or null when the user doesn't
- * exist or hasn't opted in. Used by the /u/[id] page; exposes only the
- * display name, avatar, and saved movies — never email or account data.
- */
-export const getPublicProfile = async (userId: string) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { name: true, image: true, publicWatchlist: true },
+import { auth } from './auth'
+export const getPublicProfile = async (id: string) => {
+  const session = await auth()
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ id }, { handle: id.toLowerCase() }] },
+    select: {
+      id: true,
+      name: true,
+      image: true,
+      handle: true,
+      bio: true,
+      publicWatchlist: true,
+    },
   })
   if (!user || !user.publicWatchlist) return null
-
-  const movies = await prisma.watchListItem.findMany({
-    where: { userId },
-    orderBy: { name: 'asc' },
-  })
-  return { user: { name: user.name, image: user.image }, movies }
+  if (
+    session?.user?.id &&
+    (await prisma.userConnection.findFirst({
+      where: {
+        kind: 'BLOCK',
+        OR: [
+          { userId: user.id, targetId: session.user.id },
+          { userId: session.user.id, targetId: user.id },
+        ],
+      },
+    }))
+  )
+    return null
+  const [movies, entries, lists] = await Promise.all([
+    prisma.watchListItem.findMany({
+      where: {
+        userId: user.id,
+        OR: [{ inWatchlist: true }, { watched: true }, { favorite: true }],
+      },
+      orderBy: [{ favorite: 'desc' }, { name: 'asc' }],
+    }),
+    prisma.watchEvent.findMany({
+      where: { userId: user.id, isPublic: true },
+      orderBy: { watchedAt: 'desc' },
+      take: 20,
+    }),
+    prisma.movieList.findMany({
+      where: { userId: user.id, isPublic: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 12,
+      include: { _count: { select: { items: true } } },
+    }),
+  ])
+  return { user, movies, entries, lists }
 }

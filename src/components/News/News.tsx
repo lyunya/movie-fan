@@ -1,95 +1,41 @@
-'use client'
-
+import Link from 'next/link'
 import type { NewsStoryProps } from './types'
-import type { FC } from 'react'
-import type { NewStory } from '@/types/main'
-
-import { useState } from 'react'
-import Image from 'next/image'
-import parse from 'html-react-parser'
-import Balancer from 'react-wrap-balancer'
-import { partitionNews, INITIAL_HEADLINES } from '@/utils/news'
-
-const News: FC<NewsStoryProps> = ({ newsStories }) => {
-  const [expanded, setExpanded] = useState(false)
-  // Feed images can 404 or come from a host we can't render — when one
-  // fails, fall back to the next story that has a working image
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
-  const { stories, mainStory, restStories } = partitionNews(
-    newsStories,
-    failedImages
-  )
-  const visibleStories = expanded
-    ? restStories
-    : restStories.slice(0, INITIAL_HEADLINES)
-  const hiddenCount = restStories.length - INITIAL_HEADLINES
-
-  // Nothing to show (the news feed is sometimes empty) — render nothing
-  // rather than a stray heading
-  if (stories.length === 0) return null
-
+export default function News({ newsStories }: NewsStoryProps) {
   return (
-    <section className="flex w-full flex-col text-white">
-      <h2 className="section-heading mb-4">
-        <span className="gradient-text">News</span>
-      </h2>
-      <div className="flex flex-1 flex-col gap-6">
-        {mainStory?.mainImage?.url && (
+    <section className="surface p-5 sm:p-7">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="eyebrow">The latest reel</h2>
+        <Link href="/news" className="text-sm text-pink-300">
+          All news ↗
+        </Link>
+      </div>
+      {newsStories.slice(0, 4).map((story) => (
+        <article
+          key={story.id}
+          className="border-b border-zinc-800 py-4 last:border-0"
+        >
+          <p className="mb-1 text-xs text-zinc-400">
+            {story.source || 'Film news'}
+            {story.publishedAt
+              ? ` · ${new Date(story.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`
+              : ''}
+          </p>
           <a
-            href={mainStory.link}
+            href={story.link}
             target="_blank"
             rel="noreferrer"
-            className="surface group block overflow-hidden"
+            className="font-semibold leading-snug hover:text-pink-300"
           >
-            <div className="relative aspect-video w-full overflow-hidden">
-              <Image
-                src={mainStory.mainImage.url}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 600px"
-                alt="Featured news story"
-                className="object-cover transition duration-300 group-hover:scale-105"
-                onError={() =>
-                  setFailedImages(
-                    (prev) => new Set(prev).add(mainStory.mainImage.url)
-                  )
-                }
-              />
-            </div>
-            <Balancer className="block p-4 text-lg font-semibold transition group-hover:text-pink-400 lg:text-xl">
-              {parse(mainStory.title)}
-            </Balancer>
+            {story.title}
+            <span className="sr-only"> (opens publisher in new tab)</span>
           </a>
-        )}
-        <div className="surface flex flex-1 flex-col overflow-hidden">
-          <ul className="flex flex-col divide-y divide-zinc-800">
-            {visibleStories.map((story: NewStory) => (
-              <li key={story.id}>
-                <a
-                  className="block px-4 py-3 text-base transition hover:bg-zinc-800/60 hover:text-pink-400 lg:text-lg"
-                  href={story.link}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Balancer>{parse(story.title)}</Balancer>
-                </a>
-              </li>
-            ))}
-          </ul>
-          {/* On desktop the overflow already fills the space beside the
-              hero (see HomeClient), so this toggle is mobile-only there */}
-          {hiddenCount > 0 && (
-            <button
-              onClick={() => setExpanded((current) => !current)}
-              className="border-t border-zinc-800 px-4 py-3 text-sm font-semibold text-pink-400 transition hover:bg-zinc-800/60 hover:text-pink-300 lg:hidden"
-            >
-              {expanded ? 'Show less' : `More news (${hiddenCount})`}
-            </button>
-          )}
-        </div>
-      </div>
+        </article>
+      ))}
+      {!newsStories.length && (
+        <p className="mt-5 text-zinc-400">
+          The latest stories couldn’t be loaded. Check back shortly.
+        </p>
+      )}
     </section>
   )
 }
-
-export default News

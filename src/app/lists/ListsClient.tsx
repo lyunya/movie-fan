@@ -1,250 +1,503 @@
 'use client'
-
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { signIn, useSession } from 'next-auth/react'
-import {
-  HiOutlineClipboardCopy,
-  HiOutlineCollection,
-  HiOutlineTrash,
-} from 'react-icons/hi'
-
-import MovieCard from '@/components/MovieCard/MovieCard'
 import { api } from '@/utils/api'
-
+import Dialog from '@/components/ui/Dialog'
+import ComparisonSession from '@/components/ui/ComparisonSession'
+import MovieFinder from '@/components/ui/MovieFinder'
+import { notify, QueryError } from '@/components/ui/Feedback'
 export default function ListsClient() {
-  const { status } = useSession()
-  const utils = api.useUtils()
+  const { status } = useSession(),
+    utils = api.useUtils()
   const lists = api.lists.all.useQuery(undefined, {
     enabled: status === 'authenticated',
   })
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [isPublic, setIsPublic] = useState(false)
-
+  const [comparison, setComparison] = useState<
+    NonNullable<typeof lists.data>[number] | null
+  >(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null),
+    [editor, setEditor] = useState<'new' | 'edit' | null>(null),
+    [finder, setFinder] = useState(false)
+  const [name, setName] = useState(''),
+    [description, setDescription] = useState(''),
+    [ranked, setRanked] = useState(true),
+    [isPublic, setPublic] = useState(false)
+  const [drag, setDrag] = useState<string | null>(null),
+    [note, setNote] = useState<{ movieId: string; value: string } | null>(null)
+  const invalidate = () => utils.lists.all.invalidate()
+  const error = (e: { message: string }) => notify(e.message, 'error')
   const create = api.lists.create.useMutation({
-    onSuccess: async (created) => {
-      await utils.lists.all.invalidate()
-      setSelectedId(created.id)
-      setName('')
-      setDescription('')
-      setIsPublic(false)
+    onSuccess: async (l) => {
+      await invalidate()
+      setSelectedId(l.id)
+      setEditor(null)
+      setFinder(true)
     },
+    onError: error,
   })
   const update = api.lists.update.useMutation({
-    onSuccess: () => utils.lists.all.invalidate(),
+    onSuccess: () => {
+      invalidate()
+      setEditor(null)
+      notify('List updated')
+    },
+    onError: error,
   })
-  const removeMovie = api.lists.removeMovie.useMutation({
-    onSuccess: () => utils.lists.all.invalidate(),
+  const add = api.lists.addMovie.useMutation({
+    onSuccess: () => {
+      invalidate()
+      notify('Film added')
+    },
+    onError: error,
   })
-  const removeList = api.lists.delete.useMutation({
-    onSuccess: async () => {
-      setSelectedId(null)
-      await utils.lists.all.invalidate()
+  const remove = api.lists.removeMovie.useMutation({
+    onSuccess: invalidate,
+    onError: error,
+  })
+  const reorder = api.lists.reorder.useMutation({
+    onSuccess: invalidate,
+    onError: (e) => {
+      error(e)
+      invalidate()
     },
   })
-
-  const selected = useMemo(
-    () => lists.data?.find((list) => list.id === selectedId) ?? lists.data?.[0],
-    [lists.data, selectedId]
-  )
-
-  if (status === 'loading') return <div className="min-h-[60vh]" />
-  if (status !== 'authenticated') {
+  const saveNote = api.lists.note.useMutation({
+    onSuccess: () => {
+      invalidate()
+      setNote(null)
+    },
+    onError: error,
+  })
+  const del = api.lists.delete.useMutation({
+    onSuccess: () => {
+      invalidate()
+      setSelectedId(null)
+    },
+    onError: error,
+  })
+  const selected =
+    lists.data?.find((l) => l.id === selectedId) || lists.data?.[0]
+  const move = (id: string, index: number) => {
+    if (!selected || reorder.isPending) return
+    const ids = selected.items.map((i) => i.id)
+    const from = ids.indexOf(id)
+    if (from < 0) return
+    ids.splice(from, 1)
+    ids.splice(Math.max(0, Math.min(index, ids.length)), 0, id)
+    reorder.mutate({ id: selected.id, version: selected.version, itemIds: ids })
+  }
+  if (status === 'loading')
     return (
-      <main className="mx-auto flex min-h-[65vh] max-w-xl flex-col items-center justify-center px-4 text-center">
-        <HiOutlineCollection className="h-12 w-12 text-pink-400" />
-        <h1 className="mt-5 font-heading text-4xl font-bold">
-          Lists for every occasion
+      <main className="page-shell">
+        <div className="surface h-72 animate-pulse" />
+      </main>
+    )
+  if (status !== 'authenticated')
+    return (
+      <main className="page-shell max-w-2xl text-center">
+        <p className="eyebrow">Your taste. Your order.</p>
+        <h1 className="mt-3 text-4xl font-semibold">
+          Every favorite deserves a place.
         </h1>
         <p className="mt-4 text-zinc-400">
-          Build private collections or share your favorites with friends.
+          Build your Top 10, a perfect double feature, or a rainy Sunday
+          watchlist.
         </p>
-        <button className="btn-brand mt-8" onClick={() => signIn()}>
-          Sign in to create lists
+        <button className="btn-brand mt-6" onClick={() => signIn()}>
+          Create your first list
         </button>
       </main>
     )
-  }
-
   return (
-    <main className="mx-auto w-11/12 max-w-screen-xl pb-16 pt-10">
-      <header>
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-pink-400">
-          Collections
-        </p>
-        <h1 className="mt-2 font-heading text-4xl font-bold sm:text-5xl">
-          Your movie lists
-        </h1>
-      </header>
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-[320px_1fr]">
-        <aside className="flex flex-col gap-5">
-          <form
-            className="surface p-5"
-            onSubmit={(event) => {
-              event.preventDefault()
-              if (!name.trim()) return
-              create.mutate({ name, description, isPublic })
-            }}
-          >
-            <h2 className="font-heading text-lg font-bold">New list</h2>
-            <div className="mt-4 flex flex-col gap-3">
-              <input
-                value={name}
-                required
-                maxLength={80}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Date night"
-                className="rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-pink-500"
-              />
-              <textarea
-                value={description}
-                maxLength={500}
-                rows={3}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="A short description (optional)"
-                className="resize-none rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-pink-500"
-              />
-              <label className="flex items-center gap-2 text-sm text-zinc-400">
-                <input
-                  type="checkbox"
-                  checked={isPublic}
-                  onChange={(event) => setIsPublic(event.target.checked)}
-                  className="accent-pink-500"
-                />
-                Anyone with the link can view it
-              </label>
-              <button className="btn-brand !py-2.5" disabled={create.isPending}>
-                {create.isPending ? 'Creating…' : 'Create list'}
-              </button>
-            </div>
-          </form>
-
-          <div className="flex flex-col gap-2">
-            {(lists.data ?? []).map((list) => (
+    <main className="page-shell">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Link href="/library" className="eyebrow">
+            Your library
+          </Link>
+          <h1 className="mt-3 text-4xl font-semibold">Lists & rankings</h1>
+        </div>
+        <button
+          className="btn-brand"
+          onClick={() => {
+            setName('My Top 10')
+            setDescription('')
+            setRanked(true)
+            setPublic(false)
+            setEditor('new')
+          }}
+        >
+          + New list
+        </button>
+      </div>
+      {lists.isError ? (
+        <QueryError retry={() => lists.refetch()} />
+      ) : lists.isLoading ? (
+        <div className="surface mt-6 h-64 animate-pulse" />
+      ) : (
+        <div className="mt-7 grid gap-6 lg:grid-cols-[240px_1fr]">
+          <aside className="flex flex-col gap-2">
+            {lists.data?.map((l) => (
               <button
-                key={list.id}
-                onClick={() => setSelectedId(list.id)}
-                className={`rounded-xl border px-4 py-3 text-left transition ${
-                  selected?.id === list.id
-                    ? 'border-pink-500 bg-pink-500/10'
-                    : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-600'
-                }`}
+                key={l.id}
+                onClick={() => setSelectedId(l.id)}
+                className={`surface p-4 text-left ${selected?.id === l.id ? '!border-pink-400' : ''}`}
               >
-                <span className="block font-semibold">{list.name}</span>
-                <span className="text-xs text-zinc-500">
-                  {list.items.length} movies
+                <span className="block font-semibold">
+                  {l.ranked ? '# ' : ''}
+                  {l.name}
+                </span>
+                <span className="text-xs text-zinc-400">
+                  {l.items.length} films ·{' '}
+                  {l.isPublic ? 'Shared by link' : 'Private'}
                 </span>
               </button>
             ))}
-          </div>
-        </aside>
-
-        <section>
-          {selected ? (
-            <>
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                <div>
-                  <h2 className="font-heading text-3xl font-bold">
-                    {selected.name}
-                  </h2>
+          </aside>
+          <section>
+            {selected ? (
+              <>
+                <header className="mb-6">
+                  <p className="eyebrow">
+                    {selected.ranked ? 'A personal ranking' : 'A collection'} ·{' '}
+                    {selected.isPublic ? 'Shared by link' : 'Private'}
+                  </p>
+                  <h2 className="mt-2 text-3xl font-bold">{selected.name}</h2>
                   {selected.description && (
                     <p className="mt-2 text-zinc-400">{selected.description}</p>
                   )}
-                  <p className="mt-2 text-sm text-zinc-500">
-                    {selected.isPublic ? 'Public by link' : 'Private'} ·{' '}
-                    {selected.items.length} movies
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    className="btn-ghost !px-4 !py-2 !text-sm"
-                    onClick={() =>
-                      update.mutate({
-                        id: selected.id,
-                        name: selected.name,
-                        description: selected.description,
-                        isPublic: !selected.isPublic,
-                      })
-                    }
-                  >
-                    Make {selected.isPublic ? 'private' : 'public'}
-                  </button>
-                  {selected.isPublic && (
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <button
-                      className="btn-ghost !px-4 !py-2 !text-sm"
-                      onClick={() =>
-                        navigator.clipboard.writeText(
-                          `${window.location.origin}/lists/${selected.id}`
-                        )
-                      }
+                      className="btn-brand !px-4 !py-2"
+                      onClick={() => setFinder(true)}
                     >
-                      <HiOutlineClipboardCopy className="h-4 w-4" /> Copy link
+                      + Add films
                     </button>
-                  )}
-                  <button
-                    className="btn-ghost !px-4 !py-2 !text-sm text-red-300"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Delete “${selected.name}”? The list can’t be recovered.`
-                        )
-                      ) {
-                        removeList.mutate({ id: selected.id })
-                      }
-                    }}
-                  >
-                    <HiOutlineTrash className="h-4 w-4" /> Delete
-                  </button>
-                </div>
-              </div>
-
-              {selected.items.length ? (
-                <div className="mt-8 grid grid-cols-2 gap-x-2 gap-y-8 min-[360px]:gap-x-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-                  {selected.items.map((item) => (
-                    <div key={item.id} className="relative">
-                      <MovieCard
-                        name={item.name}
-                        emsVersionId={item.movieId}
-                        posterImage={item.posterImage}
-                        releaseDate={item.releaseDate}
-                        tomatoMeter={item.tomatoMeter}
-                      />
+                    <button
+                      className="btn-ghost !px-4 !py-2"
+                      onClick={() => {
+                        setName(selected.name)
+                        setDescription(selected.description || '')
+                        setRanked(selected.ranked)
+                        setPublic(selected.isPublic)
+                        setEditor('edit')
+                      }}
+                    >
+                      Edit list
+                    </button>
+                    {selected.ranked && selected.items.length > 1 && (
                       <button
-                        aria-label={`Remove ${item.name} from ${selected.name}`}
-                        onClick={() =>
-                          removeMovie.mutate({
-                            listId: selected.id,
-                            movieId: item.movieId,
-                          })
-                        }
-                        className="absolute -right-1 -top-2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-zinc-950 text-zinc-400 shadow hover:text-red-300"
+                        className="btn-ghost !px-4 !py-2"
+                        onClick={() => setComparison(selected)}
                       >
-                        <HiOutlineTrash className="h-4 w-4" />
+                        Compare films
                       </button>
-                    </div>
+                    )}
+                    {selected.isPublic && (
+                      <button
+                        className="btn-ghost !px-4 !py-2"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(
+                              `${location.origin}/lists/${selected.id}`
+                            )
+                            notify('Link copied')
+                          } catch {
+                            notify('Could not copy the link.', 'error')
+                          }
+                        }}
+                      >
+                        Copy link
+                      </button>
+                    )}
+                    <button
+                      className="btn-ghost !px-4 !py-2"
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Delete “${selected.name}”? Your library and ratings will be kept.`
+                          )
+                        )
+                          del.mutate({ id: selected.id })
+                      }}
+                    >
+                      Delete list
+                    </button>
+                  </div>
+                </header>
+                <ol className="space-y-3">
+                  {selected.items.map((item, i) => (
+                    <li
+                      key={item.id}
+                      draggable={selected.ranked && !reorder.isPending}
+                      onDragStart={() => setDrag(item.id)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        if (drag) move(drag, i)
+                        setDrag(null)
+                      }}
+                      className="surface flex gap-3 p-3 sm:gap-5 sm:p-4"
+                    >
+                      {selected.ranked && (
+                        <span className="self-center text-xl font-bold text-pink-300 sm:text-3xl">
+                          {i + 1}
+                        </span>
+                      )}
+                      <Link
+                        prefetch={false}
+                        className="shrink-0"
+                        href={`/movie/${item.movieId}`}
+                      >
+                        <Image
+                          src={item.posterImage || '/placeholderposter.svg'}
+                          width={64}
+                          height={96}
+                          className="rounded"
+                          alt={`${item.name} poster`}
+                        />
+                      </Link>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          prefetch={false}
+                          className="font-semibold hover:text-pink-300"
+                          href={`/movie/${item.movieId}`}
+                        >
+                          {item.name}
+                        </Link>
+                        <p className="text-xs text-zinc-400">
+                          {item.releaseDate?.slice(0, 4)}
+                        </p>
+                        {item.note && (
+                          <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">
+                            {item.note}
+                          </p>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs text-pink-300">
+                          <button
+                            onClick={() =>
+                              setNote({
+                                movieId: item.movieId,
+                                value: item.note || '',
+                              })
+                            }
+                          >
+                            {item.note ? 'Edit note' : 'Add a note'}
+                          </button>
+                          <button
+                            onClick={() =>
+                              update.mutate({
+                                id: selected.id,
+                                name: selected.name,
+                                description: selected.description,
+                                isPublic: selected.isPublic,
+                                coverMovieId: item.movieId,
+                              })
+                            }
+                          >
+                            {selected.coverMovieId === item.movieId
+                              ? '✓ Cover'
+                              : 'Use as cover'}
+                          </button>
+                          <button
+                            disabled={remove.isPending}
+                            onClick={() =>
+                              remove.mutate({
+                                listId: selected.id,
+                                movieId: item.movieId,
+                              })
+                            }
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        {selected.ranked && (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <button
+                              aria-label={`Move ${item.name} up`}
+                              className="icon-button border border-zinc-700"
+                              disabled={i === 0 || reorder.isPending}
+                              onClick={() => move(item.id, i - 1)}
+                            >
+                              ↑
+                            </button>
+                            <button
+                              aria-label={`Move ${item.name} down`}
+                              className="icon-button border border-zinc-700"
+                              disabled={
+                                i === selected.items.length - 1 ||
+                                reorder.isPending
+                              }
+                              onClick={() => move(item.id, i + 1)}
+                            >
+                              ↓
+                            </button>
+                            <label className="flex items-center gap-2 text-xs text-zinc-400">
+                              Position
+                              <select
+                                className="rounded-lg bg-zinc-900 p-2"
+                                value={i}
+                                disabled={reorder.isPending}
+                                onChange={(e) =>
+                                  move(item.id, Number(e.target.value))
+                                }
+                              >
+                                {selected.items.map((_, j) => (
+                                  <option key={j} value={j}>
+                                    {j + 1}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    </li>
                   ))}
-                </div>
-              ) : (
-                <div className="surface mt-8 p-10 text-center">
-                  <p className="text-zinc-300">
-                    This list is ready for its first movie.
+                </ol>
+                {!selected.items.length && (
+                  <p className="surface p-8 text-zinc-400">
+                    The first spot is waiting. Add a film to get started.
                   </p>
-                  <Link href="/" className="btn-brand mt-5">
-                    Find movies
-                  </Link>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="surface p-10 text-center text-zinc-400">
-              Create a list to get started.
-            </div>
-          )}
-        </section>
-      </div>
+                )}
+              </>
+            ) : (
+              <p className="surface p-10 text-zinc-400">
+                Make a Top 10, a date-night collection, or something entirely
+                your own.
+              </p>
+            )}
+          </section>
+        </div>
+      )}
+      {comparison && (
+        <ComparisonSession
+          list={comparison}
+          onClose={() => setComparison(null)}
+        />
+      )}
+      <Dialog
+        open={editor !== null}
+        onClose={() => setEditor(null)}
+        title={editor === 'new' ? 'Create a list' : 'Edit your list'}
+      >
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (editor === 'new')
+              create.mutate({ name, description, isPublic, ranked })
+            else if (selected)
+              update.mutate({
+                id: selected.id,
+                name,
+                description,
+                isPublic,
+                ranked,
+              })
+          }}
+        >
+          <label className="field-label">
+            Name
+            <input
+              className="field"
+              required
+              maxLength={80}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label className="field-label">
+            Description
+            <textarea
+              className="field"
+              maxLength={500}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </label>
+          <label className="flex gap-2">
+            <input
+              type="checkbox"
+              checked={ranked}
+              onChange={(e) => setRanked(e.target.checked)}
+            />
+            Rank these films
+          </label>
+          <label className="flex gap-2">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setPublic(e.target.checked)}
+            />
+            Anyone with the link can view
+          </label>
+          <button
+            className="btn-brand"
+            disabled={create.isPending || update.isPending}
+          >
+            Save list
+          </button>
+        </form>
+      </Dialog>
+      <Dialog
+        open={finder}
+        onClose={() => setFinder(false)}
+        title={`Add to ${selected?.name || 'your list'}`}
+      >
+        <MovieFinder
+          busy={add.isPending}
+          onChoose={(m) => {
+            if (selected)
+              add.mutate({
+                listId: selected.id,
+                movie: {
+                  movieId: m.emsVersionId,
+                  name: m.name,
+                  posterImage:
+                    (typeof m.posterImage === 'string'
+                      ? m.posterImage
+                      : m.posterImage?.url) || null,
+                  releaseDate: m.releaseDate || null,
+                  tomatoMeter: m.tomatoMeter ?? null,
+                },
+              })
+          }}
+        />
+      </Dialog>
+      <Dialog
+        open={!!note}
+        onClose={() => setNote(null)}
+        title="Why this film belongs"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (note && selected)
+              saveNote.mutate({
+                listId: selected.id,
+                movieId: note.movieId,
+                note: note.value,
+              })
+          }}
+        >
+          <textarea
+            aria-label="Your note"
+            maxLength={1000}
+            className="field"
+            rows={5}
+            value={note?.value || ''}
+            onChange={(e) =>
+              setNote((n) => (n ? { ...n, value: e.target.value } : null))
+            }
+          />
+          <button className="btn-brand mt-4" disabled={saveNote.isPending}>
+            Save note
+          </button>
+        </form>
+      </Dialog>
     </main>
   )
 }

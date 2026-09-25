@@ -21,12 +21,15 @@ const socialButtonClass =
 
 export default function SigninClient({ callbackUrl }: { callbackUrl: string }) {
   const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
   const [pending, setPending] = useState<Provider | null>(null)
 
   const startProvider = async (provider: Exclude<Provider, 'nodemailer'>) => {
     setPending(provider)
     try {
       await signIn(provider, { callbackUrl })
+    } catch {
+      setError('Sign-in could not be started. Please try again.')
     } finally {
       setPending(null)
     }
@@ -43,6 +46,8 @@ export default function SigninClient({ callbackUrl }: { callbackUrl: string }) {
         redirect: true,
         callbackUrl,
       })
+    } catch {
+      setError('Sign-in could not be started. Please try again.')
     } finally {
       setPending(null)
     }
@@ -66,7 +71,6 @@ export default function SigninClient({ callbackUrl }: { callbackUrl: string }) {
           <Image
             src="/shining.webp"
             fill
-            priority
             sizes="(min-width: 1024px) 520px, 0px"
             alt=""
             className="object-cover object-center"
@@ -98,8 +102,8 @@ export default function SigninClient({ callbackUrl }: { callbackUrl: string }) {
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-pink-400">
               Movie Fan
             </p>
-            <h1 className="mt-3 font-heading text-3xl font-bold leading-tight sm:text-4xl">
-              Welcome back
+            <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+              Your next chapter starts here
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-zinc-400 sm:text-base">
               Sign in to sync your watchlist, diary, ratings, and movie nights.
@@ -145,6 +149,11 @@ export default function SigninClient({ callbackUrl }: { callbackUrl: string }) {
               <span className="h-px flex-1 bg-zinc-800" />
             </div>
 
+            {error && (
+              <p role="alert" className="mb-4 text-sm text-red-300">
+                {error}
+              </p>
+            )}
             <form onSubmit={handleEmailSubmit}>
               <label
                 className="text-sm font-semibold text-zinc-300"
@@ -177,7 +186,8 @@ export default function SigninClient({ callbackUrl }: { callbackUrl: string }) {
             </form>
 
             <p className="mt-4 text-center text-xs leading-relaxed text-zinc-600">
-              No password required. We only use your email to sign you in.
+              No password required. Email is used for sign-in and any streaming
+              alerts you choose to enable.
             </p>
           </div>
         </div>
