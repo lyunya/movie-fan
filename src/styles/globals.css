@@ -61,6 +61,17 @@
   summary {
     cursor: pointer;
   }
+  /* One consistent dropdown: the native arrow hugs the right edge, so draw
+     our own chevron with breathing room and reserve space for it. */
+  select:not([multiple]):not([size]) {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23a1a1aa' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 7.5 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.1rem;
+    padding-right: 2.75rem !important;
+  }
   ::selection {
     @apply bg-pink-500/40 text-white;
   }
