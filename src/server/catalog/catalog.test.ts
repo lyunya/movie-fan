@@ -108,7 +108,7 @@ describe('Catalog discover', () => {
       'vote_count.gte': '100',
       region: 'CA',
       watch_region: 'CA',
-      with_watch_monetization_types: 'flatrate',
+      with_watch_monetization_types: 'flatrate|free|ads',
       with_watch_providers: '8|337',
       page: '2',
     })

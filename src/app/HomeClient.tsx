@@ -38,20 +38,16 @@ export default function HomeClient({ data }: { data: HomeData }) {
     enabled: status === 'authenticated',
   })
   const upNext = api.library.upNext.useQuery(
-    // Enough to find a few that are streaming tonight
-    { limit: 50 },
+    { limit: 6 },
     { enabled: status === 'authenticated' }
   )
-  const available = api.user.libraryAvailability.useQuery(
-    {},
-    { enabled: status === 'authenticated' && !query, staleTime: 3600000 }
-  )
-  const streamingIds = new Set(available.data?.available.map((m) => m.movieId))
+  // Up-next films the Member can stream tonight (checked in order, up to 6)
+  const available = api.availability.upNext.useQuery(undefined, {
+    enabled: status === 'authenticated' && !query,
+    staleTime: 3600000,
+  })
   const watchlist = upNext.data || []
-  const availableShelf = watchlist
-    .filter((m) => streamingIds.has(m.filmId))
-    .slice(0, 6)
-    .map(filmFromEntry)
+  const availableShelf = (available.data?.films || []).map(filmFromEntry)
   useEffect(() => {
     setValue(query)
     setExtra([])
@@ -261,7 +257,7 @@ export default function HomeClient({ data }: { data: HomeData }) {
               }
               subtitle={
                 availableShelf.length
-                  ? `Included with a subscription in ${available.data?.region || 'US'} · Open a film for service details`
+                  ? `On your services or free in ${available.data?.region || 'US'} · Open a film for details`
                   : 'A few films you’ve been meaning to watch'
               }
               films={

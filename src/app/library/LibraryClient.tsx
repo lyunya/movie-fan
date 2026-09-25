@@ -26,7 +26,7 @@ export default function LibraryClient() {
     enabled: status === 'authenticated',
   })
   const streamingOnly = params.get('streaming') === 'yes'
-  const availability = api.user.libraryAvailability.useInfiniteQuery(
+  const availability = api.availability.library.useInfiniteQuery(
     {},
     {
       enabled: status === 'authenticated' && streamingOnly,
@@ -56,9 +56,8 @@ export default function LibraryClient() {
     availabilityError,
   ])
   const streamingIds = new Set(
-    availability.data?.pages.flatMap((p) =>
-      p.available.map((m) => m.movieId)
-    ) || []
+    availability.data?.pages.flatMap((p) => p.available.map((m) => m.filmId)) ||
+      []
   )
   const lists = api.lists.all.useQuery(undefined, {
     enabled: status === 'authenticated' && selected.length > 0,
@@ -234,8 +233,8 @@ export default function LibraryClient() {
             onChange={(e) => update('streaming', e.target.checked ? 'yes' : '')}
           />
           {member.data?.user?.preferredProviders.length
-            ? 'Available on my services'
-            : 'Available with a subscription'}{' '}
+            ? 'On my services or free'
+            : 'Streaming with a subscription or free'}{' '}
           · {member.data?.user?.watchRegion || 'US'}
         </label>
         {streamingOnly && (

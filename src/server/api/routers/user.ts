@@ -1,61 +1,8 @@
 import { z } from 'zod'
 import { createTRPCRouter, protectedProcedure } from './../trpc'
-import { catalog } from '@/server/catalog'
+import { REGION_CODES } from '@/server/availability/regions'
 
 export const UserRouter = createTRPCRouter({
-  libraryAvailability: protectedProcedure
-    .input(z.object({ cursor: z.number().int().min(0).nullish() }))
-    .query(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id
-      const user = await ctx.prisma.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { watchRegion: true, preferredProviders: true },
-      })
-      const offset = input.cursor || 0
-      const rows = await ctx.prisma.watchListItem.findMany({
-        where: { userId },
-        orderBy: [{ savedAt: 'desc' }, { id: 'asc' }],
-        skip: offset,
-        take: 51,
-        select: { movieId: true },
-      })
-      const available: { movieId: string; services: string[] }[] = [],
-        failed: string[] = []
-      const batch = rows.slice(0, 50)
-      let index = 0
-      await Promise.all(
-        Array.from({ length: Math.min(5, batch.length) }, async () => {
-          while (index < batch.length) {
-            const movie = batch[index++]!
-            try {
-              const data = await catalog.whereToWatch(
-                movie.movieId,
-                user.watchRegion
-              )
-              const providers = (data?.subscription || []).filter(
-                (p) =>
-                  !user.preferredProviders.length ||
-                  user.preferredProviders.includes(p.id)
-              )
-              if (providers.length)
-                available.push({
-                  movieId: movie.movieId,
-                  services: providers.map((p) => p.name),
-                })
-            } catch {
-              failed.push(movie.movieId)
-            }
-          }
-        })
-      )
-      return {
-        available,
-        failed,
-        checked: batch.length,
-        region: user.watchRegion,
-        nextCursor: rows.length > 50 ? offset + 50 : undefined,
-      }
-    }),
   query: protectedProcedure.query(async ({ ctx }) => {
     const { prisma, session } = ctx
     const userIdNum = session?.user?.id
@@ -113,11 +60,7 @@ export const UserRouter = createTRPCRouter({
   setStreamingPreferences: protectedProcedure
     .input(
       z.object({
-        watchRegion: z
-          .string()
-          .trim()
-          .length(2)
-          .transform((value) => value.toUpperCase()),
+        watchRegion: z.enum(REGION_CODES),
         preferredProviders: z.array(z.number().int().positive()).max(20),
       })
     )

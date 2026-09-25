@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer'
 import { createHash } from 'node:crypto'
 import { env } from '@/env/server.mjs'
 import { prisma } from '@/server/db'
-import { catalog } from '@/server/catalog'
+import { availability } from '@/server/availability'
 import { getSiteUrl } from '@/server/siteUrl'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -42,38 +42,28 @@ export async function GET(req: Request) {
     const items = await prisma.watchListItem.findMany({
       where: { userId: user.id, inWatchlist: true },
     })
-    const available: typeof items = []
-    for (let offset = 0; offset < items.length; offset += 5) {
-      const batch = await Promise.all(
-        items.slice(offset, offset + 5).map(async (item) => {
-          let providers
-          try {
-            providers = await catalog.whereToWatch(
-              item.movieId,
-              user.watchRegion
-            )
-          } catch {
-            return null
-          } // A failed lookup must never erase known availability.
-          const streaming = (providers?.subscription || []).some(
-            (p) =>
-              !user.preferredProviders.length ||
-              user.preferredProviders.includes(p.id)
-          )
-          if (!streaming && item.hasStreaming)
-            await prisma.watchListItem.update({
-              where: { id: item.id },
-              data: { hasStreaming: false },
-            })
-          return streaming && !item.hasStreaming ? item : null
-        })
-      )
-      available.push(
-        ...batch.filter(
-          (item): item is NonNullable<typeof item> => item != null
-        )
-      )
-    }
+    // A failed lookup must never erase known availability, so only films
+    // checked successfully change state.
+    const result = await availability.streamingFor(
+      items.map((item) => item.movieId),
+      { region: user.watchRegion, services: user.preferredProviders }
+    )
+    const streaming = new Set(result.available.map((a) => a.filmId))
+    const unchecked = new Set(result.failed)
+    const stopped = items.filter(
+      (item) =>
+        item.hasStreaming &&
+        !streaming.has(item.movieId) &&
+        !unchecked.has(item.movieId)
+    )
+    if (stopped.length)
+      await prisma.watchListItem.updateMany({
+        where: { id: { in: stopped.map((item) => item.id) } },
+        data: { hasStreaming: false },
+      })
+    const available = items.filter(
+      (item) => !item.hasStreaming && streaming.has(item.movieId)
+    )
     if (!available.length || !user.email) continue
     const digest = createHash('sha256')
       .update(

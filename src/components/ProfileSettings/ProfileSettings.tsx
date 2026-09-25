@@ -5,6 +5,12 @@ import type { FC } from 'react'
 import { HiOutlineClipboardCopy, HiCheck } from 'react-icons/hi'
 import { api } from '@/utils/api'
 import { notify } from '@/components/ui/Feedback'
+import RegionOptions from '@/components/RegionOptions/RegionOptions'
+import {
+  DEFAULT_REGION,
+  isRegion,
+  type RegionCode,
+} from '@/server/availability/regions'
 
 interface ProfileSettingsProps {
   userId: string
@@ -65,14 +71,15 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
     onError,
   })
   const [copied, setCopied] = useState(false)
-  const [region, setRegion] = useState(watchRegion)
+  const saved: RegionCode = isRegion(watchRegion) ? watchRegion : DEFAULT_REGION
+  const [region, setRegion] = useState<RegionCode>(saved)
   const [providers, setProviders] = useState(preferredProviders)
   const providerOptions = api.catalog.providers.useQuery({ region })
   const savePreferences = api.user.setStreamingPreferences.useMutation({
     onSuccess: async () => {
       await Promise.all([
         invalidate(),
-        utils.user.libraryAvailability.invalidate(),
+        utils.availability.invalidate(),
         utils.catalog.tonight.invalidate(),
       ])
       notify('Streaming preferences saved')
@@ -81,9 +88,9 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
   })
 
   useEffect(() => {
-    setRegion(watchRegion)
+    setRegion(saved)
     setProviders(preferredProviders)
-  }, [preferredProviders, watchRegion])
+  }, [preferredProviders, saved])
 
   const toggleProvider = (id: number) => {
     setProviders((current) =>
@@ -168,15 +175,12 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
               <select
                 value={region}
                 onChange={(event) => {
-                  setRegion(event.target.value)
+                  setRegion(event.target.value as RegionCode)
                   setProviders([])
                 }}
                 className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-white outline-none focus:border-pink-500"
               >
-                <option value="US">United States</option>
-                <option value="CA">Canada</option>
-                <option value="GB">United Kingdom</option>
-                <option value="AU">Australia</option>
+                <RegionOptions />
               </select>
             </label>
           </div>

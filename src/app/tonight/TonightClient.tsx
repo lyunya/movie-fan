@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import { useLibrary } from '@/hooks/useLibrary'
+import { useRegion } from '@/hooks/useRegion'
+import RegionOptions from '@/components/RegionOptions/RegionOptions'
+import type { RegionCode } from '@/server/availability/regions'
 import { api } from '@/utils/api'
 import { QueryError } from '@/components/ui/Feedback'
 const moods = [
@@ -16,13 +19,11 @@ const moods = [
 ]
 export default function TonightClient() {
   const { status } = useSession()
-  const user = api.user.query.useQuery(undefined, {
-    enabled: status === 'authenticated',
-  })
+  const preferred = useRegion()
   const [mood, setMood] = useState(0),
     [runtime, setRuntime] = useState(120),
     [minScore, setScore] = useState(60),
-    [region, setRegion] = useState('US'),
+    [region, setRegion] = useState<RegionCode>(preferred.region),
     [providers, setProviders] = useState<number[]>([]),
     [page, setPage] = useState(0),
     [exclude, setExclude] = useState<string[]>([])
@@ -30,17 +31,19 @@ export default function TonightClient() {
     genreIds: number[]
     maxRuntime?: number
     minScore: number
-    region: string
+    region: RegionCode
     providerIds: number[]
     surprise: number
     excludeIds: string[]
   } | null>(null)
-  const savedRegion = user.data?.user?.watchRegion
-  const savedProviders = user.data?.user?.preferredProviders
+  // Start from the saved (or guessed) Region and services once they're known
+  const { region: startRegion, services: savedServices, settled } = preferred
   useEffect(() => {
-    if (savedRegion) setRegion(savedRegion)
-    if (savedProviders) setProviders(savedProviders)
-  }, [savedRegion, savedProviders])
+    if (!settled) return
+    setRegion(startRegion)
+    setProviders(savedServices)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settled, startRegion, savedServices.join(',')])
   const providerOptions = api.catalog.providers.useQuery({ region })
   const picks = api.catalog.tonight.useQuery(
     request || { genreIds: [], minScore: 60, surprise: 0 },
@@ -110,20 +113,11 @@ export default function TonightClient() {
               className="field"
               value={region}
               onChange={(e) => {
-                setRegion(e.target.value)
+                setRegion(e.target.value as RegionCode)
                 setProviders([])
               }}
             >
-              {[
-                ['US', 'United States'],
-                ['CA', 'Canada'],
-                ['GB', 'United Kingdom'],
-                ['AU', 'Australia'],
-              ].map(([v, t]) => (
-                <option value={v} key={v}>
-                  {t}
-                </option>
-              ))}
+              <RegionOptions />
             </select>
           </label>
         </div>
