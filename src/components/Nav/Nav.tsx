@@ -104,7 +104,7 @@ export default function Nav() {
         onClose={() => setOpen(false)}
         title={session?.user?.name || 'Your account'}
       >
-        <nav aria-label="Account" className="flex flex-col gap-2">
+        <nav aria-label="Account" className="grid gap-1 sm:grid-cols-2">
           {[
             { href: '/library', label: 'Your library' },
             { href: '/lists', label: 'Lists & rankings' },
@@ -116,7 +116,7 @@ export default function Nav() {
             { href: '/profile', label: 'Profile & settings' },
           ].map((d) => (
             <Link
-              className="rounded-lg p-3 hover:bg-zinc-800"
+              className="rounded-lg px-3 py-2.5 hover:bg-zinc-800"
               onClick={() => setOpen(false)}
               key={d.href}
               href={d.href}
@@ -124,7 +124,10 @@ export default function Nav() {
               {d.label}
             </Link>
           ))}
-          <button className="btn-ghost mt-4" onClick={() => signOut()}>
+          <button
+            className="btn-ghost mt-3 sm:col-span-2"
+            onClick={() => signOut()}
+          >
             Sign out
           </button>
         </nav>

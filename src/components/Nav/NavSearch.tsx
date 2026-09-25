@@ -121,8 +121,17 @@ export default function NavSearch() {
           /
         </kbd>
       </button>
-      <Dialog open={open} onClose={close} title="Find your next favorite">
-        <form onSubmit={submit} role="search" className="space-y-3">
+      <Dialog
+        open={open}
+        onClose={close}
+        title="Find your next favorite"
+        contentScroll
+      >
+        <form
+          onSubmit={submit}
+          role="search"
+          className="flex min-h-0 flex-1 flex-col gap-3 pt-1.5"
+        >
           <label className="field-label">
             <span className="sr-only">Movie or person</span>
             <input
@@ -156,7 +165,7 @@ export default function NavSearch() {
               id="search-suggestions"
               role="listbox"
               aria-label="Suggestions"
-              className="-mx-2 max-h-[50dvh] overflow-auto"
+              className="-mx-2 min-h-0 flex-1 overflow-y-auto overscroll-contain"
             >
               {suggestions.map((s, i) => (
                 <li
@@ -208,7 +217,7 @@ export default function NavSearch() {
                   : `Nothing matched “${term}”.`}
               </p>
             )}
-          <button className="btn-brand w-full">
+          <button className="btn-brand w-full shrink-0">
             {value.trim() ? `See all results for “${value.trim()}”` : 'Search'}
           </button>
           <p className="hidden text-center text-xs text-zinc-500 sm:block">

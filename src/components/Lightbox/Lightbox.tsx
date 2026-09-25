@@ -39,16 +39,22 @@ export default function Lightbox({
       open
       onClose={onClose}
       title={`${altBase} · ${index + 1} of ${images.length}`}
+      wide
     >
       <Image
         src={images[index]!.url}
         width={1200}
         height={800}
         alt={`${altBase}, photo ${index + 1}`}
-        className="max-h-[60dvh] w-full rounded-lg object-contain"
+        // Fit the still to the window (minus header and the nav row)
+        style={{
+          width:
+            'min(60rem, calc(100vw - 5.75rem), calc((100dvh - 13rem) * 1.5))',
+        }}
+        className="mx-auto block h-auto max-h-[calc(100dvh-13rem)] rounded-lg object-contain"
       />
       {images.length > 1 && (
-        <div className="mt-4 flex justify-between">
+        <div className="mt-3 flex justify-between gap-3">
           <button className="btn-ghost" onClick={() => step(-1)}>
             ← Previous photo
           </button>
