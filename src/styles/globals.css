@@ -76,6 +76,12 @@
     border-color: rgb(236 72 153 / 0.7);
     box-shadow: 0 0 0 3px rgb(236 72 153 / 0.18);
   }
+  @media (forced-colors: active) {
+    select:not([multiple]):not([size]):focus-visible {
+      outline: 2px solid CanvasText;
+      box-shadow: none;
+    }
+  }
   ::selection {
     @apply bg-pink-500/40 text-white;
   }
