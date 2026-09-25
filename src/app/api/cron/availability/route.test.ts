@@ -48,6 +48,17 @@ const request = () =>
   new Request('https://example.test/api/cron/availability', {
     headers: { authorization: 'Bearer test-secret' },
   })
+const netflix = { id: 8, name: 'Netflix', logoPath: null }
+const where = (over = {}) => ({
+  region: 'CA',
+  link: null,
+  subscription: [],
+  free: [],
+  ads: [],
+  rent: [],
+  buy: [],
+  ...over,
+})
 beforeEach(() => {
   vi.resetAllMocks()
   mocks.users.mockResolvedValue([
@@ -61,9 +72,7 @@ beforeEach(() => {
   mocks.items.mockResolvedValue([
     { id: 'i', movieId: '1', name: '<Film>', hasStreaming: false },
   ])
-  mocks.providers.mockResolvedValue({
-    subscription: [{ id: 8, name: 'Netflix' }],
-  })
+  mocks.providers.mockResolvedValue(where({ subscription: [netflix] }))
   mocks.claim.mockResolvedValue({ count: 1 })
 })
 describe('streaming alert delivery', () => {
@@ -85,8 +94,29 @@ describe('streaming alert delivery', () => {
     )
   })
   it('does not send for a provider outside the selected services', async () => {
-    mocks.providers.mockResolvedValue({ subscription: [{ id: 9 }] })
+    mocks.providers.mockResolvedValue(
+      where({ subscription: [{ id: 9, name: 'Other', logoPath: null }] })
+    )
     await GET(request())
+    expect(mocks.send).not.toHaveBeenCalled()
+  })
+  it('counts free and ad-supported services as available', async () => {
+    mocks.providers.mockResolvedValue(
+      where({ ads: [{ id: 73, name: 'Tubi TV', logoPath: null }] })
+    )
+    await GET(request())
+    expect(mocks.send).toHaveBeenCalled()
+  })
+  it('clears availability for films that stopped streaming', async () => {
+    mocks.items.mockResolvedValue([
+      { id: 'i', movieId: '1', name: 'Film', hasStreaming: true },
+    ])
+    mocks.providers.mockResolvedValue(where())
+    await GET(request())
+    expect(mocks.itemUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['i'] } },
+      data: { hasStreaming: false },
+    })
     expect(mocks.send).not.toHaveBeenCalled()
   })
   it('preserves known availability on lookup failure', async () => {
@@ -95,7 +125,7 @@ describe('streaming alert delivery', () => {
     ])
     mocks.providers.mockRejectedValue(new Error('Unavailable'))
     await GET(request())
-    expect(mocks.itemUpdate).not.toHaveBeenCalled()
+    expect(mocks.itemUpdateMany).not.toHaveBeenCalled()
     expect(mocks.send).not.toHaveBeenCalled()
   })
   it('retains retry eligibility after a mail failure', async () => {

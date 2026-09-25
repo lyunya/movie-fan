@@ -342,7 +342,8 @@ export function discoverParams(
     params['vote_average.gte'] = String(filters.minScore / 10)
   if (filters.streamingOn) {
     params.watch_region = region
-    params.with_watch_monetization_types = 'flatrate'
+    // Free and ad-supported services count: anyone can watch those
+    params.with_watch_monetization_types = 'flatrate|free|ads'
     if (filters.streamingOn.length)
       params.with_watch_providers = filters.streamingOn.join('|')
   }

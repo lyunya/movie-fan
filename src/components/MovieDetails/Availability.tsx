@@ -1,7 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
 import Image from 'next/image'
+import RegionOptions from '@/components/RegionOptions/RegionOptions'
+import { useRegion } from '@/hooks/useRegion'
+import type { RegionCode } from '@/server/availability/regions'
 import type { WhereToWatch } from '@/server/catalog/types'
 import { filmImage } from '@/utils/film'
 import { api } from '@/utils/api'
@@ -12,16 +14,15 @@ export default function Availability({
   id: string
   initial: WhereToWatch | null
 }) {
-  const { status } = useSession()
-  const user = api.user.query.useQuery(undefined, {
-    enabled: status === 'authenticated',
-  })
-  const [region, setRegion] = useState('US')
+  const preferred = useRegion().region
+  const [region, setRegion] = useState<RegionCode>(preferred)
+  // Follow the saved or guessed Region until the Member picks another here
+  const [picked, setPicked] = useState(false)
   useEffect(() => {
-    if (user.data?.user?.watchRegion) setRegion(user.data.user.watchRegion)
-  }, [user.data?.user?.watchRegion])
-  const data = api.catalog.availability.useQuery(
-    { movieId: id, region },
+    if (!picked) setRegion(preferred)
+  }, [preferred, picked])
+  const data = api.availability.whereToWatch.useQuery(
+    { filmId: id, region },
     { initialData: region === 'US' ? initial : undefined, staleTime: 60_000 }
   )
   return (
@@ -33,18 +34,12 @@ export default function Availability({
           <select
             className="rounded-lg border border-zinc-700 bg-zinc-900 p-2 text-white"
             value={region}
-            onChange={(e) => setRegion(e.target.value)}
+            onChange={(e) => {
+              setPicked(true)
+              setRegion(e.target.value as RegionCode)
+            }}
           >
-            {[
-              ['US', 'United States'],
-              ['CA', 'Canada'],
-              ['GB', 'United Kingdom'],
-              ['AU', 'Australia'],
-            ].map(([v, t]) => (
-              <option key={v} value={v}>
-                {t}
-              </option>
-            ))}
+            <RegionOptions />
           </select>
         </label>
       </div>
@@ -61,12 +56,18 @@ export default function Availability({
       ) : data.isLoading ? (
         <p className="mt-3 text-sm text-zinc-400">Checking services…</p>
       ) : data.data &&
-        [...data.data.subscription, ...data.data.rent, ...data.data.buy]
-          .length ? (
+        [
+          ...data.data.subscription,
+          ...data.data.free,
+          ...data.data.ads,
+          ...data.data.rent,
+          ...data.data.buy,
+        ].length ? (
         <div className="mt-3 space-y-3">
           {(
             [
               ['Included', data.data.subscription],
+              ['Free', [...data.data.free, ...data.data.ads]],
               ['Rent', data.data.rent],
               ['Buy', data.data.buy],
             ] as const

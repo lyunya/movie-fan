@@ -6,6 +6,7 @@ import type { FilmPage } from '@/server/catalog/types'
 import MovieCard from '@/components/MovieCard/MovieCard'
 import MovieGrid from '@/components/MovieGrid/MovieGrid'
 import { api } from '@/utils/api'
+import { useRegion } from '@/hooks/useRegion'
 import { QueryError } from '@/components/ui/Feedback'
 export default function GenreResults({
   genreId,
@@ -15,9 +16,7 @@ export default function GenreResults({
   initialPage: FilmPage
 }) {
   const { status } = useSession()
-  const user = api.user.query.useQuery(undefined, {
-    enabled: status === 'authenticated',
-  })
+  const { region, services } = useRegion()
   const [page, setPage] = useState(1),
     [runtime, setRuntime] = useState(0),
     [decade, setDecade] = useState(0),
@@ -29,8 +28,8 @@ export default function GenreResults({
       maxRuntime: runtime || undefined,
       decade: decade || undefined,
       streaming,
-      region: user.data?.user?.watchRegion || 'US',
-      providerIds: user.data?.user?.preferredProviders || [],
+      region,
+      providerIds: services,
     },
     {
       initialData:
@@ -85,10 +84,10 @@ export default function GenreResults({
               setPage(1)
             }}
           />
-          {user.data?.user?.preferredProviders.length
+          {services.length
             ? 'On my services'
-            : 'Included with a subscription'}{' '}
-          · {user.data?.user?.watchRegion || 'US'}
+            : 'Streaming with a subscription or free'}{' '}
+          · {region}
         </label>
         <Link
           href={status === 'authenticated' ? '/profile' : '/tonight'}

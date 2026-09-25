@@ -5,19 +5,16 @@ import {
   protectedProcedure,
 } from './../trpc'
 import { catalog } from '@/server/catalog'
+import { REGION_CODES } from '@/server/availability/regions'
 import { library } from '@/server/library'
 import { recommendations } from '@/server/recommendations'
 
-const region = z.string().regex(/^[A-Z]{2}$/)
+const region = z.enum(REGION_CODES)
 
 export const catalogRouter = createTRPCRouter({
-  availability: publicProcedure
-    .input(z.object({ movieId: z.string().regex(/^\d+$/), region }))
-    .query(({ input }) => catalog.whereToWatch(input.movieId, input.region)),
-
   providers: publicProcedure
-    .input(z.object({ region: z.string().trim().length(2).default('US') }))
-    .query(({ input }) => catalog.providers(input.region.toUpperCase())),
+    .input(z.object({ region: region.default('US') }))
+    .query(({ input }) => catalog.providers(input.region)),
 
   tonight: publicProcedure
     .input(
