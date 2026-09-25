@@ -16,7 +16,7 @@ import { api } from '@/utils/api'
 
 export function useRegion() {
   const { status } = useSession()
-  const member = api.user.query.useQuery(undefined, {
+  const member = api.member.preferences.useQuery(undefined, {
     enabled: status === 'authenticated',
   })
   // Guessed after mount so server and client render the same first frame
@@ -28,10 +28,10 @@ export function useRegion() {
       )
     )
   }, [])
-  const saved = member.data?.user?.watchRegion
+  const saved = member.data?.region
   return {
     region: isRegion(saved) ? saved : guess,
-    services: member.data?.user?.preferredProviders ?? [],
+    services: member.data?.services ?? [],
     /** True once we know whether a saved Region applies */
     settled:
       status !== 'loading' && (status !== 'authenticated' || !member.isLoading),

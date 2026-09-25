@@ -7,6 +7,7 @@ import {
 import { catalog } from '@/server/catalog'
 import { REGION_CODES } from '@/server/availability/regions'
 import { library } from '@/server/library'
+import { members } from '@/server/member'
 import { recommendations } from '@/server/recommendations'
 
 const region = z.enum(REGION_CODES)
@@ -30,17 +31,14 @@ export const catalogRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session?.user?.id
-      const [member, entries] = userId
+      const [prefs, entries] = userId
         ? await Promise.all([
-            ctx.prisma.user.findUnique({
-              where: { id: userId },
-              select: { watchRegion: true, preferredProviders: true },
-            }),
+            members.forMember(userId).preferences(),
             library.forMember(userId).entries(),
           ])
         : [null, []]
-      const watchRegion = input.region || member?.watchRegion || 'US',
-        providerIds = input.providerIds || member?.preferredProviders || []
+      const watchRegion = input.region || prefs?.region || 'US',
+        providerIds = input.providerIds || prefs?.services || []
       const picks = await recommendations.pickTonight({
         library: entries,
         excludeIds: input.excludeIds,

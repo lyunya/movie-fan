@@ -15,7 +15,7 @@ export default function NewsClient({
     utils = api.useUtils()
   const [tab, setTab] = useState('All'),
     [topic, setTopic] = useState('')
-  const user = api.user.query.useQuery(undefined, {
+  const user = api.member.preferences.useQuery(undefined, {
     enabled: status === 'authenticated',
   })
   // Titles on the Watchlist or among favorites personalize "For you"
@@ -29,15 +29,15 @@ export default function NewsClient({
     onSuccess: () => utils.news.bookmarks.invalidate(),
     onError: () => notify('Could not update your reading list.', 'error'),
   })
-  const prefs = api.news.preferences.useMutation({
+  const prefs = api.member.setNewsTopics.useMutation({
     onSuccess: () => {
-      utils.user.query.invalidate()
+      void utils.member.preferences.invalidate()
       setTopic('')
     },
     onError: () => notify('Could not save your topics.', 'error'),
   })
-  const followed = user.data?.user?.newsTopics || [],
-    muted = user.data?.user?.mutedNewsTopics || []
+  const followed = user.data?.newsTopics || [],
+    muted = user.data?.mutedNewsTopics || []
   const visible = stories.filter(
     (s) =>
       !muted.includes(s.topic || '') &&
