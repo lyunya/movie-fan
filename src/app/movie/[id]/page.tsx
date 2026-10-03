@@ -1,26 +1,21 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { connection } from 'next/server'
 
 import { catalog } from '@/server/catalog'
 import MovieDetails from '@/components/MovieDetails/MovieDetails'
 import { filmImage, filmScore } from '@/utils/film'
 
-// Movie facts are effectively static — regenerate at most daily
-export const revalidate = 86400
-
-// An empty list opts every path into on-demand ISR: the first visit renders
-// and caches the page, later visits (and crawlers) are served from the cache
-// until `revalidate` elapses. Without this, Next treats the route as fully
-// dynamic and every view is a fresh serverless render.
-export async function generateStaticParams() {
-  return []
-}
+// Render the unbounded film catalogue on request instead of persisting a full
+// ISR page for every id a crawler visits. Catalog fetches still use their own
+// Data Cache lifetimes; connection() does not disable those explicit caches.
 
 type PageProps = { params: Promise<{ id: string }> }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
+  await connection()
   const { id } = await params
   const film = await catalog.filmDetail(id).catch(() => null)
   if (!film) return { title: 'Movie not found' }
@@ -38,6 +33,7 @@ export async function generateMetadata({
 }
 
 export default async function MoviePage({ params }: PageProps) {
+  await connection()
   const { id } = await params
   const film = await catalog.filmDetail(id)
   if (!film) notFound()

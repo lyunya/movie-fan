@@ -1,21 +1,15 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { connection } from 'next/server'
 
 import { catalog, isCatalogConfigured } from '@/server/catalog'
 import { PERSON_PLACEHOLDER, filmImage } from '@/utils/film'
 import { parseIdFromSlug } from '@/utils/slug'
 
-// People data barely changes — rebuild at most daily
-export const revalidate = 86400
-
-// An empty list opts every path into on-demand ISR: the first visit renders
-// and caches the page, later visits (and crawlers) are served from the cache
-// until `revalidate` elapses. Without this, Next treats the route as fully
-// dynamic and every view is a fresh serverless render.
-export async function generateStaticParams() {
-  return []
-}
+// Person URLs form an unbounded graph through film credits. Render on request
+// to avoid a full ISR write per crawled URL, while retaining Catalog Data Cache
+// lifetimes for the underlying TMDB requests.
 
 import Filmography from './Filmography'
 import FollowNews from '@/components/ui/FollowNews'
@@ -56,6 +50,7 @@ export async function generateMetadata({
 }
 
 export default async function PersonPage({ params }: PageProps) {
+  await connection()
   const { slug } = await params
   const decoded = displayNameFromSlug(slug)
 
