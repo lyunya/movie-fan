@@ -4,7 +4,7 @@ import {
   publicProcedure,
   protectedProcedure,
 } from './../trpc'
-import { catalog } from '@/server/catalog'
+import { catalog, isCatalogConfigured } from '@/server/catalog'
 import { REGION_CODES } from '@/server/availability/regions'
 import { library } from '@/server/library'
 import { members } from '@/server/member'
@@ -68,6 +68,21 @@ export const catalogRouter = createTRPCRouter({
       })
     )
     .query(({ input }) => catalog.search(input.query, input.page)),
+
+  person: publicProcedure
+    .input(z.object({ slug: z.string().trim().min(1).max(200) }))
+    .query(async ({ input }) => {
+      if (!isCatalogConfigured()) return null
+      // The client has already decoded the URL path slug. Do not
+      // decode again: a literal percent sign is valid in a legacy name URL.
+      const id = input.slug.match(/^(\d+)(?:-|$)/)?.[1]
+      if (id) {
+        const personId = Number(id)
+        if (!Number.isSafeInteger(personId) || personId < 1) return null
+        return catalog.person(personId)
+      }
+      return catalog.personByName(input.slug)
+    }),
 
   details: publicProcedure
     .input(z.object({ id: z.string().min(1) }))
