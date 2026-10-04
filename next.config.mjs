@@ -20,6 +20,15 @@ const imageHosts = [
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
+  async rewrites() {
+    return {
+      beforeFiles: [
+        // One build-time static shell for the entire person catalog, with the
+        // original address preserved for visitors and client-side navigation.
+        { source: '/person/:slug', destination: '/person' },
+      ],
+    };
+  },
   // Pin the workspace root so a stray lockfile elsewhere doesn't confuse tracing
   outputFileTracingRoot: process.cwd(),
   images: {

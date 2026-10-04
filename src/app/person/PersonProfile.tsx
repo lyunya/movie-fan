@@ -1,71 +1,81 @@
-import type { Metadata } from 'next'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { connection } from 'next/server'
 
-import { catalog, isCatalogConfigured } from '@/server/catalog'
+import { api } from '@/utils/api'
 import { PERSON_PLACEHOLDER, filmImage } from '@/utils/film'
-import { parseIdFromSlug } from '@/utils/slug'
-
-// Person URLs form an unbounded graph through film credits. Render on request
-// to avoid a full ISR write per crawled URL, while retaining Catalog Data Cache
-// lifetimes for the underlying TMDB requests.
 
 import Filmography from './Filmography'
 import FollowNews from '@/components/ui/FollowNews'
 
-type PageProps = { params: Promise<{ slug: string }> }
-
 const rtSearchUrl = (name: string) =>
   `https://www.rottentomatoes.com/search?search=${encodeURIComponent(name)}`
-
-// The slug is either `<id>-<name>` (new links from cast cards) or a bare name
-// (legacy URLs). Resolve by id when present — exact and one request cheaper.
-const resolvePerson = (slug: string) => {
-  const id = parseIdFromSlug(slug)
-  return id != null
-    ? catalog.person(id)
-    : catalog.personByName(decodeURIComponent(slug))
-}
 
 // A readable name for metadata / the fallback UI before TMDB data loads:
 // strip a leading id from an `<id>-<name>` slug, else use the decoded slug.
 const displayNameFromSlug = (slug: string) => {
-  const decoded = decodeURIComponent(slug)
-  return decoded.replace(/^\d+-/, '').replace(/-/g, ' ')
+  return slug.replace(/^\d+-/, '').replace(/-/g, ' ')
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
-  const { slug } = await params
-  const label = displayNameFromSlug(slug)
-  return {
-    title: label,
-    description: `Movies featuring ${label}`,
-    // Person pages are also disallowed in robots.txt (see src/app/robots.ts) —
-    // the unbounded movie↔person link graph made crawlers a quota problem
-    robots: { index: false },
-  }
+export function PersonLoading() {
+  return (
+    <main className="mx-auto max-w-screen-md px-4 py-24 text-center text-white sm:px-8">
+      <p role="status" className="text-zinc-400">
+        Loading profile…
+      </p>
+    </main>
+  )
 }
 
-export default async function PersonPage({ params }: PageProps) {
-  await connection()
-  const { slug } = await params
-  const decoded = displayNameFromSlug(slug)
+export default function PersonProfile() {
+  const pathname = usePathname()
+  const [slug, setSlug] = useState<string | null>(null)
+  // The address in the browser keeps /person/<slug> after the rewrite. Read
+  // it after hydration so the shared static HTML never depends on a slug or
+  // on the destination's query string (which isn't in the visible URL).
+  useEffect(() => {
+    const encoded = pathname?.match(/^\/person\/([^/]+)\/?$/)?.[1] ?? ''
+    try {
+      setSlug(decodeURIComponent(encoded))
+    } catch {
+      setSlug('')
+    }
+  }, [pathname])
+  const decoded = displayNameFromSlug(slug ?? '')
+  const {
+    data: person,
+    isLoading,
+    isError,
+    refetch,
+  } = api.catalog.person.useQuery(
+    { slug: slug ?? '' },
+    { enabled: !!slug, staleTime: 24 * 60 * 60 * 1000, retry: false }
+  )
 
-  const person = isCatalogConfigured()
-    ? await resolvePerson(slug).catch(() => null)
-    : null
+  useEffect(() => {
+    document.title = `${person?.name || decoded || 'Person'} · Movie Fan`
+  }, [person?.name, decoded])
+
+  if (slug === null || isLoading) return <PersonLoading />
 
   if (!person) {
     return (
       <main className="mx-auto max-w-screen-md px-4 py-24 text-center text-white sm:px-8">
-        <h1 className="text-3xl font-semibold sm:text-4xl">{decoded}</h1>
+        <h1 className="text-3xl font-semibold sm:text-4xl">
+          {decoded || 'Person'}
+        </h1>
         <p className="mt-4 text-zinc-400">
           We couldn&apos;t load a profile for this person right now.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          {isError && (
+            <button className="btn-ghost" onClick={() => void refetch()}>
+              Try again
+            </button>
+          )}
           <a
             href={rtSearchUrl(decoded)}
             target="_blank"
@@ -148,7 +158,7 @@ export default async function PersonPage({ params }: PageProps) {
         </div>
       </div>
 
-      <Filmography credits={person.credits} />
+      <Filmography key={person.id} credits={person.credits} />
     </main>
   )
 }
