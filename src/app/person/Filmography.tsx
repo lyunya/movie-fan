@@ -94,6 +94,7 @@ export default function Filmography({ credits }: { credits: PersonCredit[] }) {
             prefetch={false}
             key={`${c.filmId}-${c.role}`}
             href={`/movie/${c.filmId}`}
+            rel="nofollow"
             className="group"
           >
             <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-900">
