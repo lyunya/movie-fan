@@ -16,12 +16,15 @@ export default function MovieCard({
   film,
   userRating,
   rank,
+  nofollow = false,
 }: {
   film: Film
   /** The signed-in Member's own star rating, when it's in their Library */
   userRating?: number | null
   /** Renders a rank numeral on the poster */
   rank?: number
+  /** Mark the links rel="nofollow" (e.g. "More like this" on movie pages) */
+  nofollow?: boolean
 }) {
   const { id, title: name } = film
   const { has, toggleWatchlist: toggle, pendingId } = useLibrary()
@@ -37,6 +40,7 @@ export default function MovieCard({
         <Link
           prefetch={false}
           href={`/movie/${id}`}
+          rel={nofollow ? 'nofollow' : undefined}
           className="relative block aspect-[2/3]"
           aria-label={`${name}${year ? ` (${year})` : ''}`}
         >
@@ -75,7 +79,12 @@ export default function MovieCard({
           )}
         </button>
       </div>
-      <Link prefetch={false} href={`/movie/${id}`} className="mt-2.5 block">
+      <Link
+        prefetch={false}
+        href={`/movie/${id}`}
+        rel={nofollow ? 'nofollow' : undefined}
+        className="mt-2.5 block"
+      >
         <h3 className="line-clamp-2 text-sm font-semibold leading-5 text-zinc-100 transition group-hover:text-pink-200">
           {name}
         </h3>

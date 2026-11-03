@@ -35,14 +35,16 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        // Auth and API surfaces aren't useful to crawlers. /person/ and /u/ are
-        // blocked deliberately: every movie page links to dozens of person pages
-        // (each a unique URL that misses the ISR cache), so an obedient crawler
-        // walking that graph burns tens of thousands of function invocations a
-        // day for thin, TMDB-sourced content. Movie and genre pages remain
-        // indexable — they're the content that matters.
+        // Auth and API surfaces aren't useful to crawlers. /movie/, /person/ and
+        // /u/ are blocked deliberately: every movie page links to ~20 similar
+        // movies and dozens of people, so the graph is effectively unbounded
+        // (all of TMDB). /movie/[id] renders per request, so each crawled id is
+        // a function invocation, Fast Origin Transfer, and Data Cache writes
+        // (billed as ISR writes). Crawling it exhausted the Hobby quotas in July,
+        // October, and November 2026. Home and genre pages remain indexable.
         disallow: [
           '/api/',
+          '/movie/',
           '/profile',
           '/signin',
           '/person/',

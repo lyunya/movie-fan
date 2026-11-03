@@ -449,7 +449,7 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
       {/* More like this — full-bleed carousel outside the padded container */}
       {film.similar.length > 0 && (
         <div className="mt-2">
-          <MovieRow title="More like this" films={film.similar} />
+          <MovieRow title="More like this" films={film.similar} nofollow />
         </div>
       )}
 

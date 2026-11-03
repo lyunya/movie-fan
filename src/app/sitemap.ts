@@ -1,43 +1,16 @@
 import type { MetadataRoute } from 'next'
 import { getSiteUrl } from '@/server/siteUrl'
-import { catalog } from '@/server/catalog'
 
-// Refresh alongside the home data windows
-export const revalidate = 21600
-
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = getSiteUrl()
-  const now = new Date()
-
-  const staticRoutes: MetadataRoute.Sitemap = [
-    { url: base, lastModified: now, changeFrequency: 'daily', priority: 1 },
+// Movie pages are disallowed in robots.ts (the unbounded movie graph was the
+// main driver of blowing the Vercel Hobby quotas), so the sitemap lists only
+// the home page. Genre pages stay crawlable through internal links.
+export default function sitemap(): MetadataRoute.Sitemap {
+  return [
+    {
+      url: getSiteUrl(),
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 1,
+    },
   ]
-
-  // Movie pages are unbounded; listing the currently surfaced titles is enough
-  // for crawlers to discover the section and follow internal links from there.
-  const [popular, nowPlaying, upcoming] = await Promise.all([
-    catalog.films('popular').catch(() => []),
-    catalog.films('nowPlaying').catch(() => []),
-    catalog.films('upcoming').catch(() => []),
-  ])
-
-  const seen = new Set<string>()
-  const movieRoutes: MetadataRoute.Sitemap = [
-    ...popular,
-    ...nowPlaying,
-    ...upcoming,
-  ]
-    .filter((movie) => {
-      if (seen.has(movie.id)) return false
-      seen.add(movie.id)
-      return true
-    })
-    .map((movie) => ({
-      url: `${base}/movie/${movie.id}`,
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    }))
-
-  return [...staticRoutes, ...movieRoutes]
 }

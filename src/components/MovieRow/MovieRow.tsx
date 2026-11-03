@@ -15,6 +15,8 @@ interface MovieRowProps {
   href?: string
   /** Rank badges on the first 10 cards */
   ranked?: boolean
+  /** Mark card links rel="nofollow" so crawlers don't walk the movie graph */
+  nofollow?: boolean
 }
 
 /**
@@ -29,6 +31,7 @@ const MovieRow: FC<MovieRowProps> = ({
   eyebrow,
   href,
   ranked = false,
+  nofollow = false,
 }) => {
   if (!films?.length) return null
   return (
@@ -54,6 +57,7 @@ const MovieRow: FC<MovieRowProps> = ({
             key={film.id}
             film={film}
             rank={ranked && idx < 10 ? idx + 1 : undefined}
+            nofollow={nofollow}
           />
         ))}
       />
