@@ -6,6 +6,7 @@ import Link from 'next/link'
 import type { PersonCredit } from '@/server/catalog/types'
 import { POSTER_PLACEHOLDER, filmImage } from '@/utils/film'
 import { useLibrary } from '@/hooks/useLibrary'
+import { filmographyCompletion } from '@/utils/completion'
 export default function Filmography({ credits }: { credits: PersonCredit[] }) {
   const { status } = useSession()
   const { entries } = useLibrary()
@@ -15,6 +16,11 @@ export default function Filmography({ credits }: { credits: PersonCredit[] }) {
     [limit, setLimit] = useState(24),
     [sort, setSort] = useState('popular')
   const seen = new Set(entries.filter((m) => m.watched).map((m) => m.filmId))
+  const completion = filmographyCompletion(credits, seen)
+  // Worth its own line only for people who direct as well as act
+  const directed = completion.byRole.Directing
+  const showDirected =
+    !!directed && directed.total >= 2 && directed.total < completion.all.total
   const movies = credits
     .filter(
       (c) =>
@@ -30,6 +36,47 @@ export default function Filmography({ credits }: { credits: PersonCredit[] }) {
   return (
     <section id="filmography">
       <h2 className="section-heading">Explore this filmography</h2>
+      {status === 'authenticated' && completion.all.total > 0 && (
+        <div className="surface mt-5 max-w-xl p-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="font-semibold">
+              {completion.all.seen === completion.all.total
+                ? `You’ve seen all ${completion.all.total} films`
+                : `You’ve seen ${completion.all.seen} of ${completion.all.total} films`}
+            </p>
+            <p className="font-display text-xl font-semibold text-gold">
+              {completion.all.percent}%
+            </p>
+          </div>
+          <div
+            className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800"
+            role="progressbar"
+            aria-label="Filmography watched"
+            aria-valuemin={0}
+            aria-valuemax={completion.all.total}
+            aria-valuenow={completion.all.seen}
+          >
+            <div
+              className="h-full rounded-full bg-gold transition-all"
+              style={{ width: `${completion.all.percent}%` }}
+            />
+          </div>
+          <p className="mt-3 text-sm text-zinc-400">
+            {showDirected &&
+              `${directed.seen} of ${directed.total} as director · `}
+            {completion.all.seen < completion.all.total ? (
+              <button
+                className="text-pink-300 underline-offset-4 hover:underline"
+                onClick={() => setWatched('no')}
+              >
+                Show what’s left
+              </button>
+            ) : (
+              'A complete set.'
+            )}
+          </p>
+        </div>
+      )}
       <div className="my-5 flex flex-wrap gap-3">
         <label className="field-label">
           Credits

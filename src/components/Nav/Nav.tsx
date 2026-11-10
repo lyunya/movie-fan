@@ -135,7 +135,7 @@ export default function Nav() {
       {
         <nav
           aria-label="Mobile navigation"
-          className={`safe-area-bottom fixed inset-x-0 bottom-0 z-40 ${pathname.startsWith('/movie/') ? 'hidden sm:grid' : 'grid'} grid-cols-4 border-t border-ink-line bg-ink/95 px-2 pt-2 backdrop-blur lg:hidden`}
+          className={`safe-area-bottom fixed inset-x-0 bottom-0 z-40 ${session && pathname.startsWith('/movie/') ? 'hidden sm:grid' : 'grid'} grid-cols-4 border-t border-ink-line bg-ink/95 px-2 pt-2 backdrop-blur lg:hidden`}
         >
           {[
             { href: '/', label: 'Discover', icon: HiOutlineHome },

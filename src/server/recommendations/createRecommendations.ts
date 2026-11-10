@@ -6,11 +6,11 @@
  */
 import type { Catalog } from '@/server/catalog/createCatalog'
 import type { Film } from '@/server/catalog/types'
-import { tasteGenres, type TasteEntry } from './taste'
+import { isLoved, tasteGenres, type TasteEntry } from './taste'
 import { selectTonightPicks } from './tonightPicks'
 
 /** What the recommender needs to know about each Library entry. */
-export type MemberFilm = TasteEntry & { filmId: string }
+export type MemberFilm = TasteEntry & { filmId: string; title?: string }
 
 export interface TonightFilters {
   genreIds: number[]
@@ -31,11 +31,13 @@ export interface TonightPick {
 }
 
 const FOR_YOU_LIMIT = 20
+/** How many Loved films seed the "For you" row */
+const FOR_YOU_SEEDS = 3
 
 export function createRecommendations({
   films,
 }: {
-  films: Pick<Catalog, 'discover' | 'genres'>
+  films: Pick<Catalog, 'discover' | 'genres' | 'similarTo'>
 }) {
   /** Catalog genre ids for genre names, in the same order; unknown names drop out. */
   const genreIds = async (names: string[]) => {
@@ -107,8 +109,10 @@ export function createRecommendations({
     },
 
     /**
-     * Popular films in the Member's two strongest genres that aren't in
-     * their Library yet, and the genre to credit for them.
+     * Films the Member doesn't have yet, led by ones similar to the Films
+     * they Loved most recently (`library` is expected newest first), then
+     * topped up with popular films in their two strongest genres.
+     * `becauseOf` names the Loved films that actually contributed.
      */
     async forYou({
       library,
@@ -116,16 +120,47 @@ export function createRecommendations({
     }: {
       library: MemberFilm[]
       limit?: number
-    }): Promise<{ films: Film[]; topGenre: string | null }> {
-      const top = (await genreIds(tasteGenres(library))).slice(0, 2)
-      if (!top.length) return { films: [], topGenre: null }
-      const { films: found } = await films
-        .discover({ genreIds: top.map((g) => g.id), minVotes: 200 })
-        .catch(() => ({ films: [] as Film[] }))
-      const owned = new Set(library.map((e) => e.filmId))
+    }): Promise<{
+      films: Film[]
+      topGenre: string | null
+      becauseOf: string[]
+    }> {
+      const seeds = library
+        .filter((e) => !e.dismissed && isLoved(e))
+        .slice(0, FOR_YOU_SEEDS)
+      const [top, ...similar] = await Promise.all([
+        genreIds(tasteGenres(library)).then((g) => g.slice(0, 2)),
+        ...seeds.map((seed) =>
+          films.similarTo(seed.filmId).catch(() => [] as Film[])
+        ),
+      ])
+      const taken = new Set(library.map((e) => e.filmId))
+      const picked: Film[] = []
+      const take = (film: Film | undefined) => {
+        if (!film || taken.has(film.id) || picked.length >= limit) return false
+        taken.add(film.id)
+        picked.push(film)
+        return true
+      }
+      // One from each seed in turn, so no single film dominates the row
+      const contributed = new Set<number>()
+      const longest = Math.max(0, ...similar.map((list) => list.length))
+      for (let i = 0; i < longest && picked.length < limit; i++)
+        similar.forEach((list, s) => {
+          if (take(list[i])) contributed.add(s)
+        })
+      if (picked.length < limit && top.length) {
+        const { films: found } = await films
+          .discover({ genreIds: top.map((g) => g.id), minVotes: 200 })
+          .catch(() => ({ films: [] as Film[] }))
+        found.forEach(take)
+      }
       return {
-        films: found.filter((f) => !owned.has(f.id)).slice(0, limit),
-        topGenre: top[0]!.name,
+        films: picked,
+        topGenre: top[0]?.name ?? null,
+        becauseOf: seeds
+          .filter((seed, s) => contributed.has(s) && seed.title)
+          .map((seed) => seed.title!),
       }
     },
   }

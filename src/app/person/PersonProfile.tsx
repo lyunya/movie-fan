@@ -11,9 +11,6 @@ import { PERSON_PLACEHOLDER, filmImage } from '@/utils/film'
 import Filmography from './Filmography'
 import FollowNews from '@/components/ui/FollowNews'
 
-const rtSearchUrl = (name: string) =>
-  `https://www.rottentomatoes.com/search?search=${encodeURIComponent(name)}`
-
 // A readable name for metadata / the fallback UI before TMDB data loads:
 // strip a leading id from an `<id>-<name>` slug, else use the decoded slug.
 const displayNameFromSlug = (slug: string) => {
@@ -76,14 +73,6 @@ export default function PersonProfile() {
               Try again
             </button>
           )}
-          <a
-            href={rtSearchUrl(decoded)}
-            target="_blank"
-            rel="noreferrer"
-            className="btn-brand"
-          >
-            Find them on Rotten Tomatoes
-          </a>
           <Link href="/" className="btn-ghost">
             Back to home
           </Link>

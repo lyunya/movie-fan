@@ -1,6 +1,9 @@
+import { cache } from 'react'
 import { prisma } from './db'
 import { auth } from './auth'
-export const getPublicProfile = async (id: string) => {
+import { tasteMatch } from '@/utils/tasteMatch'
+// cache(): the page and its metadata share one lookup per request
+export const getPublicProfile = cache(async (id: string) => {
   const session = await auth()
   const user = await prisma.user.findFirst({
     where: { OR: [{ id }, { handle: id.toLowerCase() }] },
@@ -47,5 +50,30 @@ export const getPublicProfile = async (id: string) => {
       include: { _count: { select: { items: true } } },
     }),
   ])
-  return { user, movies, entries, lists }
-}
+  // For a signed-in visitor looking at someone else: what the two have in
+  // common. Only the visitor's own entries for films already on this profile.
+  const viewerId = session?.user?.id
+  const mine =
+    viewerId && viewerId !== user.id && movies.length
+      ? await prisma.watchListItem.findMany({
+          where: {
+            userId: viewerId,
+            movieId: { in: movies.map((m) => m.movieId) },
+          },
+          select: { movieId: true, inWatchlist: true, userRating: true },
+        })
+      : []
+  const iWant = new Set(mine.filter((m) => m.inWatchlist).map((m) => m.movieId))
+  return {
+    user,
+    movies,
+    entries,
+    lists,
+    isOwner: viewerId === user.id,
+    bothWant: movies.filter((m) => m.inWatchlist && iWant.has(m.movieId)),
+    match: tasteMatch(
+      mine.map((m) => ({ filmId: m.movieId, rating: m.userRating })),
+      movies.map((m) => ({ filmId: m.movieId, rating: m.userRating }))
+    ),
+  }
+})

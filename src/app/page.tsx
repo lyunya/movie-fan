@@ -2,10 +2,11 @@ import { Suspense } from 'react'
 import type { HomeData } from '@/types/main'
 import { catalog, type Film, type FilmDetail } from '@/server/catalog'
 import { fetchNews } from '@/server/news'
+import { featureCandidates } from '@/utils/feature'
 import HomeClient from './HomeClient'
 
-// ISR: rebuild the home data periodically. The Catalog's per-request cache
-// windows govern the finer-grained freshness of each section.
+// ISR: an upper bound. Next uses the shortest fetch lifetime on the page, so
+// the 30-minute news feed is what actually sets the rebuild interval.
 export const revalidate = 21600
 
 export default async function Page() {
@@ -57,15 +58,20 @@ export default async function Page() {
 }
 
 /**
- * The marquee film: the most popular title that has artwork. One extra
- * (cached, ISR-bound) detail lookup buys a tagline, runtime, director, and
- * trailer so the feature can say something real about it.
+ * The marquee film: one of the ten most popular titles with artwork, a new
+ * one each day (see featureCandidates). One extra cached detail lookup buys a
+ * tagline, runtime, director, and trailer so the feature can say something
+ * real about it. If the day's pick can't be loaded, the next in line stands in.
+ *
+ * This page is rebuilt at least every 30 minutes, so the feature turns over
+ * shortly after midnight UTC without any per-request work.
  */
 async function pickFeature(popular: Film[]): Promise<FilmDetail | null> {
-  const candidate = popular.find((m) => m.backdropPath && m.posterPath)
-  if (!candidate) return null
-  const film = await catalog.filmDetail(candidate.id).catch(() => null)
-  if (!film?.backdropPath) return null
-  // The marquee shows none of these; keep them out of the page payload
-  return { ...film, cast: [], crew: [], stills: [], similar: [] }
+  for (const candidate of featureCandidates(popular).slice(0, 3)) {
+    const film = await catalog.filmDetail(candidate.id).catch(() => null)
+    if (!film?.backdropPath) continue
+    // The marquee shows none of these; keep them out of the page payload
+    return { ...film, cast: [], crew: [], stills: [], similar: [] }
+  }
+  return null
 }

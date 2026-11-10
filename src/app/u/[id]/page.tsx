@@ -36,7 +36,7 @@ export default async function PublicWatchlistPage({ params }: PageProps) {
   const profile = await getPublicProfile(id).catch(() => null)
   if (!profile) notFound()
 
-  const { user, movies, entries, lists } = profile
+  const { user, movies, entries, lists, bothWant, match } = profile
   const owner = user.name || 'A movie fan'
   const rated = movies.filter((movie) => movie.userRating)
   const watchList = movies.filter((movie) => movie.inWatchlist)
@@ -59,6 +59,15 @@ export default async function PublicWatchlistPage({ params }: PageProps) {
         <p className="text-sm text-zinc-400">
           {watchList.length} to watch · {rated.length} rated
         </p>
+        {match && (
+          <p className="chip border-gold/40 text-gold">
+            {match.percent}% taste match
+            <span className="text-zinc-400">
+              {' '}
+              · from {match.shared} films you’ve both rated
+            </span>
+          </p>
+        )}
         <ProfileActions userId={user.id} />
       </div>
 
@@ -109,6 +118,23 @@ export default async function PublicWatchlistPage({ params }: PageProps) {
               </article>
             ))}
           </div>
+        </section>
+      )}
+      {!!bothWant.length && (
+        <section className="mb-10">
+          <p className="eyebrow">A movie night waiting to happen</p>
+          <h2 className="section-heading mb-1 mt-2">You both want to see</h2>
+          <p className="mb-4 text-sm text-zinc-400">
+            {bothWant.length === 1
+              ? 'One film is'
+              : `${bothWant.length} films are`}{' '}
+            on both of your watchlists.
+          </p>
+          <MovieGrid
+            movieCards={bothWant.slice(0, 12).map((movie) => (
+              <MovieCard key={movie.id} film={filmFromSnapshot(movie)} />
+            ))}
+          />
         </section>
       )}
       <h2 className="section-heading mb-4">The collection</h2>

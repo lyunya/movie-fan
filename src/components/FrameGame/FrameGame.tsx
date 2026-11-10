@@ -4,17 +4,21 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { HiOutlineShare, HiCheck } from 'react-icons/hi'
 import {
+  activeStreak,
   buildRounds,
+  extendStreak,
   FOCUS_STEPS,
   hashString,
   localDateKey,
   MAX_POINTS,
   MAX_SCORE,
+  parseStreak,
   pointsFor,
   rankFor,
   seededRandom,
   shareText,
   type FrameFilm,
+  type Streak,
 } from '@/utils/frameGame'
 import { useLibrary } from '@/hooks/useLibrary'
 
@@ -86,6 +90,7 @@ export default function FrameGame({ pool }: { pool: FrameFilm[] }) {
   const [picked, setPicked] = useState<string | null>(null)
   const [points, setPoints] = useState<number[]>([])
   const [best, setBest] = useState<number | null>(null)
+  const [streak, setStreak] = useState<Streak | null>(null)
   const [copied, setCopied] = useState(false)
   const { has, toggleWatchlist: toggle } = useLibrary()
   const scoreCard = useRef<HTMLElement>(null)
@@ -104,6 +109,7 @@ export default function FrameGame({ pool }: { pool: FrameFilm[] }) {
     }
     const bestSaved = Number(store.get('frame-game:best'))
     if (bestSaved) setBest(bestSaved)
+    setStreak(parseStreak(store.get('frame-game:streak')))
   }, [])
 
   const rounds = useMemo(() => {
@@ -124,6 +130,7 @@ export default function FrameGame({ pool }: { pool: FrameFilm[] }) {
     if (finished) scoreCard.current?.focus({ preventScroll: false })
   }, [finished])
   const score = points.reduce((a, b) => a + b, 0)
+  const days = today ? activeStreak(streak, today) : 0
 
   // Warm the next still so the reveal → next transition is instant
   useEffect(() => {
@@ -159,15 +166,19 @@ export default function FrameGame({ pool }: { pool: FrameFilm[] }) {
       setPoints(nextPoints)
       if (nextPoints.length === rounds.length) {
         const total = nextPoints.reduce((a, b) => a + b, 0)
-        if (mode === 'daily' && today)
+        if (mode === 'daily' && today) {
           store.set(`frame-game:daily:${today}`, JSON.stringify(nextPoints))
+          const run = extendStreak(streak, today)
+          setStreak(run)
+          store.set('frame-game:streak', JSON.stringify(run))
+        }
         if (!best || total > best) {
           setBest(total)
           store.set('frame-game:best', String(total))
         }
       }
     },
-    [round, answered, step, points, rounds.length, mode, today, best]
+    [round, answered, step, points, rounds.length, mode, today, best, streak]
   )
 
   const next = useCallback(() => {
@@ -207,6 +218,7 @@ export default function FrameGame({ pool }: { pool: FrameFilm[] }) {
           : 'Practice reel',
       points,
       url: `${window.location.origin}/play`,
+      streak: mode === 'daily' ? days : 0,
     })
     try {
       if (navigator.share) await navigator.share({ text })
@@ -290,6 +302,15 @@ export default function FrameGame({ pool }: { pool: FrameFilm[] }) {
           <p className="mt-2 font-display text-2xl italic text-pink-200">
             {rankFor(score)}
           </p>
+          {mode === 'daily' && days > 0 && (
+            <p className="mt-3 font-semibold text-gold">
+              🔥 {days}-day streak
+              <span className="font-normal text-zinc-400">
+                {' '}
+                · come back tomorrow to keep it going
+              </span>
+            </p>
+          )}
           {best != null && (
             <p className="mt-1 text-sm text-zinc-400">Your best: {best}</p>
           )}

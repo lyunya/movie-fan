@@ -79,6 +79,19 @@ export function createMembers(db: PrismaClient) {
           }
         },
 
+        /**
+         * Remove the Member and everything they made: Library, Diary, Lists,
+         * connections, bookmarks, sessions and sign-in links. Not undoable.
+         */
+        async deleteAccount(): Promise<void> {
+          await db.$transaction([
+            // Explicit, so this works whether or not the cascade is in place
+            db.watchListItem.deleteMany({ where: { userId: memberId } }),
+            db.streamingDelivery.deleteMany({ where: { userId: memberId } }),
+            db.user.delete({ where }),
+          ])
+        },
+
         updateProfile: (p: { name: string; handle: string; bio: string }) =>
           update(p),
         setPublic: (isPublic: boolean) => update({ publicWatchlist: isPublic }),

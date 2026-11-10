@@ -46,6 +46,11 @@ export const memberRouter = createTRPCRouter({
     )
     .mutation(({ ctx, input }) => me(ctx).setStreaming(input)),
 
+  /** Permanently delete the Member's account and everything in it. */
+  deleteAccount: protectedProcedure
+    .input(z.object({ confirm: z.literal('DELETE') }))
+    .mutation(({ ctx }) => me(ctx).deleteAccount()),
+
   setNewsTopics: protectedProcedure
     .input(
       z.object({

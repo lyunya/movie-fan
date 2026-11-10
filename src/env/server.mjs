@@ -6,17 +6,25 @@
 import { serverSchema } from "./schema.mjs";
 import { env as clientEnv, formatErrors } from "./client.mjs";
 
-const _serverEnv = serverSchema.safeParse(process.env);
+// SKIP_ENV_VALIDATION (CI, Docker builds) hands back process.env unchecked,
+// so a build can run without real secrets. Never set it in production.
+const parsed = process.env.SKIP_ENV_VALIDATION
+  ? null
+  : serverSchema.safeParse(process.env);
 
-if (!_serverEnv.success) {
+if (parsed && !parsed.success) {
   console.error(
     "❌ Invalid environment variables:\n",
-    ...formatErrors(_serverEnv.error.format()),
+    ...formatErrors(parsed.error.format()),
   );
   throw new Error("Invalid environment variables");
 }
 
-for (let key of Object.keys(_serverEnv.data)) {
+const serverEnv = /** @type {import('zod').infer<typeof serverSchema>} */ (
+  parsed ? parsed.data : process.env
+);
+
+for (let key of parsed ? Object.keys(serverEnv) : []) {
   if (key.startsWith("NEXT_PUBLIC_")) {
     console.warn("❌ You are exposing a server-side env-variable:", key);
 
@@ -24,4 +32,4 @@ for (let key of Object.keys(_serverEnv.data)) {
   }
 }
 
-export const env = { ..._serverEnv.data, ...clientEnv };
+export const env = { ...serverEnv, ...clientEnv };

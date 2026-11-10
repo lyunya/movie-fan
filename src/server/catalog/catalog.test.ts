@@ -167,10 +167,11 @@ describe('Catalog search, people, and services', () => {
     expect(names.slice(0, 2)).toEqual(['Netflix', 'Disney Plus'])
   })
 
-  it('adds IMDb ratings where known and leaves the rest alone', async () => {
+  it('lists films similar to one film, and nothing for an unknown id', async () => {
     const { catalog } = setup()
-    const films = await catalog.withImdb(await catalog.films('popular'))
-    expect(films.some((f) => f.imdb)).toBe(true)
-    expect(films.some((f) => !f.imdb)).toBe(true)
+    const similar = await catalog.similarTo(String(FIXTURE_FIRST_ID))
+    expect(similar.length).toBeGreaterThan(0)
+    expect(similar.every((f) => f.posterPath)).toBe(true)
+    expect(await catalog.similarTo('not-a-film')).toEqual([])
   })
 })

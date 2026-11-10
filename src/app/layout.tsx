@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     template: '%s · Movie Fan',
   },
   description:
-    'Find your next favorite. Remember every movie night. Build a library, rank your favorites, and choose what to watch with friends.',
+    'Find your next favorite. Remember every movie night. Build a library, rank your favorites, and pick what to watch tonight.',
   openGraph: {
     title: 'Movie Fan',
     description:

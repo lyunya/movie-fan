@@ -63,7 +63,7 @@ export const catalogRouter = createTRPCRouter({
   search: publicProcedure
     .input(
       z.object({
-        query: z.string().trim().min(1),
+        query: z.string().trim().min(1).max(120),
         page: z.number().int().min(1).max(500).default(1),
       })
     )

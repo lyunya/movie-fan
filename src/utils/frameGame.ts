@@ -104,16 +104,63 @@ export function shareText({
   label,
   points,
   url,
+  streak = 0,
 }: {
   label: string
   points: number[]
   url: string
+  /** Days in a row; mentioned from the second day on */
+  streak?: number
 }) {
   const score = points.reduce((a, b) => a + b, 0)
   const tiles = points.map((p) => TILE[p] ?? TILE[0]).join('')
-  return `🎞️ The Frame Game · ${label}\n${tiles}  ${score}/${MAX_SCORE}\n${rankFor(score)}\n${url}`
+  const run = streak > 1 ? ` · 🔥 ${streak} days` : ''
+  return `🎞️ The Frame Game · ${label}\n${tiles}  ${score}/${MAX_SCORE}\n${rankFor(score)}${run}\n${url}`
 }
 
 /** Local calendar date, so "today's reel" changes at the player's midnight. */
 export const localDateKey = (date = new Date()) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+/** A run of consecutive days with a finished daily reel. */
+export interface Streak {
+  /** Date key of the last finished daily reel */
+  last: string
+  count: number
+}
+
+const dayBefore = (key: string) => {
+  const [y, m, d] = key.split('-').map(Number)
+  return localDateKey(new Date(y!, m! - 1, d! - 1))
+}
+
+/** The streak after finishing today's reel. Finishing twice in a day counts once. */
+export function extendStreak(previous: Streak | null, today: string): Streak {
+  if (previous?.last === today) return previous
+  return {
+    last: today,
+    count: previous?.last === dayBefore(today) ? previous.count + 1 : 1,
+  }
+}
+
+/** Days in the current run: still alive if the last reel was today or yesterday. */
+export const activeStreak = (streak: Streak | null, today: string) =>
+  streak && (streak.last === today || streak.last === dayBefore(today))
+    ? streak.count
+    : 0
+
+/** Read a stored streak, ignoring anything malformed. */
+export function parseStreak(raw: string | null): Streak | null {
+  try {
+    const value: unknown = raw ? JSON.parse(raw) : null
+    if (
+      value &&
+      typeof value === 'object' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(String((value as Streak).last)) &&
+      Number.isInteger((value as Streak).count) &&
+      (value as Streak).count > 0
+    )
+      return { last: (value as Streak).last, count: (value as Streak).count }
+  } catch {}
+  return null
+}

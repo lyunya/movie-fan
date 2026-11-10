@@ -32,7 +32,6 @@ export const REVALIDATE = {
   details: 86_400, // 24h
   search: 3_600, // 1h
   availability: 3_600, // 1h
-  externalIds: 604_800, // 7d
 } as const
 
 /* ---------------------------------------------------------------- */
@@ -303,11 +302,6 @@ const LIST_PATHS: Record<
     regional: false,
     revalidate: REVALIDATE.lists,
   },
-  trendingDay: {
-    path: '/trending/movie/day',
-    regional: false,
-    revalidate: REVALIDATE.lists,
-  },
 }
 
 /** Build TMDB /discover parameters from our filters. One place, one set of rules. */
@@ -353,6 +347,15 @@ export function discoverParams(
 /* ---------------------------------------------------------------- */
 /* The interface                                                     */
 /* ---------------------------------------------------------------- */
+
+/**
+ * "No such film or person" is an answer; an outage is not. Letting outages
+ * throw keeps them from being shown (or cached) as "not found".
+ */
+const notFoundAsNull = (error: unknown) => {
+  if (error instanceof CatalogNotFound) return null
+  throw error
+}
 
 export function createCatalog(source: CatalogSource) {
   const get = <T>(path: string, params: Record<string, string>, ttl: number) =>
@@ -479,7 +482,7 @@ export function createCatalog(source: CatalogSource) {
       `/person/${id}`,
       { append_to_response: 'movie_credits', language: 'en-US' },
       REVALIDATE.details
-    ).catch(() => null)
+    ).catch(notFoundAsNull)
     return data?.id ? toPerson(data) : null
   }
 
@@ -489,7 +492,7 @@ export function createCatalog(source: CatalogSource) {
       '/search/person',
       { query: name, include_adult: 'false', language: 'en-US', page: '1' },
       REVALIDATE.details
-    ).catch(() => null)
+    ).catch(notFoundAsNull)
     const match = data?.results?.[0]
     return match?.id ? person(match.id) : null
   }
@@ -539,23 +542,15 @@ export function createCatalog(source: CatalogSource) {
     return toWhereToWatch(region, data?.results?.[region])
   }
 
-  /** Attach IMDb ratings where known. Failures leave a film unchanged. */
-  async function withImdb(list: Film[]): Promise<Film[]> {
-    return Promise.all(
-      list.map(async (film) => {
-        try {
-          const ids = await get<{ imdb_id?: string | null }>(
-            `/movie/${film.id}/external_ids`,
-            {},
-            REVALIDATE.externalIds
-          )
-          const imdb = ids?.imdb_id ? await source.imdb(ids.imdb_id) : null
-          return imdb ? { ...film, imdb } : film
-        } catch {
-          return film
-        }
-      })
+  /** TMDB's own "if you liked this" films for one Film. Empty if unknown. */
+  async function similarTo(id: string): Promise<Film[]> {
+    if (!/^\d+$/.test(id)) return []
+    const data = await get<TmdbPage<TmdbFilm>>(
+      `/movie/${id}/recommendations`,
+      { language: 'en-US', page: '1' },
+      REVALIDATE.details
     )
+    return toFilms(data?.results)
   }
 
   return {
@@ -568,7 +563,7 @@ export function createCatalog(source: CatalogSource) {
     genres,
     providers,
     whereToWatch,
-    withImdb,
+    similarTo,
   }
 }
 
