@@ -55,7 +55,7 @@ const Carousel: FC<{ movieCards: ReactNode[] }> = ({ movieCards }) => {
       <div
         ref={scroller}
         onScroll={updateEdges}
-        className="hide-scrollbar bleed-x flex snap-x gap-4 overflow-x-auto scroll-smooth pb-2 pt-1 sm:gap-5"
+        className="hide-scrollbar bleed-x -mt-1 flex snap-x gap-4 overflow-x-auto scroll-smooth pb-2 pt-2 sm:gap-5"
       >
         {movieCards}
       </div>
