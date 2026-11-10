@@ -50,16 +50,12 @@ describe('For you', () => {
     const owned = String(FIXTURE_FIRST_ID + 7) // a Horror film
     const result = await recs.forYou({
       library: [
-        entry({
-          filmId: owned,
-          genres: ['Horror'],
-          favorite: true,
-          watched: true,
-        }),
+        entry({ filmId: owned, genres: ['Horror'], watched: true }),
         entry({ genres: ['Mystery'], inWatchlist: true }),
       ],
     })
     expect(result.topGenre).toBe('Horror')
+    expect(result.becauseOf).toEqual([])
     expect(result.films.length).toBeGreaterThan(0)
     expect(result.films.some((f) => f.id === owned)).toBe(false)
     expect(
@@ -69,17 +65,55 @@ describe('For you', () => {
     ).toBe(true)
   })
 
+  it('leads with films similar to the ones they loved, and says which', async () => {
+    const { recs, source } = setup()
+    const loved = String(FIXTURE_FIRST_ID + 2)
+    const alsoLoved = String(FIXTURE_FIRST_ID + 20)
+    const catalog = createCatalog(fixtureSource())
+    const [first, second] = await Promise.all([
+      catalog.similarTo(loved),
+      catalog.similarTo(alsoLoved),
+    ])
+    const owned = first[1]!.id
+    const result = await recs.forYou({
+      library: [
+        entry({ filmId: loved, title: 'Loved One', rating: 5, watched: true }),
+        entry({ filmId: alsoLoved, title: 'Loved Two', favorite: true }),
+        entry({ filmId: owned, inWatchlist: true }),
+        entry({
+          filmId: String(FIXTURE_FIRST_ID + 30),
+          title: 'Dismissed',
+          favorite: true,
+          dismissed: true,
+        }),
+      ],
+      limit: 4,
+    })
+    // Alternates between the two loved films, skipping what they already have
+    expect(result.films.map((f) => f.id).slice(0, 2)).toEqual([
+      first[0]!.id,
+      second[0]!.id,
+    ])
+    expect(result.films).toHaveLength(4)
+    expect(new Set(result.films.map((f) => f.id)).size).toBe(4)
+    expect(
+      result.films.some((f) => [loved, alsoLoved, owned].includes(f.id))
+    ).toBe(false)
+    expect(result.becauseOf).toEqual(['Loved One', 'Loved Two'])
+    expect(
+      source.calls.filter((c) => c.path.endsWith('/recommendations'))
+    ).toHaveLength(2)
+  })
+
   it('has nothing to say without a taste', async () => {
     const { recs } = setup()
-    expect(await recs.forYou({ library: [] })).toEqual({
-      films: [],
-      topGenre: null,
-    })
+    const nothing = { films: [], topGenre: null, becauseOf: [] }
+    expect(await recs.forYou({ library: [] })).toEqual(nothing)
     expect(
       await recs.forYou({
         library: [entry({ genres: ['Comedy'], rating: 1, watched: true })],
       })
-    ).toEqual({ films: [], topGenre: null })
+    ).toEqual(nothing)
   })
 })
 

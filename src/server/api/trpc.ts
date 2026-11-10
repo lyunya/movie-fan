@@ -9,8 +9,11 @@ import superjson from 'superjson'
 import { auth } from '../auth'
 import { prisma } from '../db'
 
-export const createTRPCContext = async () => {
-  const session = await auth()
+export const createTRPCContext = async ({
+  skipSession = false,
+}: { skipSession?: boolean } = {}) => {
+  // Requests made only of public catalog reads don't need to know who's asking
+  const session = skipSession ? null : await auth()
   return { session, prisma }
 }
 

@@ -69,7 +69,21 @@ export default function LibraryClient() {
     },
     onError: () => notify('Your collection could not be updated.', 'error'),
   })
-  const addToList = api.lists.addMovie.useMutation()
+  const addToList = api.lists.addMovies.useMutation({
+    onSuccess: ({ added, failed }) => {
+      notify(
+        failed
+          ? `${added} added. ${failed} could not be loaded; please retry those.`
+          : added
+            ? `${added} ${added === 1 ? 'film' : 'films'} added`
+            : 'Those films were already in the list',
+        failed ? 'error' : 'success'
+      )
+      if (!failed) setSelected([])
+      void utils.lists.all.invalidate()
+    },
+    onError: () => notify('Could not add to that list. Please retry.', 'error'),
+  })
   const tab = params.get('tab') || 'watchlist',
     search = params.get('q') || '',
     sort = params.get('sort') || 'recent',
@@ -386,28 +400,9 @@ export default function LibraryClient() {
               <button
                 disabled={!bulkList || addToList.isPending}
                 className="btn-ghost !px-3 !py-2"
-                onClick={async () => {
-                  const films = all.filter((m) => selected.includes(m.filmId))
-                  let failed = 0
-                  for (const m of films) {
-                    try {
-                      await addToList.mutateAsync({
-                        listId: bulkList,
-                        filmId: m.filmId,
-                      })
-                    } catch {
-                      failed++
-                    }
-                  }
-                  notify(
-                    failed
-                      ? `${failed} films could not be added. Please retry.`
-                      : `${films.length} films added`,
-                    failed ? 'error' : 'success'
-                  )
-                  if (!failed) setSelected([])
-                  utils.lists.all.invalidate()
-                }}
+                onClick={() =>
+                  addToList.mutate({ listId: bulkList, filmIds: selected })
+                }
               >
                 Add
               </button>

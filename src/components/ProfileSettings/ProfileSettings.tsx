@@ -14,6 +14,7 @@ import {
 
 interface ProfileSettingsProps {
   userId: string
+  handle?: string | null
   isPublic: boolean
   alertsEnabled: boolean
   watchRegion: string
@@ -53,6 +54,7 @@ const Toggle: FC<{
 
 const ProfileSettings: FC<ProfileSettingsProps> = ({
   userId,
+  handle,
   isPublic,
   alertsEnabled,
   watchRegion,
@@ -101,7 +103,9 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
   }
 
   const shareUrl =
-    typeof window !== 'undefined' ? `${window.location.origin}/u/${userId}` : ''
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/u/${handle || userId}`
+      : ''
 
   const copy = async () => {
     try {
@@ -123,8 +127,8 @@ const ProfileSettings: FC<ProfileSettingsProps> = ({
       </h2>
       <div className="flex flex-col gap-5">
         <Toggle
-          label="Public watchlist"
-          description="Anyone with the link can view your saved movies (no account details shown)."
+          label="Public profile"
+          description="Anyone with the link can see your name, photo, bio, watchlist, watched films, favorites and star ratings, plus any diary entries and lists you mark as shared. Your email is never shown."
           checked={isPublic}
           disabled={setPublic.isPending}
           onChange={(value) => setPublic.mutate({ public: value })}

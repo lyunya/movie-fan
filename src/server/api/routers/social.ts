@@ -1,6 +1,31 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
+import type { PrismaClient } from '@prisma/client'
 import { createTRPCRouter, protectedProcedure } from '../trpc'
+
+/**
+ * The people whose shared activity a Member sees: those they follow who are
+ * still public, minus anyone muted or blocked in either direction.
+ */
+async function circleOf(prisma: PrismaClient, userId: string) {
+  const connections = await prisma.userConnection.findMany({
+    where: { OR: [{ userId }, { targetId: userId, kind: 'BLOCK' }] },
+  })
+  const excluded = new Set(
+    connections
+      .filter((c) => c.kind === 'BLOCK' || c.kind === 'MUTE')
+      .map((c) => (c.userId === userId ? c.targetId : c.userId))
+  )
+  const ids = connections
+    .filter((c) => c.kind === 'FOLLOW' && !excluded.has(c.targetId))
+    .map((c) => c.targetId)
+  if (!ids.length) return []
+  return prisma.user.findMany({
+    where: { id: { in: ids }, publicWatchlist: true },
+    select: { id: true, name: true, handle: true, image: true },
+  })
+}
+
 export const socialRouter = createTRPCRouter({
   people: protectedProcedure
     .input(z.object({ query: z.string().trim().max(80) }))
@@ -101,23 +126,37 @@ export const socialRouter = createTRPCRouter({
         })
       })
     }),
+  /** What the people a Member follows shared about one Film, newest first. */
+  filmActivity: protectedProcedure
+    .input(z.object({ filmId: z.string().regex(/^[1-9]\d*$/) }))
+    .query(async ({ ctx, input }) => {
+      const users = await circleOf(ctx.prisma, ctx.session.user.id)
+      if (!users.length) return []
+      const byId = new Map(users.map((u) => [u.id, u]))
+      const entries = await ctx.prisma.watchEvent.findMany({
+        where: {
+          userId: { in: users.map((u) => u.id) },
+          movieId: input.filmId,
+          isPublic: true,
+        },
+        orderBy: { watchedAt: 'desc' },
+        take: 12,
+        select: {
+          id: true,
+          userId: true,
+          rating: true,
+          review: true,
+          spoiler: true,
+          watchedAt: true,
+        },
+      })
+      return entries.map(({ userId, ...entry }) => ({
+        ...entry,
+        member: byId.get(userId)!,
+      }))
+    }),
   feed: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id
-    const connections = await ctx.prisma.userConnection.findMany({
-      where: { OR: [{ userId }, { targetId: userId, kind: 'BLOCK' }] },
-    })
-    const excluded = new Set(
-      connections
-        .filter((c) => c.kind === 'BLOCK' || c.kind === 'MUTE')
-        .map((c) => (c.userId === userId ? c.targetId : c.userId))
-    )
-    const ids = connections
-      .filter((c) => c.kind === 'FOLLOW' && !excluded.has(c.targetId))
-      .map((c) => c.targetId)
-    const users = await ctx.prisma.user.findMany({
-      where: { id: { in: ids }, publicWatchlist: true },
-      select: { id: true, name: true, handle: true, image: true },
-    })
+    const users = await circleOf(ctx.prisma, ctx.session.user.id)
     const visible = users.map((u) => u.id)
     const [entries, lists] = await Promise.all([
       ctx.prisma.watchEvent.findMany({

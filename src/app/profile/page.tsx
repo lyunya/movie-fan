@@ -1,10 +1,11 @@
 'use client'
 import Link from 'next/link'
-import { signIn, useSession } from 'next-auth/react'
+import { signIn, signOut, useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { api } from '@/utils/api'
 import ProfileSettings from '@/components/ProfileSettings/ProfileSettings'
 import { notify, QueryError } from '@/components/ui/Feedback'
+import Dialog from '@/components/ui/Dialog'
 function Identity({
   name,
   handle,
@@ -71,6 +72,80 @@ function Identity({
     </form>
   )
 }
+function DeleteAccount() {
+  const [open, setOpen] = useState(false),
+    [typed, setTyped] = useState('')
+  const remove = api.member.deleteAccount.useMutation({
+    onSuccess: () => signOut({ callbackUrl: '/' }),
+    onError: () =>
+      notify(
+        'Your account could not be deleted. Nothing was removed.',
+        'error'
+      ),
+  })
+  const close = () => {
+    setOpen(false)
+    setTyped('')
+  }
+  return (
+    <section className="surface mt-10 border-red-900/60 p-5">
+      <h2 className="text-xl font-semibold">Delete your account</h2>
+      <p className="mt-2 text-sm text-zinc-400">
+        Removes your library, ratings, diary, lists, follows and profile for
+        good. To keep a copy first, export your library from{' '}
+        <Link className="text-pink-300 underline" href="/library">
+          Your library
+        </Link>{' '}
+        and your diary from{' '}
+        <Link className="text-pink-300 underline" href="/diary">
+          Diary
+        </Link>
+        .
+      </p>
+      <button
+        className="btn-ghost mt-4 !border-red-800 !text-red-200"
+        onClick={() => setOpen(true)}
+      >
+        Delete account…
+      </button>
+      <Dialog open={open} onClose={close} title="Delete your account?">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (typed === 'DELETE') remove.mutate({ confirm: 'DELETE' })
+          }}
+        >
+          <p className="text-sm text-zinc-300">
+            This can’t be undone. Everything you’ve saved, rated, logged and
+            listed will be permanently removed.
+          </p>
+          <label className="field-label">
+            Type DELETE to confirm
+            <input
+              className="field"
+              autoComplete="off"
+              autoCapitalize="characters"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+            />
+          </label>
+          <div className="flex flex-wrap gap-3">
+            <button
+              className="btn-brand !bg-red-700 !bg-none"
+              disabled={typed !== 'DELETE' || remove.isPending}
+            >
+              {remove.isPending ? 'Deleting…' : 'Delete everything'}
+            </button>
+            <button type="button" className="btn-ghost" onClick={close}>
+              Keep my account
+            </button>
+          </div>
+        </form>
+      </Dialog>
+    </section>
+  )
+}
 export default function Profile() {
   const { status } = useSession(),
     query = api.member.profile.useQuery(undefined, {
@@ -107,6 +182,7 @@ export default function Profile() {
           />
           <ProfileSettings
             userId={user.id}
+            handle={user.handle}
             isPublic={user.isPublic}
             alertsEnabled={user.streamAlerts}
             watchRegion={prefs.data.region}
@@ -121,6 +197,7 @@ export default function Profile() {
               Preview your public profile
             </Link>
           )}
+          <DeleteAccount />
         </>
       ) : (
         <div className="surface h-72 animate-pulse" />

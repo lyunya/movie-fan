@@ -3,7 +3,7 @@
  * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation.
  * This is especially useful for Docker builds.
  */
-!process.env.SKIP_ENV_VALIDATION && (await import("./src/env/server.mjs"));
+!process.env.SKIP_ENV_VALIDATION && (await import('./src/env/server.mjs'))
 
 const imageHosts = [
   'image.tmdb.org',
@@ -15,7 +15,7 @@ const imageHosts = [
   'variety.com',
   'www.hollywoodreporter.com',
   'deadline.com',
-];
+]
 
 /** @type {import("next").NextConfig} */
 const config = {
@@ -27,7 +27,26 @@ const config = {
         // original address preserved for visitors and client-side navigation.
         { source: '/person/:slug', destination: '/person' },
       ],
-    };
+    }
+  },
+  async headers() {
+    return [
+      {
+        // Film pages render per request (no ISR page written per id), and the
+        // HTML is the same for everyone: who is signed in is worked out in
+        // the browser. Let the CDN keep each page for an hour and refresh it
+        // in the background, so repeat views and crawlers stop being function
+        // invocations. Only shared caches see these headers; browsers still
+        // get Next's own no-store Cache-Control.
+        source: '/movie/:id',
+        headers: [
+          {
+            key: 'CDN-Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=86400',
+          },
+        ],
+      },
+    ]
   },
   // Pin the workspace root so a stray lockfile elsewhere doesn't confuse tracing
   outputFileTracingRoot: process.cwd(),
@@ -44,5 +63,5 @@ const config = {
       hostname,
     })),
   },
-};
-export default config;
+}
+export default config

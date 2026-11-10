@@ -87,3 +87,53 @@ describe('scoring', () => {
     expect(localDateKey(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05')
   })
 })
+
+describe('streaks', () => {
+  it('grows on consecutive days and counts a day once', async () => {
+    const { extendStreak } = await import('./frameGame')
+    const day1 = extendStreak(null, '2026-11-09')
+    expect(day1).toEqual({ last: '2026-11-09', count: 1 })
+    const day2 = extendStreak(day1, '2026-11-10')
+    expect(day2).toEqual({ last: '2026-11-10', count: 2 })
+    expect(extendStreak(day2, '2026-11-10')).toBe(day2)
+  })
+
+  it('carries over month and year ends, and restarts after a missed day', async () => {
+    const { extendStreak } = await import('./frameGame')
+    expect(
+      extendStreak({ last: '2026-12-31', count: 6 }, '2027-01-01').count
+    ).toBe(7)
+    expect(
+      extendStreak({ last: '2028-02-29', count: 2 }, '2028-03-01').count
+    ).toBe(3)
+    expect(
+      extendStreak({ last: '2026-11-08', count: 9 }, '2026-11-10')
+    ).toEqual({ last: '2026-11-10', count: 1 })
+  })
+
+  it('stays alive through the next day, then lapses', async () => {
+    const { activeStreak } = await import('./frameGame')
+    const streak = { last: '2026-11-09', count: 4 }
+    expect(activeStreak(streak, '2026-11-09')).toBe(4)
+    expect(activeStreak(streak, '2026-11-10')).toBe(4)
+    expect(activeStreak(streak, '2026-11-11')).toBe(0)
+    expect(activeStreak(null, '2026-11-11')).toBe(0)
+  })
+
+  it('ignores stored values that are not a streak', async () => {
+    const { parseStreak } = await import('./frameGame')
+    expect(parseStreak('{"last":"2026-11-09","count":3}')).toEqual({
+      last: '2026-11-09',
+      count: 3,
+    })
+    for (const bad of [null, '', 'nope', '{}', '{"last":"x","count":2}'])
+      expect(parseStreak(bad)).toBeNull()
+    expect(parseStreak('{"last":"2026-11-09","count":-1}')).toBeNull()
+  })
+
+  it('mentions a streak in the share text from the second day', async () => {
+    const base = { label: 'Nov 10', points: [3, 0], url: 'https://x/play' }
+    expect(shareText({ ...base, streak: 1 })).not.toContain('🔥')
+    expect(shareText({ ...base, streak: 5 })).toContain('🔥 5 days')
+  })
+})

@@ -35,5 +35,10 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run build
+        env:
+          TMDB_FIXTURES: '1'
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: ci-only-secret
       - run: npx prisma migrate deploy
       - run: npm run test:integration

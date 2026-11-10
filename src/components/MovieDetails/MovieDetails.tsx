@@ -22,6 +22,7 @@ import MovieRow from '@/components/MovieRow/MovieRow'
 import { toSlug } from '@/utils/slug'
 import DiaryLogButton from '@/components/DiaryLog/DiaryLogButton'
 import Availability from './Availability'
+import CircleActivity from './CircleActivity'
 import ListPicker from '@/components/ListPicker/ListPicker'
 import TrailerButton from '@/components/ui/TrailerButton'
 import {
@@ -370,6 +371,7 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
             </Link>
           </section>
         )}
+        {session && <CircleActivity filmId={id} />}
         {/* Photo gallery — click any still to open the lightbox */}
         {stills.length > 0 && (
           <section className="my-10">
@@ -453,13 +455,10 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
         </div>
       )}
 
-      {/* Sticky mobile action bar */}
-      <div className="safe-area-bottom fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-black/90 px-3 pt-3 backdrop-blur sm:hidden">
-        {!session ? (
-          <button className="btn-brand w-full" onClick={() => signIn()}>
-            Sign in to add &amp; rate
-          </button>
-        ) : (
+      {/* Sticky mobile action bar. Guests keep the site navigation instead
+          (see Nav); the sign-in button above is already on their screen. */}
+      {session && (
+        <div className="safe-area-bottom fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-black/90 px-3 pt-3 backdrop-blur sm:hidden">
           <div className="flex items-center gap-2">
             <Link href="/library" className="btn-ghost !px-3 !py-2 !text-sm">
               Library
@@ -473,8 +472,8 @@ const MovieDetails = ({ film }: { film: FilmDetail }) => {
             </button>
             <DiaryLogButton film={film} initialRating={currentUserRating} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </article>
   )
 }

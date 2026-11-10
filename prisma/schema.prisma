@@ -97,7 +97,7 @@ model WatchListItem {
   lastWatchedAt       DateTime?
   updatedAt           DateTime  @default(now()) @updatedAt
   dismissed           Boolean   @default(false)
-  user                User      @relation(fields: [userId], references: [id])
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, movieId])
   @@index([userId, inWatchlist])

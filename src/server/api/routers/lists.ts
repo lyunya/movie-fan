@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc'
 import { catalog } from '@/server/catalog'
+import { pooled } from '@/server/availability/createAvailability'
 import { listItemSnapshot } from '@/server/library'
 
 const filmId = z.string().regex(/^[1-9]\d*$/)
@@ -17,6 +18,11 @@ const snapshotFor = async (id: string) => {
     })
   return listItemSnapshot(film)
 }
+
+const fresh = <T extends { movieId: string }>(
+  snapshots: T[],
+  present: ReadonlySet<string>
+) => snapshots.filter((s) => !present.has(s.movieId))
 
 export const listsRouter = createTRPCRouter({
   all: protectedProcedure.query(({ ctx }) =>
@@ -171,8 +177,12 @@ export const listsRouter = createTRPCRouter({
             code: 'BAD_REQUEST',
             message: 'The ordering must include each film exactly once.',
           })
-        for (const [position, id] of input.itemIds.entries())
-          await tx.movieListItem.update({ where: { id }, data: { position } })
+        // One statement for the whole order, not one round trip per film
+        await tx.$executeRaw`
+          UPDATE "MovieListItem" AS item
+          SET "position" = ordered.position - 1
+          FROM unnest(${input.itemIds}::text[]) WITH ORDINALITY AS ordered(id, position)
+          WHERE item."id" = ordered.id AND item."listId" = ${input.id}`
         return { version: input.version + 1 }
       })
     }),
@@ -233,6 +243,54 @@ export const listsRouter = createTRPCRouter({
           },
         })
       })
+    }),
+  /** Add several Films at once; ones already in the List are left alone. */
+  addMovies: protectedProcedure
+    .input(
+      z.object({
+        listId: z.string().cuid(),
+        filmIds: z.array(filmId).min(1).max(100),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const ids = [...new Set(input.filmIds)]
+      const found = await pooled(ids, 5, (id) =>
+        catalog
+          .filmDetail(id)
+          .then((film) => (film ? listItemSnapshot(film) : null))
+          .catch(() => null)
+      )
+      const snapshots = found.filter((s) => s !== null)
+      const added = await ctx.prisma.$transaction(async (tx) => {
+        const claimed = await tx.movieList.updateMany({
+          where: { id: input.listId, userId: ctx.session.user.id },
+          data: { version: { increment: 1 }, updatedAt: new Date() },
+        })
+        if (!claimed.count) throw new TRPCError({ code: 'NOT_FOUND' })
+        const last = await tx.movieListItem.aggregate({
+          where: { listId: input.listId },
+          _max: { position: true },
+        })
+        const start = (last._max.position ?? -1) + 1
+        const present = new Set(
+          (
+            await tx.movieListItem.findMany({
+              where: { listId: input.listId },
+              select: { movieId: true },
+            })
+          ).map((item) => item.movieId)
+        )
+        const result = await tx.movieListItem.createMany({
+          data: fresh(snapshots, present).map((snapshot, i) => ({
+            listId: input.listId,
+            position: start + i,
+            ...snapshot,
+          })),
+          skipDuplicates: true,
+        })
+        return result.count
+      })
+      return { added, failed: ids.length - snapshots.length }
     }),
   removeMovie: protectedProcedure
     .input(z.object({ listId: z.string().cuid(), movieId: z.string() }))

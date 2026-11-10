@@ -4,8 +4,8 @@ import { catalog, type Film, type FilmDetail } from '@/server/catalog'
 import { fetchNews } from '@/server/news'
 import HomeClient from './HomeClient'
 
-// ISR: rebuild the home data periodically. The Catalog's per-request cache
-// windows govern the finer-grained freshness of each section.
+// ISR: an upper bound. Next uses the shortest fetch lifetime on the page, so
+// the 30-minute news feed is what actually sets the rebuild interval.
 export const revalidate = 21600
 
 export default async function Page() {

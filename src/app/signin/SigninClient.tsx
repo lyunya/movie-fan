@@ -14,7 +14,7 @@ import { HiCheck } from 'react-icons/hi'
 
 type Provider = 'google' | 'github' | 'facebook' | 'nodemailer'
 
-const BENEFITS = ['Tonight picks', 'Diary & reviews', 'Movie-night voting']
+const BENEFITS = ['Tonight picks', 'Diary & reviews', 'Lists & rankings']
 
 const socialButtonClass =
   'flex min-h-12 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 disabled:cursor-wait disabled:opacity-50'

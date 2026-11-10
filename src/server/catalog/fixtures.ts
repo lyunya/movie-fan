@@ -301,8 +301,7 @@ export function fixtureSource(): CatalogSource & { calls: FixtureCall[] } {
           throw new CatalogNotFound(path)
         if (m[2] === '/watch/providers')
           return out({ results: providersFor(id) })
-        if (m[2] === '/external_ids')
-          return out({ imdb_id: `tt${String(id).padStart(7, '0')}` })
+        if (m[2] === '/recommendations') return out(detail(id).recommendations)
         if (!m[2]) return out(detail(id))
       }
       throw new CatalogNotFound(path)

@@ -271,9 +271,11 @@ export default function HomeClient({ data }: { data: HomeData }) {
             eyebrow="Picked for you"
             title="A little more your thing"
             subtitle={
-              forYou.data?.topGenre
-                ? `Inspired by your interest in ${forYou.data.topGenre}`
-                : undefined
+              forYou.data?.becauseOf.length
+                ? `Because you loved ${forYou.data.becauseOf.slice(0, 2).join(' and ')}`
+                : forYou.data?.topGenre
+                  ? `Inspired by your interest in ${forYou.data.topGenre}`
+                  : undefined
             }
             films={personalized}
           />

@@ -137,12 +137,7 @@ export interface ProviderOption extends Provider {
 }
 
 export type FilmListName =
-  | 'popular'
-  | 'nowPlaying'
-  | 'upcoming'
-  | 'topRated'
-  | 'trendingWeek'
-  | 'trendingDay'
+  'popular' | 'nowPlaying' | 'upcoming' | 'topRated' | 'trendingWeek'
 
 export interface DiscoverFilters {
   /** Films in ANY of these genres */
