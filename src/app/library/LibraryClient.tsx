@@ -360,8 +360,15 @@ export default function LibraryClient() {
           <p className="mb-4 text-sm text-zinc-400">
             {rows.length} films · Select films for bulk actions
           </p>
+          {/* Floats over the page instead of sitting above the grid, so
+              selecting a film never pushes the films down. Sits above the
+              phone navigation bar, which is hidden from lg up. */}
           {selected.length > 0 && (
-            <div className="surface sticky top-20 z-30 mb-5 flex flex-wrap items-center gap-2 p-3">
+            <div
+              role="toolbar"
+              aria-label="Bulk actions"
+              className="surface fixed inset-x-3 bottom-24 z-50 mx-auto flex max-w-3xl flex-wrap items-center gap-2 p-3 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.9)] lg:bottom-6"
+            >
               <span className="mr-2 text-sm">{selected.length} selected</span>
               <button
                 disabled={bulk.isPending}
@@ -476,6 +483,7 @@ export default function LibraryClient() {
               </div>
             ))}
           </div>
+          {selected.length > 0 && <div aria-hidden className="h-28" />}
           {limit < rows.length && (
             <button
               className="btn-ghost mt-8"
